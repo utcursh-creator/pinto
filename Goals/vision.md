@@ -1,7 +1,7 @@
 ---
 type: goals
 timeframe: 3-year
-last_reviewed:
+last_reviewed: 2026-02-26
 ---
 
 # 3-Year Vision
@@ -11,23 +11,29 @@ Where do you want to be in 3 years? Think across life areas.
 ## Life Areas
 
 ### Career / Work
-<!-- What does your professional life look like? -->
+<!-- Based on positioning: you're building toward being the default Forward Deployed AI Partner for agencies at scale. The agency sells, you build, they use it. Multiple agency partnerships running simultaneously. -->
+- Established Forward Deployed AI Partner with multiple agency partnerships
+- Systems and team in place — not bottlenecked on personal delivery
+- Known name in the AI automation agency space through content authority
 
 ### Financial
-<!-- What's your financial situation? -->
+<!-- Fill this in — what does financial freedom look like for you? -->
 
 ### Health & Fitness
-<!-- How do you feel physically? -->
+<!-- Fill this in — what does your physical life look like? -->
 
 ### Relationships
-<!-- Family, friends, community -->
+<!-- Fill this in — family, friends, community -->
 
 ### Learning & Growth
-<!-- What have you mastered? What are you exploring? -->
+<!-- Operating at the frontier of AI. Deep domain expertise that compounds. -->
 
 ### Creative / Content
-<!-- What are you creating? What's your platform/audience? -->
+<!-- Recognized practitioner voice in AI automation. Content creates inbound pipeline without outbound hustle. -->
+- Authority content machine that runs consistently
+- Content is the primary inbound driver — no cold outreach needed
+- Recognized voice in AI automation agency space
 
 ---
 
-*Run `/setup` to fill this in with your assistant, or write it yourself. Review quarterly.*
+*Fill in the sections you haven't defined yet. Review quarterly during weekly reviews.*

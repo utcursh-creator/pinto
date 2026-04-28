@@ -1,0 +1,28 @@
+{
+  "name": "vibelife-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LinkedIn comment mining scraper for Vibelife prospecting pipeline. Mines magnet account comment sections via dummy account with anti-detection.",
+  "scripts": {
+    "scrape": "node src/index.js",
+    "login": "node src/index.js --mode=login",
+    "test-detection": "node src/index.js --mode=test-detection",
+    "health": "node src/index.js --mode=health",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "rebrowser-playwright": "1.52.0",
+    "ghost-cursor-playwright": "^1.1.5",
+    "better-sqlite3": "^11.3.0",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
+}

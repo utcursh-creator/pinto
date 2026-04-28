@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "last_updated": "2026-04-06",
+  "_note": "URLs are best-guess slugs. VERIFY each LinkedIn URL manually before the first production scrape (Task 17). Update slugs if any 404. Per user: 'We can go with that for now. We'll update that ahead.'",
+  "rotation_strategy": "round-robin",
+  "max_per_cycle": 2,
+  "magnets": {
+    "segment_1_agencies": [
+      {
+        "id": "liam-ottley",
+        "name": "Liam Ottley",
+        "linkedin_url": "https://www.linkedin.com/in/liamottley/",
+        "priority": "high",
+        "expected_comment_quality": 0.6,
+        "notes": "Audience = AI agency owners asking scaling questions"
+      },
+      {
+        "id": "nick-saraev",
+        "name": "Nick Saraev",
+        "linkedin_url": "https://www.linkedin.com/in/nick-saraev/",
+        "priority": "high",
+        "expected_comment_quality": 0.65,
+        "notes": "Make.com practitioner; audience = solo agency operators"
+      },
+      {
+        "id": "ben-van-sprundel",
+        "name": "Ben Van Sprundel",
+        "linkedin_url": "https://www.linkedin.com/in/benvansprundel/",
+        "priority": "high",
+        "expected_comment_quality": 0.7,
+        "notes": "BenAI community founder; direct ICP overlap; user is in his community"
+      },
+      {
+        "id": "helena-liu",
+        "name": "Helena Liu",
+        "linkedin_url": "https://www.linkedin.com/in/helenaliu/",
+        "priority": "medium",
+        "expected_comment_quality": 0.5,
+        "notes": "n8n educator; technical audience"
+      },
+      {
+        "id": "riley-brown",
+        "name": "Riley Brown",
+        "linkedin_url": "https://www.linkedin.com/in/rileybrown/",
+        "priority": "medium",
+        "expected_comment_quality": 0.5,
+        "notes": "AI builder; creator-leaning audience (could feed Segment 2 as well)"
+      }
+    ],
+    "segment_2_creators": [
+      {
+        "id": "greg-isenberg",
+        "name": "Greg Isenberg",
+        "linkedin_url": "https://www.linkedin.com/in/gregisenberg/",
+        "priority": "high",
+        "expected_comment_quality": 0.55,
+        "notes": "Audience = creator-economy operators"
+      },
+      {
+        "id": "justin-welsh",
+        "name": "Justin Welsh",
+        "linkedin_url": "https://www.linkedin.com/in/justinwelsh/",
+        "priority": "high",
+        "expected_comment_quality": 0.6,
+        "notes": "Solopreneur audience with services orientation"
+      },
+      {
+        "id": "dan-koe",
+        "name": "Dan Koe",
+        "linkedin_url": "https://www.linkedin.com/in/dan-koe/",
+        "priority": "medium",
+        "expected_comment_quality": 0.5,
+        "notes": "Creator economy; content + courses"
+      }
+    ]
+  }
+}

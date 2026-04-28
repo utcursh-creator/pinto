@@ -40,5 +40,18 @@ Daily/*.md
 # Node modules (if using any scripts)
 node_modules/
 
+# Local Claude Code settings (machine-specific, all levels)
+.claude/settings.local.json
+**/settings.local.json
+
+# Embedded git repos (clone separately on target machine)
+Projects/internal-tools/n8n-workflow-reviewer/
+
+# Paperclip state (local DB, not portable)
+Tools/paperclip/node_modules/
+
+# Junk / Windows artefacts
+nul
+
 # Logs
 *.log

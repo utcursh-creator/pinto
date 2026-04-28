@@ -1,0 +1,66 @@
+{
+  "url": "https://www.linkedin.com/feed/update/urn:li:activity:7443301800524341248/",
+  "title": "Post | Feed | LinkedIn",
+  "selector_counts": {
+    "article[data-id*='urn:li:comment']": 11,
+    "article.comments-comment-entity": 11,
+    "article.comments-comment-item": 0,
+    "div.comments-comment-entity": 0,
+    "div[data-id*='urn:li:comment']": 0,
+    ".comments-comment-list article": 0,
+    ".comments-comments-list article": 12,
+    ".comments-post-meta__name-text span[aria-hidden='true']": 0,
+    ".comments-post-meta__name span[aria-hidden='true']": 0,
+    ".comments-post-meta__name-link span[aria-hidden='true']": 0,
+    "a.comments-post-meta__profile-link span[aria-hidden='true']": 0,
+    ".comments-comment-meta__name span[aria-hidden='true']": 0,
+    ".comments-comment-meta__name-text span": 0,
+    ".comments-comment-meta__description-title": 11,
+    ".comments-comment-meta a span[aria-hidden='true']": 0,
+    "[data-test-id='comment-author-name']": 0,
+    "a.comments-post-meta__profile-link": 0,
+    ".comments-post-meta a[href*='/in/']": 0,
+    ".comments-post-meta__name a[href*='/in/']": 0,
+    ".comments-comment-meta a[href*='/in/']": 0,
+    "a.comments-comment-meta__image-link": 11,
+    "a[data-test-id='comment-author-link']": 0,
+    ".comments-post-meta__headline": 0,
+    ".comments-post-meta__description": 0,
+    ".comments-post-meta__subtitle": 0,
+    ".comments-comment-meta__description": 11,
+    ".comments-comment-item__main-content": 11,
+    ".comments-comment-entity__main-content": 0,
+    ".comments-comment-item-content-body": 0,
+    ".comments-comment-content": 0,
+    ".comments-comment-item__content": 0
+  },
+  "sample_articles": [
+    {
+      "dataId": "urn:li:comment:(ugcPost:7443301535863918592,7444650273068953600)",
+      "cls": "comments-comment-entity\n        \n        \n        \n        \n        ",
+      "innerLen": 8644
+    },
+    {
+      "dataId": "urn:li:comment:(ugcPost:7443301535863918592,7443316485223145472)",
+      "cls": "comments-comment-entity\n        \n        \n        \n        \n        ",
+      "innerLen": 8080
+    },
+    {
+      "dataId": "urn:li:comment:(ugcPost:7443301535863918592,7443346716453527552)",
+      "cls": "comments-comment-entity\n        \n        \n        \n        \n        ",
+      "innerLen": 7249
+    },
+    {
+      "dataId": "urn:li:comment:(ugcPost:7443301535863918592,7443831729905139712)",
+      "cls": "comments-comment-entity\n        \n        \n        \n        \n        ",
+      "innerLen": 7310
+    },
+    {
+      "dataId": "urn:li:comment:(ugcPost:7443301535863918592,7443366205199060992)",
+      "cls": "comments-comment-entity\n        \n        \n        \n        \n        ",
+      "innerLen": 7858
+    }
+  ],
+  "first_comment_html_preview": "<article class=\"comments-comment-entity\n        \n        \n        \n        \n        \" data-id=\"urn:li:comment:(ugcPost:7443301535863918592,7444650273068953600)\" id=\"ember72\" tabindex=\"-1\">\n        \n    <div class=\"comments-comment-meta__container\n        comments-comment-meta__container--parent\">\n      <div class=\"comments-comment-meta__actor\">\n        <a class=\"wBlcAQCorNmKhFKEcSXMmIUwFaykhuTlPnY  comments-comment-meta__image-link\" aria-label=\"View Samina Yasmin’s  graphic link\" target=\"_self\" href=\"https://www.linkedin.com/in/saminaayasmin\" data-test-app-aware-link=\"\">\n          \n    <div class=\"ivm-image-view-model   \">\n        \n    <div class=\"ivm-view-attr__img-wrapper\n        \n        \">\n<!---->\n<!---->          <img width=\"32\" src=\"https://media.licdn.com/dms/image/v2/D4D03AQFY_n8XSU12iQ/profile-displayphoto-scale_100_100/B4DZyGYj5_IYAc-/0/1771781235291?e=1776902400&amp;v=beta&amp;t=T1b1Osv2QxG3uNLkE2feZApbsRAOAl_rr-Ny1QZDevE\" loading=\"lazy\" height=\"32\" alt=\"View Samina Yasmin’s  graphic link\" id=\"ember73\" class=\"ivm-view-attr__img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view\">\n    </div>\n  \n          </div>\n  \n        </a>\n\n        <a class=\"wBlcAQCorNmKhFKEcSXMmIUwFaykhuTlPnY  comments-comment-meta__description-container tap-target overflow-hidden\" aria-label=\"View: Samina Yasmin   • 3rd+ CEO @Acquisition Hub AI LLC | Helping Marketing Agencies to automate their manual tasks using AI-Agent so they can reduce hiring cost and increase profit margins | N8N Automation | Workflow Automation\" target=\"_self\" href=\"https://www.linkedin.com/in/saminaayasmin\" data-test-app-aware-link=\"\">\n          <h3 class=\"comments-comment-meta__description\">\n            <span class=\"comments-comment-meta__description-title\">\n              <!---->Samina Yasmin<!---->\n            </span><span class=\"comments-comment-meta__data\">\n                <span class=\"white-space-pre\"> </span><!----><!----><svg role=\"none\" aria-hidden=\"true\" class=\"text-view-model__linkedin-bug-premium-v2\" xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" data-supported-dps=\"14x14\" data-test-icon=\"linkedin-bug-premium-v2-xxsmall\">\n<!---->    <svg display=\"var(--hue-web-svg-display-light)\">\n      <image href=\"https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo\" x=\"0\" y=\"0\" width=\"14\" height=\"14\"></image>\n    </svg>\n    <svg display=\"var(--hue-web-svg-display-dark)\">\n      <image href=\"https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz\" x=\"0\" y=\"0\" width=\"14\" height=\"14\"></image>\n    </svg>\n</svg>\n<span class=\"white-space-pre\"> </span>• 3rd+<!---->\n              </span><!----></h3><div class=\"comments-comment-meta__description-subtitle\">\n              CEO @Acquisition Hub AI LLC | Helping Marketing Agencies to automate their manual tasks using AI-Agent so they can reduce hiring cost and increase profit margins | N8N Automation | Workflow Automation\n            </div></a>\n      </div>\n        <div class=\"comments-comment-meta__info\">\n<!---->          <time class=\"comments-comment-meta__data\">\n            6d\n          </time>\n\n            <div class=\"comment-options-trigger comments-comment-meta__options\">\n  <div id=\"ember74\" class=\"artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view\">\n    <button aria-expanded=\"false\" id=\"ember75\" class=\"artdeco-dropdown__trigger artdeco-dropdown__trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted\" type=\"button\" tabindex=\"0\">\n        <svg role=\"img\" aria-hidden=\"false\" aria-label=\"Open options for Samina Yasmin’s comment\" class=\"comment-options-dropdown__trigger-icon t-black--light\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" data-supported-dps=\"16x16\" data-test-icon=\"overflow-web-ios-small\">\n<!---->    \n    <use href=\"#overflow-web-ios-small\" width=\"16\" height=\"16\"></use>\n</svg>\n\n    \n<!----></button>\n    <div tabindex=\"-1\" aria-hidden=\"true\" id=\"ember76\" class=\"artdeco-dropdown__content artdeco-dropdown--is-dropdown-element artdeco-dropdown__content--justification-right artdeco-dropdown__content--placement-bottom ember-view dropdown-options absolute\"><!----></div>\n  </div>\n</div>\n        </div>\n    </div>\n  \n\n        \n  <div class=\"comments-thread-entity  \">\n      <div class=\"comments-thread-spacing__default\"></div>\n    <div class=\"comments-thread-item\">\n      \n          <section class=\"comments-comment-entity__content\">\n              \n    <div id=\"translation-container-ember77\" class=\"break-words\">\n      \n                  \n    <div class=\"feed-shared-inline-show-more-text\n        \n        \n        \n        \n        \n        \n         comments-comment-item__inline-show-more-text\n                      \n                      \n                      \n                      \" tabindex=\"-1\">\n      \n                    <span class=\"comments-comment-item__main-content feed-shared-main-content--comment t-14 t-black t-normal\" dir=\"ltr\">\n                      <div dir=\"ltr\" class=\"update-components-text relative\">\n    <span dir=\"ltr\"><!---->Most people stop at “build once” and expect perfect results, but real value comes from iteration.<!----><span><br></span><span><br></span><!---->→ Testing multiple times brings consistency<!----><span><br></span><!---->→ Focused feedback improves output faster<!----><span><br></span><!---->→ Treating it like a process, not a prompt, changes everything<!----><span><br></span><span><br></span><!---->How do you decide what to prioritize in each testing round?<!----></span>\n</div>\n                    </span>\n                  <button role=\"button\" class=\"feed-shared-inline-show-more-text__see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text__dynamic-more-text feed-shared-inline-show-more-text__dynamic-bidi-text\" aria-label=\"see more, visually reveals content which is already det",
+  "timestamp": "2026-04-06T20:06:12.938Z"
+}

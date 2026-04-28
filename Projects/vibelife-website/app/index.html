@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Theme initialization (prevent FOUC) -->
+    <script>
+      if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
+    </script>
+
+    <!-- Primary Meta Tags -->
+    <title>VibeLife — AI Automation Fulfillment for Agencies</title>
+    <meta name="title" content="VibeLife — AI Automation Fulfillment for Agencies" />
+    <meta name="description" content="VibeLife is the forward-deployed AI automation fulfillment partner for agencies. 50+ implementations, 95% adoption rate. Scale your agency without the delivery bottleneck." />
+    <meta name="keywords" content="AI automation, agency fulfillment, AI agency, automation partner, scale AI agency" />
+    <meta name="author" content="VibeLife Inc." />
+    <meta name="theme-color" content="#1A1610" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="VibeLife — AI Automation Fulfillment for Agencies" />
+    <meta property="og:description" content="The forward-deployed AI automation fulfillment partner for agencies. 50+ implementations, 95% adoption rate." />
+    <meta property="og:image" content="/images/og-image.jpg" />
+    <meta property="og:site_name" content="VibeLife" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="VibeLife — AI Automation Fulfillment for Agencies" />
+    <meta name="twitter:description" content="The forward-deployed AI automation fulfillment partner for agencies. 50+ implementations, 95% adoption rate." />
+    <meta name="twitter:image" content="/images/og-image.jpg" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://vibelife.io/" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "VibeLife",
+      "description": "AI Automation Fulfillment for Agencies",
+      "url": "https://vibelife.io",
+      "logo": "/favicon.svg"
+    }
+    </script>
+
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

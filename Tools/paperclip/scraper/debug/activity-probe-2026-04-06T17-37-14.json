@@ -1,0 +1,84 @@
+{
+  "url": "https://www.linkedin.com/in/benvansprundel/recent-activity/all/",
+  "title": "Activity | Ben van Sprundel | LinkedIn",
+  "main_present": 0,
+  "main_innerhtml_length": 0,
+  "selector_counts": {
+    "a[href*='/feed/update/urn:li:activity:']": 0,
+    "a[href*='linkedin.com/posts/']": 0,
+    "div[data-urn^='urn:li:activity:']": 11,
+    "div[data-id^='urn:li:activity:']": 0,
+    "article[data-urn^='urn:li:activity:']": 0,
+    "*[data-urn^='urn:li:activity:']": 11,
+    "*[data-id^='urn:li:activity:']": 0,
+    "div.feed-shared-update-v2": 11,
+    "div[data-view-name='feed-full-update']": 11,
+    "div.occludable-update": 15,
+    "div.profile-creator-shared-feed-update__container": 0,
+    "main a[href*='activity']": 0,
+    "main a[href*='/posts/']": 0,
+    "main a[href*='/feed/update/']": 0,
+    "ul.scaffold-finite-scroll__content": 0,
+    "div.scaffold-finite-scroll__content": 1
+  },
+  "sample_urns": [
+    {
+      "urn": "urn:li:activity:7443301800524341248",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7423375342876196864",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7422554443100868609",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7421800218859380736",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7421448906036736000",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7420017979741884417",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7419691690409754625",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7417898452740796416",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7416448904835248128",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7414682968486567936",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    },
+    {
+      "urn": "urn:li:activity:7412825032663506944",
+      "tag": "div",
+      "cls": "feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-sh"
+    }
+  ],
+  "sample_data_ids": [],
+  "sample_hrefs": [],
+  "timestamp": "2026-04-06T17:38:23.769Z"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "fde-video",
+  "version": "1.0.0",
+  "description": "FDE Model Explainer Video for VibeLife",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render FDEExplainer out/fde-explainer.mp4",
+    "build": "remotion render FDEExplainer out/fde-explainer.mp4 --codec h264"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@remotion/cli": "^4.0.420",
+    "@remotion/player": "^4.0.420",
+    "@remotion/tailwind": "^4.0.420",
+    "@types/react": "^19.2.13",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.420",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  }
+}

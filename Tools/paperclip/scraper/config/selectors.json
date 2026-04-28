@@ -1,0 +1,90 @@
+{
+  "version": "2026-04",
+  "_note": "Each field is a fallback chain — extractor uses first matching selector. Add new selectors to the TOP of the chain when LinkedIn DOM changes.",
+  "post": {
+    "container": [
+      "div[data-urn^='urn:li:activity:']",
+      "div[data-view-name='feed-full-update']",
+      "div.feed-shared-update-v2",
+      "article[data-urn^='urn:li:activity:']"
+    ],
+    "author_name": [
+      ".update-components-actor__title span[aria-hidden='true']",
+      ".feed-shared-actor__name span[aria-hidden='true']",
+      ".update-components-actor__name span[aria-hidden='true']"
+    ],
+    "post_text": [
+      ".update-components-text",
+      ".feed-shared-text",
+      ".feed-shared-update-v2__description"
+    ],
+    "comment_count_button": [
+      "button.social-details-social-counts__comments",
+      "button[aria-label*='comment' i]",
+      ".social-details-social-counts__comments button"
+    ]
+  },
+  "_comment_2026_04_note": "LinkedIn migrated comment markup from `comments-post-meta__*` (legacy) to `comments-comment-meta__*` in 2026-04. New selectors are listed first; legacy ones remain as fallbacks for older layouts. Author name is now in `.comments-comment-meta__description-title`, profile link is on the image anchor `a.comments-comment-meta__image-link`, and the headline subtitle is in `.comments-comment-meta__description-subtitle`.",
+  "comment": {
+    "container": [
+      "article[data-id*='urn:li:comment']",
+      "article.comments-comment-entity",
+      "article.comments-comment-item",
+      "div.comments-comment-entity"
+    ],
+    "name": [
+      ".comments-comment-meta__description-title",
+      ".comments-comment-meta__name-text span",
+      ".comments-comment-meta__name span[aria-hidden='true']",
+      ".comments-post-meta__name-text span[aria-hidden='true']",
+      ".comments-post-meta__name span[aria-hidden='true']",
+      ".comments-post-meta__name-link span[aria-hidden='true']",
+      "a.comments-post-meta__profile-link span[aria-hidden='true']"
+    ],
+    "profile_link": [
+      "a.comments-comment-meta__image-link",
+      "a.comments-comment-meta__description-container",
+      "article.comments-comment-entity a[href*='/in/']",
+      "a.comments-post-meta__profile-link",
+      ".comments-post-meta a[href*='/in/']",
+      ".comments-post-meta__name a[href*='/in/']"
+    ],
+    "headline": [
+      ".comments-comment-meta__description-subtitle",
+      ".comments-comment-meta__description",
+      ".comments-post-meta__headline",
+      ".comments-post-meta__description",
+      ".comments-post-meta__subtitle"
+    ],
+    "body": [
+      ".comments-comment-item__main-content",
+      ".comments-comment-entity__main-content",
+      ".comments-comment-item-content-body",
+      ".update-components-text"
+    ],
+    "image": [
+      "a.comments-comment-meta__image-link img",
+      "img.ivm-view-attr__img--centered",
+      ".comments-post-meta img.ivm-view-attr__img--centered",
+      ".comments-post-meta img.presence-entity__image",
+      ".comments-post-meta img.EntityPhoto-circle-3",
+      ".comments-post-meta img"
+    ]
+  },
+  "load_more_comments": [
+    "button.comments-comments-list__load-more-comments-button",
+    "button[aria-label*='Load more comments' i]",
+    "button[aria-label*='Load previous comments' i]",
+    "button.comments-comments-list__show-previous-container-button"
+  ],
+  "activity_feed_post_link": [
+    "a[href*='/feed/update/urn:li:activity:']",
+    "a[href*='linkedin.com/posts/']"
+  ],
+  "_activity_feed_post_container_note": "As of 2026-04, LinkedIn no longer wraps activity items in <a href> tags on profile activity pages — post URLs must be constructed from the data-urn attribute of these containers. See extractor.extractRecentPostUrls for the extraction logic.",
+  "activity_feed_post_container": [
+    "div[data-urn^='urn:li:activity:']",
+    "article[data-urn^='urn:li:activity:']",
+    "*[data-urn^='urn:li:activity:']"
+  ]
+}

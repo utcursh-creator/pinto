@@ -1,0 +1,348 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ============================================
+     LIGHT MODE (parchment) — :root default
+     ============================================ */
+  :root {
+    /* shadcn HSL variables */
+    --background: 36 12% 90%;
+    --foreground: 36 26% 7%;
+    --card: 36 14% 91%;
+    --card-foreground: 36 26% 7%;
+    --popover: 36 14% 91%;
+    --popover-foreground: 36 26% 7%;
+    --primary: 50 40% 58%;
+    --primary-foreground: 36 26% 7%;
+    --secondary: 36 10% 88%;
+    --secondary-foreground: 36 26% 7%;
+    --muted: 36 10% 85%;
+    --muted-foreground: 30 8% 44%;
+    --accent: 177 34% 46%;
+    --accent-foreground: 36 26% 7%;
+    --destructive: 0 44% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 36 12% 82%;
+    --input: 36 12% 82%;
+    --ring: 50 40% 58%;
+    --radius: 14px;
+
+    /* Brand color RGB triplets (for Tailwind opacity modifiers) */
+    --color-void: 237 232 223;
+    --color-void-deep: 230 224 214;
+    --color-charcoal: 238 234 225;
+    --color-charcoal-light: 244 240 233;
+    --color-panel-raised: 248 245 239;
+    --color-gold: 200 181 96;
+    --color-gold-light: 224 208 128;
+    --color-teal: 78 158 152;
+    --color-coral: 196 112 112;
+    --color-sage: 106 158 127;
+    --color-lavender: 139 126 200;
+    --color-slate-info: 94 134 168;
+    --color-ink: 24 20 14;
+    --color-ink-2: 62 56 46;
+    --color-ink-3: 122 115 104;
+    --color-ink-disabled: 176 168 154;
+
+    /* Neumorphic shadow sources (light mode) */
+    --shadow-dark: 175 165 148;
+    --shadow-light: 255 252 244;
+    --neu-raised: 6px 6px 14px rgba(175,165,148,0.52), -4px -4px 10px rgba(255,252,244,0.9);
+    --neu-inset: inset 4px 4px 10px rgba(175,165,148,0.4), inset -3px -3px 8px rgba(255,252,244,0.7);
+    --neu-hover: 8px 10px 22px rgba(175,165,148,0.52), -4px -4px 12px rgba(255,252,244,0.9);
+
+    /* Glass (light mode) */
+    --glass-bg: 248, 244, 238;
+    --glass-opacity: 0.52;
+    --glass-border: 255, 255, 255, 0.6;
+
+    /* Grain opacity (light mode) */
+    --grain-opacity: 0.035;
+  }
+
+  /* ============================================
+     DARK MODE (warm void) — DEFAULT experience
+     ============================================ */
+  .dark {
+    /* shadcn HSL variables */
+    --background: 36 18% 8%;
+    --foreground: 34 28% 91%;
+    --card: 36 12% 13%;
+    --card-foreground: 34 28% 91%;
+    --popover: 36 12% 13%;
+    --popover-foreground: 34 28% 91%;
+    --primary: 50 50% 62%;
+    --primary-foreground: 36 18% 8%;
+    --secondary: 36 10% 15%;
+    --secondary-foreground: 34 28% 91%;
+    --muted: 33 10% 22%;
+    --muted-foreground: 30 8% 44%;
+    --accent: 177 28% 50%;
+    --accent-foreground: 34 28% 91%;
+    --destructive: 0 44% 60%;
+    --destructive-foreground: 34 28% 91%;
+    --border: 36 10% 18%;
+    --input: 36 10% 18%;
+    --ring: 50 50% 62%;
+
+    /* Brand color RGB triplets (dark mode — brighter for contrast) */
+    --color-void: 26 22 16;
+    --color-void-deep: 21 18 9;
+    --color-charcoal: 34 32 26;
+    --color-charcoal-light: 44 40 32;
+    --color-panel-raised: 51 48 40;
+    --color-gold: 212 192 104;
+    --color-gold-light: 224 208 128;
+    --color-teal: 88 170 164;
+    --color-coral: 196 112 112;
+    --color-sage: 106 158 127;
+    --color-lavender: 139 126 200;
+    --color-slate-info: 94 134 168;
+    --color-ink: 240 234 224;
+    --color-ink-2: 200 191 176;
+    --color-ink-3: 122 114 104;
+    --color-ink-disabled: 74 69 64;
+
+    /* Neumorphic shadow sources (dark mode) */
+    --shadow-dark: 8 6 2;
+    --shadow-light: 60 52 36;
+    --neu-raised: 6px 6px 16px rgba(8,6,2,0.92), -4px -4px 10px rgba(60,52,36,0.8);
+    --neu-inset: inset 4px 4px 10px rgba(8,6,2,0.7), inset -3px -3px 8px rgba(60,52,36,0.5);
+    --neu-hover: 8px 8px 20px rgba(8,6,2,0.95), -6px -6px 14px rgba(60,52,36,0.85);
+
+    /* Glass (dark mode) */
+    --glass-bg: 38, 32, 22;
+    --glass-opacity: 0.58;
+    --glass-border: 255, 255, 255, 0.07;
+
+    /* Grain opacity (dark mode) */
+    --grain-opacity: 0.025;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  body {
+    @apply bg-void text-ink font-sans antialiased;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  /* Gradient text utilities */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, rgb(var(--color-gold)) 0%, rgb(var(--color-teal)) 50%, rgb(var(--color-lavender)) 100%);
+  }
+
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, rgb(var(--color-gold)) 0%, rgb(var(--color-gold-light)) 100%);
+  }
+
+  /* Gradient border */
+  .gradient-border {
+    position: relative;
+    background: rgb(var(--color-void));
+    border-radius: 1.5rem;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 1.5rem;
+    padding: 1px;
+    background: linear-gradient(135deg, rgb(var(--color-gold) / 0.3), rgb(var(--color-teal) / 0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    background: rgba(var(--glass-bg), var(--glass-opacity));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(var(--glass-border));
+  }
+
+  .glass-dark {
+    background: rgb(var(--color-void) / 0.7);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgb(var(--color-ink-disabled) / 0.1);
+  }
+
+  /* Grain texture — SVG fractalNoise */
+  .grain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+    will-change: auto;
+    contain: strict;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Section label — DM Mono numbered format */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgb(var(--color-ink-3));
+  }
+
+  /* Neumorphic utilities */
+  .neu-raised {
+    box-shadow: var(--neu-raised);
+  }
+
+  .neu-inset {
+    box-shadow: var(--neu-inset);
+  }
+
+  .neu-hover {
+    transition: box-shadow 0.28s ease, transform 0.28s ease;
+  }
+
+  .neu-hover:hover {
+    box-shadow: var(--neu-hover);
+    transform: translateY(-3px);
+  }
+
+  /* Accent gradient bar */
+  .accent-bar {
+    height: 2px;
+    background: linear-gradient(90deg, rgb(var(--color-gold)), rgb(var(--color-teal)), rgb(var(--color-lavender)));
+  }
+
+  /* Full-viewport pinned scroll section */
+  .scroll-section {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .scroll-section-pinned {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Noise texture for cards */
+  .noise-texture {
+    position: relative;
+  }
+
+  .noise-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+}
+
+/* Fade-in-up entrance animation */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.45s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* Gradient mesh animations */
+@keyframes mesh-drift-1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(50px, 30px); }
+}
+
+@keyframes mesh-drift-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, -40px); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--color-void));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-gold) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-gold) / 0.5);
+}
+
+/* Selection */
+::selection {
+  background: rgb(var(--color-gold) / 0.3);
+  color: rgb(var(--color-ink));
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+.browser-profile/
+state/
+output/
+logs/
+*.log
+.env
+.env.local
