@@ -27,17 +27,25 @@ last_updated: 2026-04-28
   - **Mac migration started**: Updated .gitignore to add `settings.local.json`, `Tools/paperclip/node_modules/`, `nul`
   - Gave git commit + push commands — user has NOT yet run them
 
-- **Git migration — PARTIALLY DONE**:
-  - Deleted junk temp files (`C:UsersUtkarsh...` files that were in working dir)
-  - Updated .gitignore: added `**/settings.local.json`, `Tools/paperclip/node_modules/`, `Projects/internal-tools/n8n-workflow-reviewer/`, `nul`
-  - Commit made: `224fe92` — 1574 files changed, 621179 insertions (full vault sync)
-  - **PUSH FAILED**: origin remote has placeholder URL `<correct-organization>/<correct-repo>` — not a real GitHub address
-  - **User must fix**: `git remote set-url origin https://github.com/USERNAME/REPO.git` then `git push origin main`
-  - On Mac after push: `git clone <url>` + `cd Tools/paperclip && pnpm install`
+- **Git migration — COMPLETE** (repo: github.com/utcursh-creator/pinto):
+  - Commits: `224fe92` (full vault sync), `b447605` (memory files), `6f2a35a` (MEMORY.md + session logs)
+  - Deleted junk temp files, fixed .gitignore (settings.local.json, node_modules, embedded repos)
+  - Memory files on GitHub: work_status.md, learnings.md, user_preferences.md, user_projects.md, MEMORY.md
+  - Session logs now tracked in git (removed gitignore exclusion)
+  - Vibelife website fully committed (source, brand bible, brand system, built assets)
+  - **MEMORY.md saved into vault** at `.claude/context/memory/MEMORY.md` — this is the auto-memory snapshot that was previously only at a system-level path
+
+- **On Mac setup (when user clones):**
+  - `git clone https://github.com/utcursh-creator/pinto.git`
+  - `cd Tools/paperclip && pnpm install`
+  - `cd Projects/vibelife-website/app && npm install`
+  - Run `/resume` in Claude Code — will reconstruct context from work_status.md
+  - Paperclip data at `~/.paperclip/` needs to be set up fresh on Mac
+  - n8n-workflow-reviewer is a separate repo — clone independently
 
 - **Pending**:
-  - User fixes git remote URL and pushes
   - Resume brainstorm next session: answer "what do you say on a call" → finalize offer language → GTM plan → write design doc
+  - Obsidian vault sync between Mac and Windows — user doesn't care about Obsidian sync, only about memory/context layer (resolved via git)
 
 ## Previous Session (2026-04-27, Aramas scraper — distance validation COMPLETE)
 - **Focus**: StepStone scraper at `D:\aramas-stepstone-scraper` — distance validation + Recruitee source tag
