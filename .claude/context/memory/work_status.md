@@ -1,12 +1,30 @@
 ---
 type: memory
 category: status
-last_updated: 2026-04-28
+last_updated: 2026-05-28
 ---
 
 # Work Status
 
-## Current Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
+## Current Session (2026-05-28, Resume — GTM avoidance pattern named + sync state clarified)
+- **Focus**: User returned after ~1 month gap, asked "where were we?" → then admitted "I am honestly not able to give time to this business aspect" → then asked about Obsidian/sync state
+- **Pattern named**: 4 weeks of pivoting away from GTM toward technical work (Aramas, ScreenStudio, paperclip). The pattern is the signal — GTM discomfort can't be solved by building one more system.
+- **Three paths offered**:
+  1. Stay technical, multiply Yosef-style partners (no customer-facing GTM, $5-8K/mo passive cap)
+  2. Hire a positioning consultant ($2-5K, 2-3 weeks, trade money for the introspection work)
+  3. Force 5 sales calls next week via DMs into the 13 communities (ego forcing function)
+- **Question raised**: Is Vibelife actually what user wants to build, or being forced because it felt responsible? User's curiosity keeps wandering to other projects.
+- **Sync state clarified**:
+  - Working in worktree branch `claude/great-proskuriakova-943388` (not main)
+  - Memory files in `.claude/` are hidden from Obsidian by design
+  - Last commit pushed to GitHub: 2026-04-28 (`d92f4bc Update work_status: Mac migration complete`)
+  - Current session edits are uncommitted, local only — would vanish from "the system" view if not committed
+  - Awaiting user decision on whether to commit + push
+- **Awaiting**: Path decision OR Vibelife-as-business question (still open)
+- **Commit decision**: User chose to commit + push memory updates so the named pattern persists across sessions
+- **No code changes this turn** — strategic conversation + sync clarification + commit
+
+## Previous Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
 - **Focus**: Continued Offer/ICP/GTM brainstorm + environment logistics
 - **Brainstorm progress this session**:
   - Researched Ben Van Sprundel profile in depth (124K YouTube, 18K LinkedIn, 1K+ Circle community, $97/mo → $4,997 upsell with resale rights, delivery overflow is explicit constraint)

@@ -1,10 +1,14 @@
 ---
 type: memory
 category: learnings
-last_updated: 2026-04-15
+last_updated: 2026-05-28
 ---
 
 # Learnings
+
+## User's GTM Avoidance Pattern (2026-05-28)
+Utkarsh has technical operator's classic blocker: defaults to build work whenever GTM/sales/positioning gets uncomfortable. Evidence: 4+ sessions on Offer/ICP/GTM brainstorm, each one pivoted to a technical project (Aramas scraper, ScreenStudio, paperclip, n8n-reviewer) before reaching offer language. The "I don't have time" framing is a symptom, not the cause — the pattern is comfort-seeking, not scheduling.
+Implication for future sessions: don't accept "I'll make time next week" as a plan. Push to structural change: (a) outsource the GTM work (positioning consultant, sales partner), (b) accept that GTM-self-doing isn't going to happen and route around it (multiply Yosef-style technical partnerships), or (c) force external commitments that can't be deflected (booked calls). The wrong move is to keep restarting the brainstorm — pattern wins unless structure changes.
 
 ## Tokio Reactor Requirement Is Broader Than Just spawn (2026-04-18)
 Not only `tokio::spawn` requires a runtime — **any tokio I/O type conversion** that registers with the reactor also panics from non-runtime threads. Specifically:
