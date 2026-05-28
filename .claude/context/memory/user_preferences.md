@@ -16,6 +16,25 @@ last_updated: 2026-03-11
 - Reason: explicit user rule stated in Aramas scraper plan.
 - How to apply: applies to all future work. When writing prose, use commas, semicolons, or colons where an em dash would normally go. For CLI/code output, use `-` or `:`.
 
+## GTM / Distribution Preferences (2026-05-28)
+- **No LinkedIn engagement-farming loop.** User explicitly rejects LinkedIn as a GTM channel because it pulls toward content-creation-and-engagement-farming, which eats bandwidth they don't have. When designing distribution or outreach, do not propose LinkedIn-centric strategies. Email + tech-leveraged prospecting is the validated path.
+- **Bandwidth is the binding constraint.** Default to low-cognitive-load paths. Don't propose multi-month commitments unless explicitly scoped as long-term.
+
+## Tooling / Spend Preferences (2026-05-28)
+- **LLM access = OpenRouter key (NOT Anthropic SDK direct).** Use OpenRouter for all LLM calls in his projects (claude-haiku-4-5 is his go-to cheap model, matches the Aramas scraper setup).
+- **Reluctant to spend on tooling, especially during dev/testing.** Default to free tiers and open-source. Surface paid options as deferred "spend only if it proves necessary" decisions, not upfront requirements. He'll pay later for proven value, not for unvalidated setup.
+
+## Platform Psychology (2026-05-28)
+- **LinkedIn is psychologically toxic for user.** His thinking inherently rejects it: too many pretenders, all personal-branding theater, "can't say real stuff." The burnout he associates with GTM is partly platform-driven (LinkedIn specifically). Do NOT route GTM through LinkedIn.
+- **Twitter/X is his preferred platform.** Better for both spreading knowledge and taking it in. This is where he's willing to build presence.
+- **Content format: TEXT + GRAPHICS only. NOT video.** Threads + supporting images/visuals. No video production (no ComfyUI video pipeline, no faceless-video channel for the Twitter play).
+- **Content angle**: contrarian business-relevant insights (NOT tech info) extracted/translated from research papers, VC/YC/AI-convention sources, AI news. Digestible nuggets for a business/agency-operator audience (his ICP).
+
+## Terminology Preferences (2026-05-28)
+- **Use "process automations" NOT "AI automation"** when describing what user does or what prospects buy. User has observed "process automations" is more appealing in job posts and prospect language.
+- **Use "custom automation development" NOT "custom integration"** when describing service category.
+- **Preferred role-tier keywords for prospect-finding**: "Automation Partner", "Process Automation Engineer", "AI Automation Partner", "Forward Deployed Engineer", "CTO". These target strategic-tier hires, not contract labor.
+
 ## Identity
 - **Name**: Anand Utkarsh (goes by Utkarsh)
 - **Role**: Founder — Forward Deployed AI Partner

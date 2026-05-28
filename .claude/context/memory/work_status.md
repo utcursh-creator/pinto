@@ -20,9 +20,175 @@ last_updated: 2026-05-28
   - Last commit pushed to GitHub: 2026-04-28 (`d92f4bc Update work_status: Mac migration complete`)
   - Current session edits are uncommitted, local only — would vanish from "the system" view if not committed
   - Awaiting user decision on whether to commit + push
-- **Awaiting**: Path decision OR Vibelife-as-business question (still open)
-- **Commit decision**: User chose to commit + push memory updates so the named pattern persists across sessions
-- **No code changes this turn** — strategic conversation + sync clarification + commit
+- **Commit pushed**: `8423257` fast-forwarded to main + pushed to origin
+- **Minor note**: git author identity is auto-derived (utkarsh@utkarshs-MacBook-Pro-2.local) — user hasn't set global user.email/user.name. Cosmetic, can fix when desired.
+
+## Path Decision (2026-05-28, same session)
+- **Path picked**: Path 1 — multiply Yosef-style partners. Community GTM (Path 3) explicitly off because user isn't active enough there; even thinking about it is mental-toll-heavy at current bandwidth.
+- **Target shape**: 2 new partners × $3K/mo = $6K/mo + Yosef ~$2K = ~$8K/mo recurring, no customer-facing time
+- **Three moves laid out (ranked by leverage)**:
+  1. Ask Yosef for 2-3 names from his network (10-min conversation, only thing that matters this week)
+  2. Build one-pager with 5 project outcomes + partnership model (Notion/PDF, one afternoon, sendable on warm intros)
+  3. Backstop: 30-50 hand-picked EU automation agencies, batched LinkedIn outbound, 2hrs/week max
+- **Constraints reinforced**: No landing page, no price-lowering, no new outbound channels, no community work
+- **The hard trade**: ONE uncomfortable conversation with Yosef vs dozens with strangers. User has been hesitant in past to have direct talks with Yosef (per earlier work_status note about pricing question). Same muscle, but bounded.
+
+## Sub-path Refined (2026-05-28, same session)
+- **User rejected Yosef-asking** as the prospect-source. Wants tech-leveraged approach to find Yosef-style operators directly (no relationship-asks, no community work).
+- **Recommendation: job board scraper for "n8n developer needed" posts.**
+  - Signal: poster has overflow AND is paying for tech capacity = exact Yosef profile with buying intent visible
+  - Sources: Upwork (>$3K filter), WeWorkRemotely, RemoteOK, Wellfound, n8n community job board, EU-specific (Workable, Indeed.de)
+  - Reuses Aramas StepStone scraper pattern. 1-2 days to build.
+  - Output: 50-100 agencies CSV, then cold email at scale with one-pager
+  - Sender stack: Smartlead or Instantly (async, batchable)
+- **Rejected alternatives**:
+  - Apollo/Clay enrichment (cold demographics, no buying intent signal)
+  - n8n community mining (noisy, mixes hobbyists with operators)
+  - n8n-workflow-reviewer as lead magnet (deferred to Phase 2 — requires finishing that project)
+- **Call dynamic clarification**: Partner-recruiting call is structurally different from client-sales call. 15-min "fit chat", no pricing pressure, no objection-handling. Lower stress than the sales calls user has struggled with.
+- **Em-dash violation noted**: I used em dashes in the prior response; user has standing rule against them. Self-corrected this turn.
+
+## Sub-path Refinements (2026-05-28, same session, continued)
+- **Keyword correction**: Target keywords are NOT "n8n developer / automation contractor" (too junior). Correct keywords for prospect-finding scraper:
+  - "AI automation partner"
+  - "Automation Engineer"
+  - "AI Automation Engineer"
+  - "Forward Deployed Engineer"
+  - "CTO"
+  - These target strategic-capacity hires, not contract labor. Matches user's positioning as Forward Deployed AI Partner.
+- **Aramas reuse impossible**: Can't use Aramas's IPRoyal proxy or OpenRouter credits for own prospecting. Need new architecture:
+  - Self-hosted/free proxies (most job boards don't need heavy proxying)
+  - Open-source scraper: Playwright or Crawlee (MIT)
+  - Own LLM key (Anthropic direct, or local Llama for classification step)
+  - Local sqlite/Postgres for dedup (no Airtable bill)
+  - RemoteOK has free public JSON API at remoteok.com/api
+  - Most job boards (Workable, Indeed, Wellfound) have parseable HTML; only Upwork is hostile
+- **Outreach refinement: Loom-based personalized video, NOT bland template email**
+  - Per-niche Loom (one per platform niche, n8n/Zapier/etc.) for volume
+  - Per-prospect Loom for highest-budget posts only
+  - Personalized video beats template email ~3-5x on cold reply rate
+- **YouTube + ComfyUI workstream raised by user (PARKED, flagged as avoidance pattern)**:
+  - Concept: faceless YouTube channel on contrarian frontier AI topics (AI in military drone warfare creating new attack surfaces, AI environmental cost vs greenwashing, VC waste on generic note apps, framing "next-gen frontier" not "model X vs model Y")
+  - Tooling concept: ComfyUI workflow for storyboarding + character creation, automated posting pipeline
+  - Angle IS genuinely differentiated (real gap in AI YouTube space)
+  - BUT: doesn't help find 2 Yosefs in 30 days, 3-6 month commitment minimum, layering on top of scraper sprint = neither ships
+  - This expansion IS the GTM avoidance pattern speaking, surfaced and named in same session
+  - Decision: capture in `/Inbox` or `/Thinking` doc, do NOT build this month, revisit after scraper + first partner lands
+- **Sprint goal locked**: Scraper shipped, 50 Looms sent, 3 fit-chat calls booked. Re-evaluate YouTube after that.
+- **YouTube concept dumped (user chose b)**: Created `/Inbox/ai-frontier-youtube-channel.md` with 4 content pillars, positioning, production system concept, open questions, and revisit triggers. Out of head, parked properly.
+
+## Scraper Brainstorm Started (2026-05-28, same session)
+- **Mode**: Formal brainstorm via brainstorming skill — user wants full spec before any code
+- **Q1 answered**: 5 sources for v1 = Easy-mode + Indeed.de
+  - RemoteOK (JSON API)
+  - WeWorkRemotely
+  - Workable
+  - n8n community job board
+  - Indeed.de (added for EU market)
+- **Research task locked**: Audit GitHub for existing open-source scrapers/selector maps for each board before writing extraction code (Crawlee, Apify, n8n community sources)
+- **Pipeline expanded by user**: Scrape → extract emails → classify → store → enrich → generate personalized Loom script → generate short framing email per prospect. Email frames + lands the Loom.
+- **Q2 answered**: Enhanced D — hybrid email extraction with layered free-tier fallbacks
+  - Website scraping primary (~50% hit rate, $0, uses existing OSS: email-finder, find-emails-on-page, email-scraper)
+  - Apollo.io free tier fallback (50/mo)
+  - Hunter.io free tier final fallback (25/mo)
+  - Free email verifier on all results (NeverBounce/MailboxLayer free credits)
+  - Net: ~75-125 verified emails/month at zero cost
+- **Q3 answered**: A — one-time bulk CLI, idempotent re-runs via dedup, no scheduler/notifications for v1. Add B (cron) as v2 upgrade after partner #1 signed.
+- **Q4 in flight (rev 2 after user terminology correction)**: Classifier criteria rebuilt from Segment A ICP in user_preferences
+  - **Terminology corrections (saved to user_preferences.md)**: "process automations" NOT "AI automation"; "custom automation development" NOT "custom integration"
+  - **Updated scraper keywords**: AI Automation Partner, Process Automation Engineer, Automation Partner, Forward Deployed Engineer, CTO, "process automations", "custom automation development"
+  - MUST: agency/studio/consultancy serving clients, niche match (n8n/Make/Zapier/process automations), strategic role tier
+  - NICE: team size signals (1-5 person), revenue anchors ($50-150/hr, $3-15K project, $1-5K/mo retainer), pain signals (backlog/ghosting/overwhelmed), geo (US/UK/AU/CA/EU esp DE), client-work language, Yosef-stack
+  - DISQUALIFY: internal IT, junior/intern/VA, crypto, vibes-AI, LLM spam
+  - Output: pass/fail + 0-1 score + signals matched + 2-line reasoning. Borderline 0.4-0.6 flagged for manual review.
+- **Q4 confirmed**: ICP-translated classifier locked in. Moving on.
+
+## Scraper Brainstorm (continued Q5+)
+- **Q5 answered**: A — markdown in vault. Sharpened with TaskNotes integration:
+  - Prospects at `Projects/prospect-scraper/prospects/<company-slug>.md`
+  - TaskNotes-compatible frontmatter (title, status, priority, scheduled, tags) so plugin renders natively
+  - Prospect-specific fields (company, email, source, score, region, source_url, date_scraped, loom_recorded, email_sent)
+  - Status pipeline: to_review → to_send → sent → replied → won/passed
+  - New view file `TaskNotes/Views/prospects-kanban.base` filtering for `file.hasTag("prospect")`, groups by status
+  - sqlite kept internal for fast dedup, invisible to user
+- **Q6 SCRATCHED**: User rejected the templated Loom + framing email approach as vendor-tier ("Fiverr"). Said the templates positioned them in a lower tier of work, contradicting the Forward Deployed AI Partner positioning saved in user_preferences.
+- **Real tension surfaced**: Cold-outreach-off-job-posts is STRUCTURALLY vendor-tier, regardless of message quality. Medium codes the message before words do. Positioning + this channel are incompatible.
+- **Three paths offered**:
+  - A. Accept the positioning compromise for v1 (vendor-tier, fast, burns rep with future network)
+  - B. Change the channel, keep positioning (peer channels: Twitter/podcasts/intros — but conflicts with bandwidth + no-LinkedIn + no-content rules user established earlier)
+  - C. Rewrite outreach to never reference job post (scraper = sourcing tool only, peer-to-peer email leads with insight, builds across 2-3 touches, ~10-15 prospects/month volume not 100)
+- **My rec**: C — only one that holds both positioning and bandwidth. Volume drop OK because only need 2 partners.
+- **Architectural shift if C**: Scraper unchanged, but enrichment depth grows, outreach pipeline grows from 1 email to 2-3-touch sequence, Loom moves later in sequence (not email 1).
+
+## MAJOR PIVOT (2026-05-28, same session) — content engine, 3rd time
+- **User chose B (peer channel) but reframed to TWITTER not LinkedIn.**
+  - LinkedIn rejected for psychology reasons: full of pretenders/personal-branding theater, "can't say real stuff". Captured as durable preference.
+  - Twitter preferred: better for spreading + taking knowledge. Format = TEXT + GRAPHICS (images/visuals), explicitly NOT video.
+- **Scraper REPURPOSED**: No longer job-board prospect-finder. Now a CONTENT-SOURCING scraper. Won't scrape Twitter (scraping issues). Will scrape forums, AI news, research papers, VC/YC/AI-convention chatter.
+- **The content engine concept**: input (research/VC/YC/AI-convention sources) → AI agent processes/refines/analyzes → output (business-relevant contrarian nuggets, NOT tech info). Translated for his ICP (agency operators / business audience). Drives engagement + builds peer positioning.
+- **PATTERN NAMED (3rd content-engine gravitation this session)**: prospect-scraper → YouTube channel (parked) → Twitter content engine. User keeps moving toward building distribution engines and away from direct prospect contact. This is data about what he actually wants to build.
+- **Timeline truth surfaced**: A content engine does NOT produce 2 partners in 30 days. It's a 3-6 month audience play. Bottleneck is audience trust-building time, not the AI pipeline.
+- **KEY DECISION FORCED**: Has the goal changed? (a) "2 partners fast/low-bandwidth" → content engine is wrong tool. (b) "build distribution asset that compounds over 6-12mo" → content engine right, drop the 30-day sprint framing, commit to long game.
+- **Scraper spec brainstorm PAUSED** pending this goal decision. Tasks #1-7 still reflect prospect-scraper; will need revision if content-engine becomes the project.
+
+## DECISION: BOTH inbound + outbound (2026-05-28, same session)
+- **User acknowledged the drift** (gracefully — thanked for keeping on track) but decided to do BOTH inbound (content engine) + outbound (prospect targeting). Reasoning: bandwidth can handle both IF automations + processes are properly built.
+- **Endorsed as one system, two pipelines (NOT scope creep) because of real synergy**:
+  - Inbound builds Twitter credibility/audience
+  - Outbound finds high-fit agencies
+  - SYNERGY: inbound credibility makes outbound land as peer-tier not vendor-tier → solves the positioning problem that blocked us earlier
+- **THE HARD RULE imposed**: Build sequentially, NOT in parallel. Bandwidth crunch is in BUILD phase not run phase. Plan:
+  1. Build shared core first (scraping framework + AI processing + vault output) — build once, both pipelines use it
+  2. Wire ONE pipeline, ship, run it
+  3. Then wire the second
+- **Build order rec**: inbound first (it's the long-pole, 3-6mo to compound, start clock now; outbound builds 2nd, still hits near-term goal, lands warmer once Twitter cred exists). Flip to outbound-first if user wants faster revenue motion.
+- **Caveat delivered**: automation gets you TO the conversation, doesn't replace it. Both pipelines end at human touchpoint (DM/fit-chat). "Build both engines" must not become a way to never talk to a prospect.
+- **Spec re-anchored**: from "prospect scraper" to "content + prospect engine: shared core, two pipelines"
+
+## Build Order + Outbound Pipeline Defined (2026-05-28, same session)
+- **OUTBOUND FIRST decided** (inbound/content engine waits for phase 2)
+- **User caught their OWN sway this time**: started drifting to "newsletter" then self-corrected ("Again, this is what I swayed to, fuck"). Teaching loop working — pattern now visible to user in real time, not just to me.
+- **Newsletter ruling**: It's INBOUND (broadcast content), parked with the content engine for phase 2. Distinct from "nurturing" (= outbound follow-up sequence to specific contacted prospects, which stays in).
+- **5-layer outbound pipeline** (user's structure + my interpretation):
+  1. Sourcing: scrape 5 boards for keyword matches → raw hits
+  2. Probing: [AWAITING USER DEFINITION] my read = cheap first-pass triage (is it an agency? recent? seen before?) before expensive steps
+  3. Qualification: LLM classifier ICP-fit scoring (Q4 criteria) → pass/fail + score + reasoning
+  4. Enrichment: company website, verified email (hybrid scrape+Apollo+Hunter+verifier), region, size, Twitter handle, recent activity
+  5. Nurturing: email sequence, multi-touch, reply tracking, stop-on-reply
+- **CRITICAL positioning constraint**: Outbound-first means NO Twitter cred yet, so nurturing emails MUST use peer-to-peer insight-led style (option C), NOT vendor-tier pitch. Lead with observation about their business, never "I saw your job post." Else = back to Fiverr problem.
+
+## Pipeline LOCKED + Architecture Proposed (2026-05-28, same session)
+- **Meta-commitment from user**: STOP pivoting, start ONE thing, run it, read real data, then optimize. Has historical validated insights but nothing currently running. (This is the breakthrough — commitment to execution over more planning.)
+- **Probing confirmed as two-stage funnel** (sharp architectural call):
+  - Probing = CHEAP rule-based filter, zero LLM cost (agency? recent? pain-signal keywords? deduped?)
+  - Qualification = EXPENSIVE LLM deep-score, ONLY on probing survivors
+  - Saves ~70% of LLM spend. Same principle as Aramas hard-ceiling reject before Claude call.
+- **5-layer pipeline LOCKED**: Sourcing → Probing → Qualification → Enrichment → Nurturing
+- **3 architecture approaches proposed** (clarifying-questions task #1 DONE, propose-approaches task #2 in progress):
+  - A (RECOMMENDED): Python CLI pipeline (reuse Aramas stack) + Smartlead for email. Playwright (JS boards) + httpx/selectolax (static), Anthropic SDK direct, sqlite state, vault markdown output. Smartlead handles warming/deliverability/sequencing/reply-detection.
+  - B: n8n-native (matches expertise but browser scraping in n8n is painful/fragile)
+  - C: Hybrid Python scraping core + n8n nurturing
+- **Deliverability flagged as hidden hard part**: separate burner sending domain (protect vibelife domain), 2-4wk warming, SPF/DKIM/DMARC, bounce mgmt, inbox placement. Use Smartlead/Instantly, don't DIY.
+- **Approach A CONFIRMED** with two adjustments:
+  - **LLM = OpenRouter (claude-haiku-4-5), NOT Anthropic SDK direct.** User has an OpenRouter key (matches Aramas exactly). Durable fact.
+  - **NO spend on email layer.** User wants free tier for dev/testing at minimum.
+- **Email layer reworked for $0**:
+  - Sending: thin provider-abstraction interface (swappable). Dev/testing = Mailtrap (free sandbox, inspect generated emails) or Resend (free tier 3000/mo, real test sends).
+  - Nurturing sequence built in Python (sqlite state machine: send touch → await → IMAP poll for reply → follow-up if due → stop on reply). NOT bought (no Smartlead).
+  - Production sender DEFERRED until system proves out. Free DIY works at low volume; spend only if deliverability/reply-rate suffers.
+  - Free config needed: SPF/DKIM/DMARC DNS records. Send from subdomain (mail.domain.com) or secondary domain, protect primary.
+- **FINAL Approach A stack**: Playwright+httpx/selectolax scraping | OpenRouter claude-haiku-4-5 qualification | free-tier enrichment (scrape+Apollo+Hunter+verifier) | sqlite state | vault markdown output (TaskNotes-compatible) | Python email sequencer + Mailtrap/Resend dev | CLI one-time bulk
+- **Architecture locked + all loops closed**. Three final decisions (via AskUserQuestion):
+  - Code location: `Tools/prospect-scraper/` (vault subdirectory)
+  - Email cadence: 3 touches / 8 days (T1, +3d T2, +5d T3, stop on reply)
+  - Volume: ~25 qualified prospects per run
+  - Mailtrap for dev sandbox; DNS deferred
+- **PRD WRITTEN**: `Projects/prospect-scraper/2026-05-28-outbound-prospect-engine-prd.md`
+  - Full 14-section spec: purpose, goal, scope, positioning constraint (peer-not-vendor, never reference job post), 5-layer pipeline detail, architecture/file structure, data model (sqlite + markdown frontmatter), config, ICP classifier criteria, error handling, testing (TDD), decisions log, deferred items, human-touchpoint reminder
+  - Self-reviewed: fixed loose "N days"→45, clarified manual_review surfacing
+- **Brainstorm tasks**: #1-5 complete (questions, approaches, design, spec written, self-review). #6 = user reviews PRD (in progress). #7 = invoke writing-plans (terminal).
+- **NEXT**: User reviews PRD → on approval, invoke writing-plans skill for phased implementation plan (NOT build directly — brainstorming HARD-GATE + skill terminal state is writing-plans)
+- **Awaiting**: User review of the PRD
 
 ## Previous Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
 - **Focus**: Continued Offer/ICP/GTM brainstorm + environment logistics
