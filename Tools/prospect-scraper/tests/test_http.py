@@ -23,3 +23,15 @@ def test_get_json_raises_on_error_status():
     with pytest.raises(httpx.HTTPStatusError):
         client.get_json("https://example.com/api")
     client.close()
+
+
+@respx.mock
+def test_get_text_returns_body_string():
+    respx.get("https://example.com/page").mock(
+        return_value=httpx.Response(200, text="<html><body>hi</body></html>")
+    )
+    client = HttpClient(delay_seconds=0.0)
+    text = client.get_text("https://example.com/page")
+    client.close()
+    assert "hi" in text
+    assert text.startswith("<html>")
