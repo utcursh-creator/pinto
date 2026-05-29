@@ -1,3 +1,7 @@
+import sqlite3
+
+from prospect_scraper import db as db_module
+from prospect_scraper.common.http import HttpClient
 from prospect_scraper.models import JobPost, Source
 
 REMOTEOK_API = "https://remoteok.com/api"
@@ -30,3 +34,18 @@ def parse_jobs(raw: list[dict], keywords: list[str]) -> list[JobPost]:
             location=item.get("location") or None,
         ))
     return jobs
+
+
+def fetch(client: HttpClient) -> list[dict]:
+    return client.get_json(REMOTEOK_API)
+
+
+def run(conn: sqlite3.Connection, client: HttpClient, keywords: list[str]) -> int:
+    """Fetch, parse, filter, insert. Returns count of newly inserted rows."""
+    raw = fetch(client)
+    jobs = parse_jobs(raw, keywords)
+    inserted = 0
+    for job in jobs:
+        if db_module.insert_job(conn, job):
+            inserted += 1
+    return inserted

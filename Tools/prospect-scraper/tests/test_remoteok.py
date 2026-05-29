@@ -29,3 +29,36 @@ def test_parsed_job_fields_mapped():
     assert j.source == Source.remoteok
     assert j.company == "AutoFlow Agency"
     assert j.source_url == "https://remoteok.com/jobs/1"
+
+
+import sqlite3
+from prospect_scraper import db
+from prospect_scraper.common.http import HttpClient
+
+
+class _FakeClient(HttpClient):
+    def __init__(self, payload):
+        self._payload = payload
+        self.delay = 0.0
+
+    def get_json(self, url: str):
+        return self._payload
+
+    def close(self):
+        pass
+
+
+def test_run_inserts_only_matching_and_dedupes():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    db.init_db(conn)
+    client = _FakeClient(_raw())
+
+    inserted_first = remoteok.run(conn, client, keywords=["automation"])
+    inserted_second = remoteok.run(conn, client, keywords=["automation"])
+
+    assert inserted_first == 1   # only the automation agency row
+    assert inserted_second == 0  # dedup on second run
+    rows = conn.execute("SELECT company FROM prospects").fetchall()
+    assert [r["company"] for r in rows] == ["AutoFlow Agency"]
+    conn.close()
