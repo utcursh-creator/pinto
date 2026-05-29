@@ -189,6 +189,39 @@ last_updated: 2026-05-28
 - **Brainstorm tasks**: #1-5 complete (questions, approaches, design, spec written, self-review). #6 = user reviews PRD (in progress). #7 = invoke writing-plans (terminal).
 - **NEXT**: User reviews PRD → on approval, invoke writing-plans skill for phased implementation plan (NOT build directly — brainstorming HARD-GATE + skill terminal state is writing-plans)
 - **Awaiting**: User review of the PRD
+- **GIT PUSH BLOCKED (auth)**: Commit `cf4bc53` is on local main + worktree branch but push to GitHub FAILED ("Invalid username or token. Password authentication is not supported"). Earlier push (8423257) worked, so cached credential went stale/expired this session. Work is safe locally, NOT on GitHub. Fix: `gh auth login` + `gh auth setup-git`, or refresh PAT in Keychain, or switch remote to SSH. Need to push cf4bc53 once re-authed.
+
+## Source Expansion Question (2026-05-28, user interrupted PRD review)
+- **User asked about Skool + Apify as sources.** My analysis:
+  - **Skool**: possible via public Discovery directory scrape (skool.com/discovery, no API/auth, Playwright). BUT targets Type 1 ICP (community owners) with NO buying signal, unlike job-board Type 2 (overflow/hiring signal). Needs separate classifier + outreach. REC: v1.1, not v1 (keep run-1 learning clean).
+  - **Apify free actors**: good fit (aligns with don't-reinvent + don't-spend). Use for HARD sources (Indeed.de), self-build easy ones (RemoteOK/WWR). Free plan ~$5/mo credits. Caveats: limited credits, some actors charge per-result, external dependency. REC: fold into v1.
+  - Offered to research specific free Apify actors (cost/quality) before updating PRD.
+- **DECIDED**: Skip Skool entirely. Integrate Apify instead. Research Apify actors before updating PRD.
+- **LinkedIn nuance clarified**: User wants LinkedIn as a DATA SOURCE (sourcing job/company data), NOT as a posting/content channel (still rejected). These are consistent — sourcing != posting.
+- **Terminal-test constraint flagged**: Running Apify actors needs user's API token + spends their free credits; I can't run live from here. Doing deep web research instead; offered live test if user shares a token.
+- **Apify research DONE + folded into PRD**:
+  - Indeed: `borderline/indeed-scraper` ("Indeed jobs scraper [PPR]") — $5/1k, no login, indeed.de support, 4.8/5, returns company website/industry/size. Backups: automation-lab (cheap, 0 reviews), misceres (3.3/5, no DE).
+  - LinkedIn: `get-leads/linkedin-scraper` (no-cookie, jobs $1/1k + companies $2/1k, no ban risk). Flaky (~3.3/5 genre) → BONUS source not backbone. Rich option curious_coder needs user's cookie + $30/mo → rejected.
+  - Free-tier viable (~$5/mo credits, <$1/run at ~25 prospects).
+  - Synergy: Apify returns company website → feeds enrichment, skips resolve step.
+  - Caveat: documented Store facts + sentiment, NOT live-tested (no Apify token). Live test offered if user shares token.
+- **PRD UPDATED** (6 sources now): self-built RemoteOK/WWR/Workable/n8n + Apify Indeed/LinkedIn. Scope, sourcing 5.1, enrichment 5.4, config, decisions-log all revised. LinkedIn = data-source-only (not channel). Skool out.
+- **PRD APPROVED** (user: "proceed to building"). Brainstorm tasks #1-6 complete.
+- **Build directive**: use superpowers skills interchangeably; per step: write code → test → audit (skeptical, hunt gaps/oversights) → fix → redo, then next step. Never assume done.
+- **Env verified**: uv 0.11.8 installed (provisions Python 3.12; system python is 3.9 but irrelevant under uv). Node 25. Tools/ exists.
+- **Keys constraint**: build + unit-test with mocked externals now; live integration needs user's keys (OpenRouter, Apify, Apollo, Hunter, Mailtrap) later.
+- **writing-plans DONE (task #7)**. Build decomposed into 8 phases (P1 foundation+RemoteOK ... P8 output+orchestration). Each phase = its own plan, produces working+tested software.
+- **Plan 1 written + self-reviewed**: `Projects/prospect-scraper/2026-05-28-p1-foundation-remoteok-plan.md`. 8 TDD tasks (scaffold, models, sqlite, config, http, RemoteOK parser, RemoteOK run, CLI). Self-review caught a real bug: `_BOARDS = {"remoteok": remoteok.run}` captured at import time would defeat the test monkeypatch — fixed to map to module + resolve `.run` at call time. Plus 2 test polish fixes.
+- **Plan 1 needs NO live keys** (all external HTTP mocked via respx). Can build+test fully now.
+- **Awaiting**: execution mode — subagent-driven (recommended; fresh subagent per task, I audit between) vs inline (executing-plans, here).
+- **Reminder**: git push still auth-blocked; plan commits will be LOCAL-only until re-auth.
+
+## Git Re-auth + Build Kickoff (2026-05-28, same session)
+- **User**: re-auth git first, then proceed to build.
+- **Git diagnosis**: `gh` CLI NOT installed; remote is HTTPS (github.com/utcursh-creator/pinto); NO SSH keys present. Stale HTTPS cred can't just refresh. Offered 3 methods (SSH key [rec], PAT, install gh). Awaiting user's pick.
+- **Pending commits to push once authed**: PRD Apify update, Plan 1 doc, all this-session memory edits (uncommitted since cf4bc53).
+- **Build**: user said proceed; will go subagent-driven (my rec) on Plan 1 after auth resolved.
+- **SSH chosen + key generated**: ed25519 at ~/.ssh/id_ed25519 (new), github.com host pre-trusted in known_hosts. Public key shown to user to paste at github.com/settings/ssh/new. AWAITING user confirmation they added it → then: set remote to git@github.com:utcursh-creator/pinto.git, `ssh -T git@github.com` test, push pending commits, start build.
 
 ## Previous Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
 - **Focus**: Continued Offer/ICP/GTM brainstorm + environment logistics

@@ -20,6 +20,11 @@ last_updated: 2026-03-11
 - **No LinkedIn engagement-farming loop.** User explicitly rejects LinkedIn as a GTM channel because it pulls toward content-creation-and-engagement-farming, which eats bandwidth they don't have. When designing distribution or outreach, do not propose LinkedIn-centric strategies. Email + tech-leveraged prospecting is the validated path.
 - **Bandwidth is the binding constraint.** Default to low-cognitive-load paths. Don't propose multi-month commitments unless explicitly scoped as long-term.
 
+## Build / Working Style (2026-05-28)
+- **Rigorous incremental loop**: for each step, write code → test → audit → fix → redo, THEN move to next step. Never assume "done". Stay skeptical and curious, actively hunt for gaps and oversights. (Maps to TDD + verification-before-completion + code-review + systematic-debugging.)
+- Wants superpowers skills used interchangeably/fluidly during a build, not rigidly.
+- Plan-first: spec (PRD) before plan, plan before code.
+
 ## Tooling / Spend Preferences (2026-05-28)
 - **LLM access = OpenRouter key (NOT Anthropic SDK direct).** Use OpenRouter for all LLM calls in his projects (claude-haiku-4-5 is his go-to cheap model, matches the Aramas scraper setup).
 - **Reluctant to spend on tooling, especially during dev/testing.** Default to free tiers and open-source. Surface paid options as deferred "spend only if it proves necessary" decisions, not upfront requirements. He'll pay later for proven value, not for unvalidated setup.

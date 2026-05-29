@@ -16,6 +16,13 @@ Implication for future sessions: don't accept "I'll make time next week" as a pl
 
 **Teaching loop working (2026-05-28)**: Later same session, user began drifting to "newsletter" then caught it himself mid-sentence ("Again, this is what I swayed to"). The named pattern is now self-visible to the user in real time. Keep naming drifts plainly and without judgment — it's transferring. When user catches their own sway, affirm it matter-of-factly (not cheerleader-y) and move on. Resolution for both-pipelines tension: build sequentially (shared core → outbound → inbound), never parallel; the bandwidth cost is in BUILD not RUN.
 
+## Apify Actors for Scraping (researched 2026-05-28)
+For job-board scraping, Apify pre-built actors offload anti-bot + maintenance. Free plan = ~$5/mo platform credits; pay-per-result charged against it (low volume = effectively free).
+- **Indeed (incl. indeed.de)**: `borderline/indeed-scraper` is the pick ($5/1k, no login, DE support, 4.8/5, returns company website/industry/size). `misceres` is Apify-maintained but 3.3/5 + no documented non-US domains.
+- **LinkedIn**: no-cookie actors (`get-leads/linkedin-scraper`, `harvestapi`) DO work in 2025-2026 via public endpoints, no account/ban risk, free-viable ($1-3/1k), BUT flaky (~3.3/5) and public-data-only. Cookie-based actors (`curious_coder`, 4.9/5) are rich+reliable but need YOUR session cookie (ban risk) + $30/mo rental. Rule: use no-cookie as a flaky bonus, never a hard dependency; validate each run.
+- Apify actors typically DON'T return contact emails (still need separate enrichment), but DO return company website → can skip the company-resolution step.
+- Reusable distinction: LinkedIn-as-data-source (scraping public data, fine) vs LinkedIn-as-channel (posting/outreach, which this user rejects). Different things.
+
 ## Positioning vs Channel Tension (2026-05-28)
 User's positioning is high-tier (Forward Deployed AI Partner, peer not vendor). Templated cold-outreach in response to a job post is STRUCTURALLY vendor-tier no matter how the words are written. The medium codes the message before the words do. When proposing outreach for high-positioning operators, do not auto-default to job-post-response templates. Either: (a) accept the positioning compromise explicitly, (b) change the channel to peer-to-peer (slower), or (c) decouple the prospecting signal from the outreach narrative (use job post as intel only, email never references it). Surface this trade-off, don't paper over it.
 

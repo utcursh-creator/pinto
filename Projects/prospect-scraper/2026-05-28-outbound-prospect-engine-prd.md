@@ -25,7 +25,7 @@ This is a tech-leveraged route around the [[GTM-avoidance-pattern]]: the system 
 ## 3. Scope
 
 ### In scope (v1, outbound)
-- 5-source job-board scraper (sourcing)
+- 6-source scraper (sourcing): RemoteOK, WeWorkRemotely, Workable, n8n jobs (self-built); Indeed/indeed.de, LinkedIn jobs+company (Apify no-cookie actors)
 - Two-stage filter: cheap probing then LLM qualification
 - Email + company enrichment via free tiers
 - Per-prospect peer-to-peer email generation (option C positioning)
@@ -37,7 +37,8 @@ This is a tech-leveraged route around the [[GTM-avoidance-pattern]]: the system 
 - Inbound Twitter content engine (phase 2, shares the core)
 - Newsletter (inbound, phase 2)
 - Production email deliverability: real DNS (SPF/DKIM/DMARC), domain warming, paid sender (Smartlead). Deferred until system proves out.
-- LinkedIn anything (explicitly excluded, see user platform psychology)
+- LinkedIn as a posting / content / outreach CHANNEL (excluded per platform psychology). NOTE: LinkedIn as a read-only DATA SOURCE for sourcing IS in scope, via Apify no-cookie actor. Sourcing != posting.
+- Skool (rejected: no buying signal, different ICP type; revisit as v1.1 if ever)
 - Upwork scraping (too hostile for v1)
 - Scheduling / cron / alerting (v2 upgrade)
 - Proxies (abstraction layer present, not wired)
@@ -63,12 +64,28 @@ Sourcing -> Probing -> Qualification -> Enrichment -> Nurturing
 ```
 
 ### 5.1 Sourcing
-- Sources: RemoteOK (JSON API), WeWorkRemotely, Workable, n8n community jobs, Indeed.de
-- Access: RemoteOK via `remoteok.com/api`; others via httpx + selectolax; Playwright only where JS forces it (likely Indeed.de, possibly Workable)
-- Keyword set: "AI automation partner", "Automation Partner", "Process Automation Engineer", "Automation Engineer", "Forward Deployed Engineer", "CTO", "process automations", "custom automation development"
-- Research task BEFORE coding: audit GitHub for existing scrapers / selector maps per board (Crawlee, Apify, n8n community). Reuse, do not reinvent.
-- Politeness delays per board. No proxies in v1 (abstraction layer only).
-- Output: raw job-post rows in sqlite (status `sourced`)
+Hybrid: self-built scrapers for the easy/free boards, Apify actors for the hard/hostile ones.
+
+**Self-built** (httpx + selectolax; Playwright only where JS forces it):
+- RemoteOK via `remoteok.com/api` (free JSON)
+- WeWorkRemotely, Workable, n8n community jobs (server-rendered HTML)
+- Research task BEFORE coding: audit GitHub for existing scrapers / selector maps per board. Reuse, do not reinvent.
+
+**Apify actors** (free-tier viable on the ~$5/mo credit plan; pay-per-result charged against credits):
+- Indeed (incl. indeed.de): `borderline/indeed-scraper` ("Indeed jobs scraper [PPR]"). ~$5/1k results (~$0.50 per 100), no login, explicit indeed.de support, 4.8/5 across 28 reviews, actively maintained. Returns company name + website + industry + size. Backups: `automation-lab/indeed-scraper` (cheaper, 0 reviews), `misceres/indeed-scraper` (Apify-maintained, 3.3/5, no documented DE support).
+- LinkedIn jobs + company: `get-leads/linkedin-scraper` (no-cookie; jobs $1/1k, companies $2/1k). No login required, so zero ban risk to us. Returns company name + website + industry + size.
+
+**LinkedIn caveat**: no-cookie actors return public data only and are reliable-but-flaky (genre sits ~3.3/5, expect occasional empty/partial runs). The rich+reliable option (`curious_coder`, 4.9/5) needs OUR LinkedIn session cookie (account-ban risk) and is $30/mo rental (breaks free tier), so it is rejected. LinkedIn is a BONUS source, NOT a hard dependency. Validate each run with a 10-20 record sample. Reliable backbone = RemoteOK + Indeed.
+
+**Sources (v1, 6 total)**: RemoteOK, WeWorkRemotely, Workable, n8n community jobs (self-built); Indeed/indeed.de, LinkedIn (Apify).
+
+**Cost at our cadence**: ~25 prospects/run, low frequency, a few hundred raw Apify results/run = well under $1/run, so multiple runs fit inside the $5/mo free credits.
+
+**Keyword set**: "AI automation partner", "Automation Partner", "Process Automation Engineer", "Automation Engineer", "Forward Deployed Engineer", "CTO", "process automations", "custom automation development"
+
+- Politeness delays for self-built. No proxies in v1 for self-built (abstraction layer only); Apify handles its own proxying.
+- Apify token + per-actor cost verified live before depending on any actor (needs user's APIFY token; not yet run).
+- Output: raw job-post rows in sqlite (status `sourced`), Apify rows carry company website/industry/size forward to enrichment
 
 ### 5.2 Probing (cheap, NO LLM)
 Purpose: cull obvious junk before spending LLM + enrichment budget. Rule-based only.
@@ -88,6 +105,7 @@ Purpose: cull obvious junk before spending LLM + enrichment budget. Rule-based o
 - Volume cap: ~25 auto-pass prospects per run reach enrichment (conserves free tiers, keeps review pile manageable). `manual_review` rows do not count against the cap.
 
 ### 5.4 Enrichment (qualified only)
+- Apify-sourced rows already carry company website + industry + size, so skip the "resolve company to website" step for them (straight to email-finding on the known domain)
 - Email waterfall (stop at first verified hit): website scrape -> Apollo (free 50/mo) -> Hunter (free 25/mo) -> free verifier (NeverBounce / MailboxLayer free tier)
 - No email found -> prospect still created, `email_status: not_found`, excluded from send queue
 - Also capture: company website, region (US/UK/AU/CA/EU/DE/other), team-size signals, Twitter handle, recent activity
@@ -161,7 +179,7 @@ date_scraped: 2026-05-28
 Body: post excerpt, qualification reasoning + matched signals, enrichment data, generated 3 email drafts, status notes.
 
 ## 8. Configuration and Secrets
-`.env`: `OPENROUTER_API_KEY`, `APOLLO_API_KEY`, `HUNTER_API_KEY`, `VERIFIER_API_KEY`, `MAILTRAP_*`, `IMAP_*` (deferred-live). `.env.example` committed, `.env` gitignored.
+`.env`: `OPENROUTER_API_KEY`, `APIFY_API_TOKEN`, `APOLLO_API_KEY`, `HUNTER_API_KEY`, `VERIFIER_API_KEY`, `MAILTRAP_*`, `IMAP_*` (deferred-live). `.env.example` committed, `.env` gitignored.
 
 ## 9. ICP Classifier Criteria (qualification prompt source)
 
@@ -184,7 +202,10 @@ Body: post excerpt, qualification reasoning + matched signals, enrichment data, 
 - Mailtrap used for live-send manual verification, not automated tests
 
 ## 12. Decisions Log (locked 2026-05-28)
-- Sources: RemoteOK + WeWorkRemotely + Workable + n8n community + Indeed.de (no Upwork)
+- Sources (6): RemoteOK + WeWorkRemotely + Workable + n8n community (self-built) + Indeed/indeed.de + LinkedIn (Apify). No Upwork, no Skool.
+- Apify for hard sources: Indeed via `borderline/indeed-scraper`, LinkedIn via `get-leads/linkedin-scraper` (no-cookie). Free-tier viable (~$5/mo credits). LinkedIn = flaky bonus, not backbone. Live actor test pending user's Apify token.
+- LinkedIn as DATA SOURCE only (sourcing), never as posting/outreach channel.
+- Skool rejected (no buying signal, different ICP type).
 - Email extraction: hybrid waterfall (scrape -> Apollo -> Hunter -> verifier)
 - Cadence: one-time bulk CLI, idempotent re-runs
 - Output: vault markdown + TaskNotes kanban; sqlite internal state
