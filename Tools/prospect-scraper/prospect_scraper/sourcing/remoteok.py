@@ -1,3 +1,4 @@
+import re
 import sqlite3
 
 from prospect_scraper import db as db_module
@@ -8,8 +9,12 @@ REMOTEOK_API = "https://remoteok.com/api"
 
 
 def matches_keywords(text: str, keywords: list[str]) -> bool:
-    t = text.lower()
-    return any(k.lower() in t for k in keywords)
+    # Word-boundary match so short tokens like "CTO" do not match inside
+    # unrelated words (e.g. "factory", "director"). Phrases match verbatim.
+    for k in keywords:
+        if re.search(rf"\b{re.escape(k)}\b", text, re.IGNORECASE):
+            return True
+    return False
 
 
 def parse_jobs(raw: list[dict], keywords: list[str]) -> list[JobPost]:

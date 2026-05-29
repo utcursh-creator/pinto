@@ -31,6 +31,15 @@ def test_parsed_job_fields_mapped():
     assert j.source_url == "https://remoteok.com/jobs/1"
 
 
+def test_matches_keywords_uses_word_boundaries_not_substring():
+    # "CTO" must match the standalone token, not substrings of other words
+    assert remoteok.matches_keywords("CTO wanted", ["CTO"]) is True
+    assert remoteok.matches_keywords("factory worker", ["CTO"]) is False
+    assert remoteok.matches_keywords("sales director", ["CTO"]) is False
+    # multi-word phrases still match
+    assert remoteok.matches_keywords("we do process automations daily", ["process automations"]) is True
+
+
 import sqlite3
 from prospect_scraper import db
 from prospect_scraper.common.http import HttpClient
