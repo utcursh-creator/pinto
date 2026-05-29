@@ -21,9 +21,13 @@
 #   company:   p.new-listing__company-name        (trailing <img> icon; text(strip=True) drops it)
 #   link:      a.listing-link--unlocked  -> href is relative "/remote-jobs/..."
 #   region:    p.new-listing__company-headquarters (mapped to location, best effort)
+import sqlite3
+
 from selectolax.parser import HTMLParser
 
+from prospect_scraper.common.http import HttpClient
 from prospect_scraper.models import JobPost, Source
+from prospect_scraper.sourcing import base
 from prospect_scraper.sourcing.remoteok import matches_keywords
 
 WWR_BASE = "https://weworkremotely.com"
@@ -74,3 +78,14 @@ def parse_jobs(html: str, keywords: list[str]) -> list[JobPost]:
             location=location,
         ))
     return jobs
+
+
+def fetch(client: HttpClient) -> str:
+    # WWR content-negotiates: request HTML or it returns an RSS feed.
+    return client.get_text(WWR_CATEGORY_URL, headers={"Accept": "text/html"})
+
+
+def run(conn: sqlite3.Connection, client: HttpClient, keywords: list[str]) -> int:
+    html = fetch(client)
+    jobs = parse_jobs(html, keywords)
+    return base.insert_jobs(conn, jobs)

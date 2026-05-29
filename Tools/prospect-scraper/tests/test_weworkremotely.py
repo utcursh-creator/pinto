@@ -50,3 +50,33 @@ def test_parse_keyword_filter_excludes_nonmatching():
     # Use a keyword that matches NOTHING in the fixture.
     jobs = weworkremotely.parse_jobs(_html(), keywords=["zzzznomatch"])
     assert jobs == []
+
+
+import sqlite3
+from prospect_scraper import db
+from prospect_scraper.common.http import HttpClient
+
+
+class _FakeClient(HttpClient):
+    def __init__(self, html):
+        self._html = html
+        self.delay = 0.0
+
+    def get_text(self, url: str, headers=None):
+        return self._html
+
+    def close(self):
+        pass
+
+
+def test_run_inserts_and_dedupes():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    db.init_db(conn)
+    client = _FakeClient(_html())
+    kw = ["engineer", "developer", "automation"]
+    first = weworkremotely.run(conn, client, kw)
+    second = weworkremotely.run(conn, client, kw)
+    assert first >= 1
+    assert second == 0  # dedup
+    conn.close()

@@ -20,8 +20,8 @@ class HttpClient:
             time.sleep(self.delay)
         return resp.json()
 
-    def get_text(self, url: str) -> str:
-        resp = self._client.get(url)
+    def get_text(self, url: str, headers: dict | None = None) -> str:
+        resp = self._client.get(url, headers=headers)
         resp.raise_for_status()
         if self.delay:
             time.sleep(self.delay)

@@ -7,7 +7,7 @@ from prospect_scraper import db as db_module
 from prospect_scraper.common.http import HttpClient
 from prospect_scraper.config import get_settings
 from prospect_scraper.constants import DEFAULT_KEYWORDS
-from prospect_scraper.sourcing import remoteok
+from prospect_scraper.sourcing import remoteok, weworkremotely
 
 app = typer.Typer(help="Outbound prospect engine")
 
@@ -19,7 +19,7 @@ def main() -> None:
 
 # Map board name to its MODULE (not module.run). We resolve `.run` at call
 # time so tests that monkeypatch `remoteok.run` take effect.
-_BOARDS = {"remoteok": remoteok}
+_BOARDS = {"remoteok": remoteok, "weworkremotely": weworkremotely}
 
 
 @app.command()
