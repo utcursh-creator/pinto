@@ -1,9 +1,0 @@
-[
-  {"legal": "RemoteOK legend, not a job"},
-  {"id": "1", "company": "AutoFlow Agency", "position": "Process Automation Engineer",
-   "description": "We build n8n automations for our clients and need help with delivery.",
-   "tags": ["n8n", "automation"], "url": "https://remoteok.com/jobs/1", "location": "Remote EU"},
-  {"id": "2", "company": "RandomCorp", "position": "Frontend Designer",
-   "description": "Figma and CSS work for our marketing site.",
-   "tags": ["design"], "url": "https://remoteok.com/jobs/2", "location": "Remote"}
-]
