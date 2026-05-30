@@ -221,7 +221,77 @@ last_updated: 2026-05-28
 - **Git diagnosis**: `gh` CLI NOT installed; remote is HTTPS (github.com/utcursh-creator/pinto); NO SSH keys present. Stale HTTPS cred can't just refresh. Offered 3 methods (SSH key [rec], PAT, install gh). Awaiting user's pick.
 - **Pending commits to push once authed**: PRD Apify update, Plan 1 doc, all this-session memory edits (uncommitted since cf4bc53).
 - **Build**: user said proceed; will go subagent-driven (my rec) on Plan 1 after auth resolved.
-- **SSH chosen + key generated**: ed25519 at ~/.ssh/id_ed25519 (new), github.com host pre-trusted in known_hosts. Public key shown to user to paste at github.com/settings/ssh/new. AWAITING user confirmation they added it → then: set remote to git@github.com:utcursh-creator/pinto.git, `ssh -T git@github.com` test, push pending commits, start build.
+- **GIT AUTH FIXED + PUSHED**: SSH ed25519 key added to GitHub by user. Root cause of failure: PORT 22 BLOCKED on user's network → configured SSH over 443 (~/.ssh/config: Host github.com / Hostname ssh.github.com / Port 443). `ssh -T` returns "Hi utcursh-creator! successfully authenticated". Remote switched to SSH. Pushed `8423257..7288a8a` → origin/main now current (PRD + Apify + Plan 1 + memory all on GitHub). Git loop CLOSED.
+- **NOW BUILDING**: Plan 1, subagent-driven-development. Brainstorm/plan tasks #1-8 done; execution tasks next.
+
+## PLAN 1 COMPLETE + PUSHED (2026-05-28, same session)
+- **Built**: `Tools/prospect-scraper/` foundation + RemoteOK source via 3 subagent implementers (Foundation T1-5, RemoteOK T6-7, CLI T8), each audited by me (reran tests, read source, probed edge cases).
+- **Result**: 18 tests green. Working CLI `prospect-scraper source --board remoteok` → fetches RemoteOK JSON API, keyword-filters, dedupes into sqlite. Python 3.12/uv/pydantic/httpx/typer/pytest/respx.
+- **Audit caught + fixed 1 real bug**: keyword matcher used naive substring → "CTO" matched "factory"/"director". Fixed with word-boundary regex (commit 8be857f), TDD. Verified file-backed dedup holds across process restart.
+- **Subagent honesty**: CLI agent flagged a typer single-command-flattening issue + fixed it correctly (@app.callback() no-op) — verified sound.
+- **Commits pushed to origin/main**: through `8a7aac7`. Everything on GitHub.
+- **Tasks #9-12 done.** Plan 1 is a complete, tested, shippable increment.
+- **NEXT (not started)**: Plan 2 = remaining self-built sources (WeWorkRemotely, Workable, n8n jobs) + selectolax HTML parsing. Must WRITE Plan 2 (writing-plans) then execute. Then P3 Apify (Indeed/LinkedIn, needs APIFY token), P4 probing, P5 qualification (needs OpenRouter key), P6 enrichment (Apollo/Hunter keys), P7 nurturing (Mailtrap), P8 output+orchestration.
+- **Note**: work_status.md is very long now — run /compress at session end to archive.
+
+## PLAN 2 IN PROGRESS (2026-05-28, same session)
+- **Scope narrowed**: Plan 2 = WeWorkRemotely ONLY (one HTML source). Workable + n8n jobs pushed to Plan 3. Reason: HTML scraping needs live-page selector discovery, so one source per plan stays reliable.
+- **Plan 2 written**: `Projects/prospect-scraper/2026-05-28-p2-weworkremotely-plan.md`. 4 tasks: (1) selectolax dep + HttpClient.get_text, (2) extract sourcing/base.py insert_jobs + refactor remoteok, (3) WWR parser DISCOVERY against live fixture [opus, may BLOCK if WWR is JS-only/blocked], (4) WWR run + CLI.
+- **Building** via subagent-driven-development, per-chunk audit by me (rerun tests, read source).
+- **WWR risk**: if live fetch returns JS-only/403/429, T3 returns BLOCKED → move WWR to Apify/Playwright phase later.
+- Build tasks #13-16.
+
+## PLAN 2 COMPLETE + PUSHED (2026-05-28/29, same session)
+- **Built WeWorkRemotely source** via 3 subagent chunks (T1-2 get_text+base refactor on sonnet, T3 discovery on opus, T4 run+CLI on sonnet), each audited by me (reran suite, read source, live-verified).
+- **Result**: 26 tests green. `prospect-scraper source --board weworkremotely` works. End-to-end live verified: run with ["engineer"] inserted 32 real jobs. Shared `base.insert_jobs` now DRYs both sources.
+- **Key discovery (opus)**: WWR content-negotiates on Accept header. Default client gets RSS/XML; needs `Accept: text/html` for HTML. Would have been a silent 0-jobs bug. Fixed: get_text now takes optional headers; WWR fetch sends Accept: text/html. Verified live.
+- **STRATEGIC FINDING to weigh**: WWR "remote-programming-jobs" category + narrow ICP keywords = 0 matches (broad "engineer" = 32). General job boards surface companies-hiring-devs, NOT necessarily Yosef-style AGENCIES-hiring-automation-partners. The scraper is technically correct, but SOURCE ICP-YIELD is the real question. May need agency-targeted Indeed queries + the probing/qualification layers to find actual fit prospects. Don't assume more general boards = more prospects.
+- **Commits pushed through `2089b8c`**. Tasks #13-16 done.
+- **NEXT (superseded by pivot below)**.
+
+## HARD PIVOT: SCRAP OUTBOUND, GO CONTENT INBOUND (2026-05-29, same session)
+- **User scratched ALL outbound work.** "I never wanted to go towards a job board type of thing in the first place." After seeing the live pull (0 ICP matches; broad = Dairy Queen/Royal Caribbean noise), confirmed job boards are the wrong channel for the agency ICP.
+- **Decision is data-driven, not drift** — but it IS the 3rd content-engine gravitation this session (YouTube → Twitter → now). This time user is choosing it deliberately with evidence. I asked for a commitment to NOT scratch this one.
+- **DELETED**: `Tools/prospect-scraper/` (code) + `Projects/prospect-scraper/` (PRD + 2 plans). Commit `05f4766`, pushed. Recoverable via git history (the scraping/AI/vault core could seed the content pipeline if wanted).
+- **KEPT**: `Inbox/ai-frontier-youtube-channel.md` (content concept seed). Note: `Projects/content-engine/` folder already exists — fold into brainstorm. `Tools/lead generator.md` also present.
+- **NOW**: brainstorming a CONTENT INBOUND PIPELINE. User "not too against content creation" if partly automated. Prior context (user_preferences Platform Psychology): Twitter not LinkedIn, TEXT + GRAPHICS not video, contrarian AI business-nuggets for agency-operator audience, sourced from research/VC/YC/AI-convention chatter via AI agent.
+- **Brainstorm tasks #1-16 are obsolete** (scratched outbound). New brainstorm tasks #17-21.
+
+## CONTENT-ENGINE BRAINSTORM (2026-05-29, same session)
+- **Explored existing content-engine work**: Projects/content-engine/ has README (1:1:1 framework, LinkedIn-era, deployment-gap overused), research-nuggets.md (20 ideas, 19KB), writing-style-analysis.md (his thinking pipeline; KEY correction: do NOT templatize his voice, latent space uncapturable). Thinking/content-resonance-research.md (excellent: inbound 14.6% vs outbound 1.7%; AUDIENCE vs PIPELINE distinction; practitioner field-notes convert, frontier/AI-news commentary = spectators).
+- **Q1 ANSWERED: C (bridge), REFINED by user**:
+  - Spine = real PROCESS-OPTIMIZATION / PROCESS-AUTOMATION work + measurable outcomes (time/cost saved from actual n8n builds: Egroma, Marcel Keller, Poosch, etc.)
+  - Tone: NOT attacking/competitor-bashing ("your last partner failed you" = OUT, too vague/aggressive). Lead with concrete value/proof.
+  - Frontier-AI contrarian angle = the FLAVOR/hook, intertwined with proof so each piece is BOTH distribution (spreads) AND proof (competence). User: "both areas are a delicacy for the viewers."
+  - The gap: others have dry case studies (proof, no reach) OR hot takes (reach, no proof); weaving them is open.
+- **Q2 IN FLIGHT: automation boundary**. A = automate sourcing (external research + pull his own build-data from vault) + synthesize angle-candidates + formatting/scheduling, human does thinking+writing (my rec, protects voice per his own rule). B = also auto-draft. C = fuller automation.
+- **Channel/format already locked (user_preferences)**: Twitter/X, text+graphics, NOT video, NOT LinkedIn. (Note: prior research is LinkedIn/YouTube-face-centric; faceless-text weakens parasocial per research, flag later.)
+- **Q2 ANSWERED + drafting boundary locked**: automation-boundary A. Machine does source->transcript->nuggets->ideas (breadth + synthesis); human curates at Kanban gates. Writer agent DRAFTS at Gate 2, user edits at Gate 3.
+  - **CRITICAL reframe of "draft"**: user does NOT want voice/beautification from the agent. Wants INFORMATION DENSITY + ARCHITECTURE (validated facts, framing, interest build-up, reveal sequence) = a dense scaffold he then voice-polishes. This dissolves the anti-determinism tension: machine = info-architecture, human = voice. (Captured in user_preferences.)
+- **Nuggets pipeline (the architecture)**: SOURCE -> TRANSCRIPT -> NUGGETS (subtopics, GATE1 keep/kill) -> CONTENT IDEAS (5-6 angles/nugget, GATE2 accept/reject) -> DRAFT (writer agent, GATE3 user edits) -> POSTED+logged. UI = Obsidian Kanban columns (NO custom UI build, user scratched it). Each card = md note w/ frontmatter, status moves across columns.
+- **Voice samples captured**: `Projects/content-engine/voice-samples.md` = 2 real posts (Claude Skills + PwC AI Outlook) verbatim + observed structural traits. Note: writing-style-analysis.md only ANALYZES posts, doesn't contain them; user thought it did.
+- **Q3 ANSWERED: sources + proof**
+  - Source-strategy A (curated manual-drop). 5 credible sources proposed (research/data for business decisions, NOT model-vs-model hype): (1) Stanford HAI AI Index, (2) McKinsey State of AI + PwC/BCG/Deloitte, (3) Menlo Ventures State of GenAI in Enterprise + a16z, (4) MIT Sloan Mgmt Review + MIT GenAI pilot studies, (5) Stratechery + Import AI. Exact feed URLs wired at build time.
+  - **Proof-bank created**: `Projects/content-engine/proof-bank.md` from documented builds (Egroma, Marcel Keller, Poosch, Aramas, Bildungsfabrik) + metrics + stack. FLAGS: Egroma figure inconsistent (73K vs 100K) -> [CONFIRM]; client-name public-use needs per-client clearance. User to add more PRDs later.
+- **All brainstorm inputs now locked**: goal (C-refined), automation boundary, nuggets pipeline, sources(5), proof-bank, voice-samples.
+- **NEXT**: propose 2-3 architecture approaches for the content engine (task #18), then design sections, then spec, then writing-plans. Minor open: cadence/format (tweet vs thread, frequency).
+- **Proof anonymization rules locked (user)**: NEVER publish client name / use-case / industry; describe problem-shape generically; round numbers; ask Utkarsh to calc missing ones. proof-bank.md updated with anonymized public framings. Open numbers (non-blocking): Egroma monthly figure, Bildungsfabrik metric.
+- **5 sources + source-strategy A accepted** (user moved on without objection).
+- **ARCHITECTURE PROPOSED (task #18)**: A = Claude-Code-orchestrated + Obsidian Kanban (rec; no app, runs as a Claude routine + sub-agents, writes md cards to Kanban columns, transcript helper the only real code; matches user's own "Claude Code as chat interface + Kanban vault" instinct). B = standalone Python pipeline (scraper pattern; only worth it for headless/scheduled). C = n8n (his domain but awkward for LLM-reasoning + voice drafting).
+- **ARCHITECTURE A PICKED**: Claude-Code-orchestrated + Obsidian Kanban. NO Python pipeline, NO n8n. Build it on this interface.
+- **User confusion clarified (key)**: there is no coded pipeline doing the thinking; CLAUDE is the engine. Transcript helper = dumb retrieval only (URL -> text card). Nugget extraction / idea expansion / drafting = Claude (+ sub-agents) reasoning in a run. User does only fast judgment at gates + final voice polish.
+- **DESIGN PRESENTED (3 build components, NOT code):**
+  1. Obsidian Kanban board: Sources -> Transcripts -> Nuggets -> Ideas -> Drafting -> Scheduled -> Posted
+  2. A `content-engine` SKILL = written instructions for how Claude does each step to standard (nugget-keep criteria, angle generation, writer-agent rules: thinking-pipeline + proof-weaving + anonymization + anti-template + no em dashes). THIS is the real build.
+  3. One small transcript helper (YouTube/article -> text).
+  - Bandwidth split: Claude does heavy reasoning; user does keep/kill, accept/reject, voice polish. Walkthrough given (McKinsey URL -> 6 nuggets -> keep 3 -> ~18 ideas -> greenlight 4 -> 4 drafts -> edit+post, ~20-30 min user time).
+- **3 refinements added by user**: (1) writer agent grounded in proven $100M-copywriter frameworks + his process (not just his post schema); (2) system is RESEARCHER + writer (extraction = reasoning + angle selection + deep research, framework-driven, not summarizing); (3) transcript scraper = production-level CODE, no vibecoding (real engineering build).
+- **Reuse flagged**: deleted prospect-scraper core (httpx/sqlite/models/CLI/source-pattern, in git history before commit 05f4766) repurposed as the transcript scraper foundation.
+- **Copywriting research DONE (opus agent)**: saved `Projects/content-engine/copywriting-framework.md`. Backbone: enter-the-conversation (Collier), channel-desire + awareness/sophistication stages (Schwartz), specificity (Hopkins/Caples/Bencivenga), slippery-slide (Sugarman), earned-reveal; RMBC-style extraction (mine the MECHANISM not the stat) + 4-filter angle ranking; explicit drop-for-organic list (no CTA/urgency/hype).
+- **SPEC WRITTEN + self-reviewed**: `Projects/content-engine/2026-05-29-content-engine-design.md`. Hybrid architecture: (A) production transcript scraper [code, reuse prospect-scraper core], (B) content-engine skill [Claude reasoning: extractor+expander+writer, grounded in the 4 reference files], (C) Obsidian Kanban. Build order: Phase 1 = skill + Kanban + MANUAL run (no code, validate reasoning); Phase 2 = scraper (code, TDD); Phase 3 = feeds/scheduling.
+- **4 reference files for the skill**: writing-style-analysis.md, voice-samples.md, proof-bank.md, copywriting-framework.md.
+- **Brainstorm tasks**: #17-20 done (questions, approaches, design, spec). #21 = writing-plans (pending user spec approval).
+- **Awaiting**: user reviews the spec, then writing-plans (Phase 1 first).
 
 ## Previous Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
 - **Focus**: Continued Offer/ICP/GTM brainstorm + environment logistics

@@ -29,6 +29,16 @@ last_updated: 2026-03-11
 - **LLM access = OpenRouter key (NOT Anthropic SDK direct).** Use OpenRouter for all LLM calls in his projects (claude-haiku-4-5 is his go-to cheap model, matches the Aramas scraper setup).
 - **Reluctant to spend on tooling, especially during dev/testing.** Default to free tiers and open-source. Surface paid options as deferred "spend only if it proves necessary" decisions, not upfront requirements. He'll pay later for proven value, not for unvalidated setup.
 
+## Content Tone + Substance (2026-05-29)
+- **Substance spine = process optimization / process automation** with concrete measurable outcomes (time saved, cost saved) from his REAL builds. Lead with proof/value, not theory.
+- **Tone: NOT attacking or competitor-bashing.** Rejected "your last automation partner built what you asked for, not what you needed" as too vague + too aggressive. Avoid attack-the-prospect's-past-vendor framing.
+- **Content model = intertwine proof + distribution**: real build outcomes (proof of competence) woven with frontier-AI contrarian flavor (the engaging hook), so each piece both spreads AND demonstrates capability.
+
+## GTM Direction: Content-Led Inbound (2026-05-29)
+- **User's true preference is content-led INBOUND, not outbound prospecting.** Stated explicitly: "I never wanted to go towards a job board type of thing in the first place." Validated by data (job-board scraping returned 0 ICP-fit prospects). Outbound was tried + scratched.
+- "Not too against content creation" IF some of it is automated. The hook is: build a partly-automated content pipeline so the bandwidth cost is low.
+- When this user circles back to content/distribution (happened 3x in one session), that IS the signal of what they actually want to build. Support it; help them commit rather than re-litigate.
+
 ## Platform Psychology (2026-05-28)
 - **LinkedIn is psychologically toxic for user.** His thinking inherently rejects it: too many pretenders, all personal-branding theater, "can't say real stuff." The burnout he associates with GTM is partly platform-driven (LinkedIn specifically). Do NOT route GTM through LinkedIn.
 - **Twitter/X is his preferred platform.** Better for both spreading knowledge and taking it in. This is where he's willing to build presence.
