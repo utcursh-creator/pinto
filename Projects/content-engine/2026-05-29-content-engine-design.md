@@ -31,15 +31,17 @@ SOURCE -> TRANSCRIPT -> NUGGETS -> IDEAS -> DRAFT -> POSTED
 - SOURCE: a URL / PDF / pasted text (one of the 5 curated sources or ad hoc).
 - TRANSCRIPT: full raw text of the source (from the scraper, or pasted).
 - NUGGETS: subtopics mined from the transcript via the extractor framework. GATE 1: Utkarsh keeps/kills.
-- IDEAS: 5-6 angled content ideas per kept nugget, each pre-married to a proof point where relevant. GATE 2: Utkarsh accepts/rejects.
+- IDEAS: 5-6 angled content ideas per kept nugget, each carrying an evidence angle, internal proof OR dynamically-researched supporting/contrarian evidence (there is ALWAYS an angle; nuggets are never dropped for lack of proof). GATE 2: Utkarsh accepts/rejects.
 - DRAFT: dense info-architecture for each accepted idea, via the writer agent. GATE 3: Utkarsh edits into final voice.
 - POSTED: published to Twitter (manual), logged back to the vault.
 
-## 4. Architecture (hybrid: code for retrieval, Claude for reasoning)
-Three components:
-- **A. Transcript/source scraper** = production code (the ONLY code). Robust, efficient, tested. No vibecoding.
-- **B. content-engine skill** = Claude reasoning (extractor + writer), grounded in the 4 reference files. No code.
-- **C. Obsidian Kanban board** = the interface + state. No custom UI.
+## 4. Architecture (hybrid: code for retrieval + graphics, Claude for reasoning + dynamic research)
+Components:
+- **A. Transcript/source scraper** = production code. Robust, efficient, tested. No vibecoding.
+- **B. content-engine skill** = Claude reasoning (extractor + expander + writer) WITH dynamic research (web search + curated sources) to find supporting/contrarian evidence per nugget. Grounded in the 5 reference files (stage-playbook operating manual + the 4 craft/voice/proof files). No code.
+- **C. Graphics generator** = production code. Renders charts/diagrams programmatically from each draft's `graphic_spec` (plotting lib + diagram lib). No manual graphics.
+- **D. Obsidian Kanban board** = interface + state. No custom UI.
+Two code components (scraper, graphics generator); the reasoning + dynamic research is Claude.
 
 ### 4A. Transcript/Source Scraper (production build)
 - Purpose: given a source reference (YouTube URL, article URL, PDF path), return clean full text as a Transcript card. Retrieval only, zero reasoning.
@@ -70,7 +72,7 @@ Stages the skill governs:
 ## 5. Build Order (proves reasoning before code)
 - **Phase 1 (no code): content-engine skill + Kanban board + a MANUAL run.** Write the skill (per `stage-playbook.md`), set up the columns, then paste one real source's text and run extractor -> ideas -> draft by hand (Claude) to validate quality + the frameworks against Utkarsh's taste. Tune the skill from his edits. This de-risks the valuable part with zero code.
   - **Acceptance criteria (Phase 1 done):** from 1-2 real sources, the engine yields nuggets Utkarsh agrees are mechanism-grade (not stat-summaries), ideas that are genuinely distinct entry points (not rephrasings), and at least 2-3 drafts he can bring to publish-ready with LIGHT edits (voice his, structure varied, proof woven where relevant, QA-lint clean). If drafts need heavy rewrites, tune the playbook and re-run before touching Phase 2.
-- **Phase 2 (code): transcript scraper.** Restore + repurpose the prospect-scraper core; build YouTube + article + PDF retrieval, TDD, audited. Now sources auto-flow into Transcript cards.
+- **Phase 2 (code): transcript scraper + graphics generator.** Restore + repurpose the prospect-scraper core; build YouTube (+ Whisper fallback) + article + PDF retrieval, TDD, audited; sources auto-flow into Transcript cards. Also build the graphics generator (plotting + diagram libs) that renders a draft's `graphic_spec` into a branded image. Both production code, TDD.
 - **Phase 3 (later, optional): light auto-feeds + scheduling.** Only if the engine is humming.
 
 ## 6. Sources (curated, manual-drop to start)
@@ -99,4 +101,4 @@ Stanford HAI AI Index; McKinsey/PwC/BCG/Deloitte enterprise AI; Menlo Ventures +
 - Transcript library + Whisper fallback confirmed at scraper build.
 
 ## 11. Gap Audit (2026-05-29) - addressed
-Deep audit found and CLOSED in `stage-playbook.md`: framework operationalized per stage; per-card schemas (nugget/idea/draft) carrying awareness-stage, sophistication, mass-desire, mechanism, entry-mode, proof-point, format; QA lint before each gate (stat accuracy, anonymization, no em dashes, drop-list, anti-repetition, lands-on-reader); the anti-repetition mechanism (read last 5 cards, vary entry+structure, diversify topic); graphics handling (graphic_need per draft); format decision (single/thread/long by awareness-distance); measurement loop (Posted card performance -> bias future selection toward buyer signal); proof-mix + cadence. Tunable knobs (exact cadence, proof-ratio) settle from the measurement loop.
+Deep audit found and CLOSED in `stage-playbook.md`: framework operationalized per stage; per-card schemas (nugget/idea/draft) carrying awareness-stage, sophistication, mass-desire, mechanism, entry-mode, proof-point, format; QA lint before each gate (stat accuracy, anonymization, no em dashes, drop-list, anti-repetition, lands-on-reader); the anti-repetition mechanism (read last 5 cards, vary entry+structure, diversify topic); PROGRAMMATIC graphics (graphic_spec per draft rendered by a code library); DYNAMIC RESEARCH (always an angle: internal proof or researched supporting/contrarian evidence, nuggets never dropped for lack of proof); measurement loop (Posted performance -> bias future selection toward buyer signal); proof-mix + cadence. Format decision REMOVED per Utkarsh. Tunable knobs settle from the measurement loop.

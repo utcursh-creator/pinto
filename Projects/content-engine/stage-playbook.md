@@ -25,11 +25,19 @@ Loaded by the content-engine skill on every run.
 - **Anti-repetition** (his cardinal rule): before drafting, read the last 5 cards in Drafting+Scheduled+Posted; record their entry_mode, structure_note, and topic; the new piece MUST differ on entry mode AND structure, and should not re-orbit a recently-used topic (see README published-content tracker; current warning: stop orbiting the "deployment/adoption gap").
 - **Drop-list** (organic, not sales letter): no hard CTA, no manufactured urgency/scarcity, no hype/superlatives, no clickbait open loops, no rigid repeated formula.
 
+## Dynamic research (the system is a smart, active researcher, NOT a transcript summarizer)
+The engine does not work only from the one transcript. At extraction AND expansion it actively QUERIES for more: web search + the curated sources, to find supporting data, the contrarian paper that argues the opposite, the number that confirms or breaks a claim. The logic is dynamic per nugget: reason about what evidence and angle THIS nugget needs, then go get it.
+**There is ALWAYS an angle.** If no internal build-proof fits a nugget, do not drop it, re-angle it:
+- find external research that SUPPORTS the claim (data, a study), or
+- find a credible source AGAINST the claim and run it as a contrarian angle (a paper/data that contradicts the prevailing view is itself a strong post).
+A nugget is never discarded for lacking a proof tie. Every nugget carries SOME evidence: internal proof, external supporting, or external contrarian.
+
 ## STAGE 1 - EXTRACTOR (transcript -> nuggets)
 Process (RMBC-R + Schwartz + his absorption/system-mapping):
 1. Research-extract: pull every hard number, sample size, named entity, dollar figure, and especially CONTRADICTIONS (data that fights the prevailing narrative). Contradiction = raw angle ore.
 2. Find the MECHANISM for each candidate: the underlying WHY nobody has named. The mechanism, not the stat, is the nugget. A report yields ~10 stats but only 2-3 real mechanisms.
 3. Score + rank on the 4 filters: desire-fit, awareness-distance, freshness-vs-sophistication, decision-relevance. Drop burned-out claims.
+4. Evidence/angle pass (DYNAMIC RESEARCH): for each surviving nugget, attach the evidence that best angles it. Internal build-proof if one fits; else actively query (web + curated sources) for external SUPPORTING research, or a credible source AGAINST the claim to run as a contrarian angle. Never leave a nugget without an angle.
 
 Nugget card frontmatter:
 ```yaml
@@ -40,7 +48,7 @@ mechanism: <the One Big Idea / underlying why, one line>
 mass_desire: results|niche|not-wasting-spend|<other>
 awareness_stage: unaware|problem|solution|product|most-aware
 sophistication_note: <what claims are burned out here; what is fresh>
-proof_point: <egroma|marcel|poosch|aramas|bildungsfabrik|none>
+evidence: internal-proof:<id> | external-supporting:<source> | external-contrarian:<source>   # ALWAYS one, never none; dynamically researched if no internal proof fits
 filter_scores: {desire: H/M/L, awareness_distance: short/long, freshness: H/M/L, decision_relevance: H/M/L}
 ```
 Body: the raw extracted facts/contradictions + the mechanism stated + why it fits the audience.
@@ -58,12 +66,11 @@ angle_type: contradiction|mechanism|unoccupied-space|what-winners-do|identificat
 entry_mode: identity-filter|shared-curiosity|contradiction|tension
 mass_desire: results|niche|not-wasting-spend|<other>
 awareness_stage: unaware|problem|solution|product|most-aware
-format: single|thread|long             # driven by awareness-distance
-proof_point: <id|none>
+evidence: internal-proof:<id> | external-supporting:<src> | external-contrarian:<src>
 one_big_idea: <one line>
 hook_seed: <a candidate first line that enters the conversation>
 ```
-QA before Gate 2: the 5-6 are different ENTRY POINTS, not rephrasings; each scored; strongest flagged; format matches awareness-distance (short distance -> single; long -> thread/long).
+QA before Gate 2: the 5-6 are different ENTRY POINTS, not rephrasings; each scored; strongest flagged; each carries an evidence angle (internal proof or researched supporting/contrarian).
 
 ## STAGE 3 - WRITER (accepted idea -> dense draft)
 Process = the draft-structure reasoning sequence (varies per idea, never a template):
@@ -79,15 +86,14 @@ Draft card frontmatter:
 type: draft
 parent_idea: <idea id>
 status: drafting             # drafting|scheduled|posted
-format: single|thread|long
 entry_mode_used: <mode>
 structure_note: <one line describing the shape, for anti-repetition tracking>
 one_big_idea: <one line>
-proof_woven: <id|none>
-graphic_need: source-chart|generated-diagram|data-viz|none
+evidence_woven: internal-proof:<id> | external-supporting:<src> | external-contrarian:<src>
+graphic_spec: <chart type + the exact data to plot | diagram description | none>   # rendered programmatically
 drop_checks: passed          # set after QA lint
 ```
-Body: the dense draft (the info-architecture). For format:thread, structured as numbered beats.
+Body: the dense draft (the info-architecture).
 
 QA LINT before Gate 3 (the writer self-checks, reports pass/fail per item):
 - No hard CTA, no urgency/scarcity, no hype/superlatives, no clickbait loop.
@@ -97,13 +103,11 @@ QA LINT before Gate 3 (the writer self-checks, reports pass/fail per item):
 - structure_note + entry_mode differ from the last 5 cards (anti-repetition); topic not re-orbiting a recent one.
 - Ends on the reader, not a pitch.
 
-## GRAPHICS
-Each draft sets `graphic_need`. Resolution:
-- source-chart: screenshot/clip the actual chart from the source (most credible, like his PwC post). Utkarsh grabs it, or a later helper does.
-- generated-diagram: a simple system-map (e.g. the circular-money flow) rendered as a clean graphic.
-- data-viz: re-plot a stat cleanly.
-- none: text-only post.
-v1: graphic_need is flagged; Utkarsh creates the visual at edit time. Automating graphic generation is a later phase.
+## GRAPHICS (programmatic, code, no manual creation)
+Graphics are generated ENTIRELY PROGRAMMATICALLY by a code library. The draft sets `graphic_spec` (chart type + the exact data to plot, or a diagram description). A graphics generator renders a clean, consistently-branded image from that spec:
+- charts + data-viz: a plotting library (e.g. matplotlib/plotly) re-plots the nugget's real numbers cleanly.
+- system-maps / diagrams: a diagram library renders flows (e.g. the circular Nvidia->OpenAI->Oracle money map).
+This is a CODE component, built in the code phase alongside the transcript scraper. Numbers come from the nugget evidence and must be accurate to source (stat-accuracy rule). No screenshots, no manual graphic-making.
 
 ## MEASUREMENT LOOP (so the engine learns)
 Posted card captures, a few days after posting:
