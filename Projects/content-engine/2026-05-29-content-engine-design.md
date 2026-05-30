@@ -43,13 +43,15 @@ Three components:
 
 ### 4A. Transcript/Source Scraper (production build)
 - Purpose: given a source reference (YouTube URL, article URL, PDF path), return clean full text as a Transcript card. Retrieval only, zero reasoning.
-- Sources v1: YouTube (transcript via a transcript library), article/HTML (fetch + readability extraction), PDF (text extract), plain paste (no scraper).
+- Sources v1: YouTube (captions via a transcript library; FALLBACK to Whisper audio transcription when captions are missing or auto-caption quality is poor), article/HTML (fetch + readability extraction), PDF (text extract), plain paste (no scraper).
+- Gated reports (McKinsey/Menlo/PwC are often PDF-behind-a-form): not auto-fetchable. Expected flow = Utkarsh downloads the PDF, drops it in Sources, scraper ingests it. Do not try to defeat gating.
 - **Reuse**: restore the deleted prospect-scraper core from git history (commit before `05f4766`): httpx client + politeness, sqlite, models, CLI, source-module pattern. Repurpose as the transcript scraper foundation instead of rebuilding.
 - Requirements: robust error handling, per-source modules, retries, dedup of already-processed sources, output written to the vault Transcripts location + sqlite state. Python 3.12, uv, pytest, TDD. External calls mocked in tests.
 - Quality bar: production-level, same rigor as the prospect-scraper build (TDD, audited per task).
 
 ### 4B. content-engine skill (the reasoning)
-A skill (instructions, not code) that defines HOW Claude does each reasoning stage to standard. Inputs it always loads:
+A skill (instructions, not code) that defines HOW Claude does each reasoning stage to standard. Its OPERATING MANUAL is `stage-playbook.md`, which bakes the framework into each stage with per-card schemas and a QA lint at every gate. The skill loads, every run:
+- `stage-playbook.md` (operating manual: per-stage process, card schemas, QA lint, anti-repetition, graphics, measurement, proof-mix/cadence)
 - `copywriting-framework.md` (persuasion craft + extraction + draft frameworks)
 - `writing-style-analysis.md` (his thinking pipeline)
 - `voice-samples.md` (his real posts, voice calibration)
@@ -66,7 +68,8 @@ Stages the skill governs:
 - Curation = move card / flip status. No app to build.
 
 ## 5. Build Order (proves reasoning before code)
-- **Phase 1 (no code): content-engine skill + Kanban board + a MANUAL run.** Write the skill, set up the columns, then paste one real source's text and run extractor -> ideas -> draft by hand (Claude) to validate quality + the frameworks against Utkarsh's taste. Tune the skill from his edits. This de-risks the valuable part with zero code.
+- **Phase 1 (no code): content-engine skill + Kanban board + a MANUAL run.** Write the skill (per `stage-playbook.md`), set up the columns, then paste one real source's text and run extractor -> ideas -> draft by hand (Claude) to validate quality + the frameworks against Utkarsh's taste. Tune the skill from his edits. This de-risks the valuable part with zero code.
+  - **Acceptance criteria (Phase 1 done):** from 1-2 real sources, the engine yields nuggets Utkarsh agrees are mechanism-grade (not stat-summaries), ideas that are genuinely distinct entry points (not rephrasings), and at least 2-3 drafts he can bring to publish-ready with LIGHT edits (voice his, structure varied, proof woven where relevant, QA-lint clean). If drafts need heavy rewrites, tune the playbook and re-run before touching Phase 2.
 - **Phase 2 (code): transcript scraper.** Restore + repurpose the prospect-scraper core; build YouTube + article + PDF retrieval, TDD, audited. Now sources auto-flow into Transcript cards.
 - **Phase 3 (later, optional): light auto-feeds + scheduling.** Only if the engine is humming.
 
@@ -91,6 +94,9 @@ Stanford HAI AI Index; McKinsey/PwC/BCG/Deloitte enterprise AI; Menlo Ventures +
 - Auto-posting to Twitter (manual for now).
 
 ## 10. Open Items
-- Egroma monthly figure + Bildungsfabrik metric (proof-bank [CONFIRM]).
+- Egroma monthly figure + Bildungsfabrik metric (proof-bank [CONFIRM]). Proof-bank expansion (more PRDs from Utkarsh) is a dependency for sustained cadence; 5 builds will repeat fast.
 - Exact Kanban plugin mechanics (TaskNotes vs Kanban plugin) confirmed at build.
-- Transcript library choice for YouTube confirmed at scraper build.
+- Transcript library + Whisper fallback confirmed at scraper build.
+
+## 11. Gap Audit (2026-05-29) - addressed
+Deep audit found and CLOSED in `stage-playbook.md`: framework operationalized per stage; per-card schemas (nugget/idea/draft) carrying awareness-stage, sophistication, mass-desire, mechanism, entry-mode, proof-point, format; QA lint before each gate (stat accuracy, anonymization, no em dashes, drop-list, anti-repetition, lands-on-reader); the anti-repetition mechanism (read last 5 cards, vary entry+structure, diversify topic); graphics handling (graphic_need per draft); format decision (single/thread/long by awareness-distance); measurement loop (Posted card performance -> bias future selection toward buyer signal); proof-mix + cadence. Tunable knobs (exact cadence, proof-ratio) settle from the measurement loop.
