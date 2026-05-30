@@ -32,6 +32,12 @@ The engine does not work only from the one transcript. At extraction AND expansi
 - find a credible source AGAINST the claim and run it as a contrarian angle (a paper/data that contradicts the prevailing view is itself a strong post).
 A nugget is never discarded for lacking a proof tie. Every nugget carries SOME evidence: internal proof, external supporting, or external contrarian.
 
+**Depth + horizon + precision (per `utkarsh_braindump.md` territory):**
+- LONG-HORIZON, not current-year: pull 2030+/2050 outlooks, trajectories, forecasts. Current-year-only data is too weak for this territory.
+- TECHNICAL-DEEP: frontier research/architecture (arXiv-grade), not business summaries.
+- FACTUAL PRECISION is existential: contrarian content dies on ONE fabricated claim. Every specific (a strike, a kidnapping, a model spec, a stat) needs a PRIMARY source before it enters a nugget or draft. Flag unverified claims; never let them through QA.
+- CONTRARIAN INVERSION: take the consensus take, find the sharper/truer inversion (e.g. "redundancy makes you safe" -> "redundancy multiplies the attack surface while solving the least likely failure mode").
+
 ## STAGE 1 - EXTRACTOR (transcript -> nuggets)
 Process (RMBC-R + Schwartz + his absorption/system-mapping):
 1. Research-extract: pull every hard number, sample size, named entity, dollar figure, and especially CONTRADICTIONS (data that fights the prevailing narrative). Contradiction = raw angle ore.

@@ -53,6 +53,7 @@ Two code components (scraper, graphics generator); the reasoning + dynamic resea
 
 ### 4B. content-engine skill (the reasoning)
 A skill (instructions, not code) that defines HOW Claude does each reasoning stage to standard. Its OPERATING MANUAL is `stage-playbook.md`, which bakes the framework into each stage with per-card schemas and a QA lint at every gate. The skill loads, every run:
+- `utkarsh_braindump.md` (CONTENT TERRITORY: contrarian + frontier + security + long-horizon AI; the lanes, the contrarian inversions, the right sources, the research requirements. This defines WHAT to talk about. Supersedes the business-adoption framing.)
 - `stage-playbook.md` (operating manual: per-stage process, card schemas, QA lint, anti-repetition, graphics, measurement, proof-mix/cadence)
 - `copywriting-framework.md` (persuasion craft + extraction + draft frameworks)
 - `writing-style-analysis.md` (his thinking pipeline)
@@ -76,7 +77,13 @@ Stages the skill governs:
 - **Phase 3 (later, optional): light auto-feeds + scheduling.** Only if the engine is humming.
 
 ## 6. Sources (curated, manual-drop to start)
-Stanford HAI AI Index; McKinsey/PwC/BCG/Deloitte enterprise AI; Menlo Ventures + a16z enterprise AI; MIT Sloan Mgmt Review + MIT GenAI studies; Stratechery + Import AI. Research/data that moves business decisions, not model-vs-model news.
+TERRITORY-CORRECTED (2026-05-29): the spine is contrarian + frontier + security + long-horizon (see `utkarsh_braindump.md`), NOT business-adoption. Sources:
+- Frontier research: arXiv (NSA, MLA, Titans, Mamba, diffusion LLMs, TurboQuant), Epoch AI (efficiency/compute/scaling), Anthropic/DeepMind/OpenAI research + interpretability.
+- Long-horizon/forecasting: AI-2027-style scenarios, Epoch projections, Metaculus AI, situational-awareness essays, Import AI (Jack Clark).
+- Security/military: Rest of World, Defense News, AI-security + mech-interp work, datacenter/HBM supply-chain reporting.
+- Strategy framing: Stratechery.
+- The earlier business sources (McKinsey/Menlo/Stanford HAI/etc.) are kept ONLY for the rare business-tie post, not the spine.
+RESEARCH REQUIREMENT: long-horizon (2030+/trajectories) + technical-depth + factual precision (verify every specific claim against a primary source before drafting). Current-year-only research is too weak for this territory.
 
 ## 7. Rules (load-bearing)
 - Anonymization: never publish client name / use-case / industry; generic problem-shape; rounded numbers; ask Utkarsh for missing metrics (see proof-bank).
