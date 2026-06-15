@@ -1,0 +1,11 @@
+begin;
+select plan(7);
+select has_table('public','matches','matches table');
+select col_is_pk('public','matches','id','id pk');
+select fk_ok('public','matches','team_a_id','public','teams','id');
+select fk_ok('public','matches','scorer_id','public','profiles','id');
+select col_type_is('public','matches','rules','jsonb','rules is jsonb');
+select col_has_default('public','matches','status','status default');
+select col_type_is('public','matches','toss_decision','toss_decision','toss_decision enum col');
+select * from finish();
+rollback;
