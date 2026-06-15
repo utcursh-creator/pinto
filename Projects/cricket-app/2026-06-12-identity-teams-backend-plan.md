@@ -8,13 +8,13 @@ status: draft
 tags: [cricket-app, plan, backend, supabase, postgres, rls, pgtap, tdd]
 ---
 
-# Identity & Teams — Backend Implementation Plan
+# Identity & Teams - Backend Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build and test the complete Postgres + RLS + RPC backend for Identity & Teams (auth-backed profiles, teams, multi-team membership, guest players, invites, and captain-approved guest claiming) on Supabase — with zero frontend.
+**Goal:** Build and test the complete Postgres + RLS + RPC backend for Identity & Teams (auth-backed profiles, teams, multi-team membership, guest players, invites, and captain-approved guest claiming) on Supabase - with zero frontend.
 
-**Architecture:** A Supabase project managed entirely as version-controlled SQL migrations. Authentication is delegated to Supabase Auth (Google/Apple OAuth — configured, not coded here). All data lives in Postgres with Row-Level Security enforced in the database, not the client. Cross-table authorization (who may mutate a roster) is centralized in `SECURITY DEFINER` helper functions to keep policies simple and avoid RLS recursion. Every schema object and every policy is verified by a `pgTAP` test before it is written (TDD).
+**Architecture:** A Supabase project managed entirely as version-controlled SQL migrations. Authentication is delegated to Supabase Auth (Google/Apple OAuth - configured, not coded here). All data lives in Postgres with Row-Level Security enforced in the database, not the client. Cross-table authorization (who may mutate a roster) is centralized in `SECURITY DEFINER` helper functions to keep policies simple and avoid RLS recursion. Every schema object and every policy is verified by a `pgTAP` test before it is written (TDD).
 
 **Tech Stack:** Supabase CLI (local stack via Docker) · PostgreSQL · Row-Level Security · PL/pgSQL functions/RPCs · pgTAP (in-database test framework) · `basejump-supabase_test_helpers` (open-source RLS test helpers, vendored into `seed.sql`). No bespoke auth, no ORM, no hand-rolled test framework.
 
@@ -142,11 +142,11 @@ rollback;
 - [ ] **Step 3: Reset (loads seed) then run tests**
 
 Run: `supabase db reset && supabase test db`
-Expected: `db reset` runs migrations then `seed.sql` (installing pgTAP + helpers); `test db` then PASSES `00-smoke.test.sql` (1 test). If it errors with `schema "tests" does not exist`, the seed install failed — fix before continuing (check internet for the dbdev fetch, or use the offline fallback).
+Expected: `db reset` runs migrations then `seed.sql` (installing pgTAP + helpers); `test db` then PASSES `00-smoke.test.sql` (1 test). If it errors with `schema "tests" does not exist`, the seed install failed - fix before continuing (check internet for the dbdev fetch, or use the offline fallback).
 
 - [ ] **Step 4: Document OAuth in config (no secrets committed)**
 
-Append to `supabase/config.toml` under `[auth]` (a comment block — real client IDs/secrets go in dashboard/env at deploy time, never in git):
+Append to `supabase/config.toml` under `[auth]` (a comment block - real client IDs/secrets go in dashboard/env at deploy time, never in git):
 ```toml
 # Identity: social login only (see spec §1). Configure in the Supabase dashboard at deploy:
 # [auth.external.google]  enabled = true  client_id = "env(GOOGLE_CLIENT_ID)" secret = "env(GOOGLE_SECRET)"
@@ -187,7 +187,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — `has_type` cannot find `public.batting_style`.
+Expected: FAIL - `has_type` cannot find `public.batting_style`.
 
 - [ ] **Step 3: Write the migration**
 
@@ -241,7 +241,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — `has_table` cannot find `public.profiles`.
+Expected: FAIL - `has_table` cannot find `public.profiles`.
 
 - [ ] **Step 3: Write the migration**
 
@@ -329,7 +329,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — with RLS enabled and no policies, even Alice's own insert is denied, so `lives_ok` fails.
+Expected: FAIL - with RLS enabled and no policies, even Alice's own insert is denied, so `lives_ok` fails.
 
 - [ ] **Step 3: Write the migration**
 
@@ -393,7 +393,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — `has_table` cannot find `public.teams`.
+Expected: FAIL - `has_table` cannot find `public.teams`.
 
 - [ ] **Step 3: Write the migration**
 
@@ -433,7 +433,7 @@ git commit -m "feat(cricket-backend): add teams table"
 - Create: `supabase/migrations/<ts>_authz_helpers.sql`
 - Create: `supabase/tests/05-authz-helpers.test.sql`
 
-These are `SECURITY DEFINER` so they read `team_members` WITHOUT triggering its RLS — this is what prevents the classic "policy on team_members that queries team_members" infinite recursion. Mechanism, precisely: they are `LANGUAGE sql` but carry BOTH `SECURITY DEFINER` and `SET search_path = public`; per Postgres SQL-inlining rules a function with either property is never inlined, so the definer context is preserved and RLS does not re-apply to the inner `team_members` read. If you ever drop the `SET` clause AND switch to plain `SECURITY INVOKER` SQL, the function could be inlined and the recursion would return — use `LANGUAGE plpgsql` in that case. `auth.uid()` must stay schema-qualified (a bare `uid()` would not resolve under `search_path = public`).
+These are `SECURITY DEFINER` so they read `team_members` WITHOUT triggering its RLS - this is what prevents the classic "policy on team_members that queries team_members" infinite recursion. Mechanism, precisely: they are `LANGUAGE sql` but carry BOTH `SECURITY DEFINER` and `SET search_path = public`; per Postgres SQL-inlining rules a function with either property is never inlined, so the definer context is preserved and RLS does not re-apply to the inner `team_members` read. If you ever drop the `SET` clause AND switch to plain `SECURITY INVOKER` SQL, the function could be inlined and the recursion would return - use `LANGUAGE plpgsql` in that case. `auth.uid()` must stay schema-qualified (a bare `uid()` would not resolve under `search_path = public`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -450,7 +450,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — functions not found.
+Expected: FAIL - functions not found.
 
 - [ ] **Step 3: Write the migration**
 
@@ -551,7 +551,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — `create_team` does not exist.
+Expected: FAIL - `create_team` does not exist.
 
 - [ ] **Step 3a: Write the teams RLS migration**
 
@@ -607,9 +607,9 @@ $$;
 revoke all on function public.create_team(text, text, text) from public;
 grant execute on function public.create_team(text, text, text) to authenticated;
 ```
-> **Forward reference:** `create_team` is `LANGUAGE plpgsql`, whose body is NOT schema-checked at CREATE time (default `check_function_bodies=on` skips plpgsql bodies), so its reference to `public.team_members` is fine as long as that table exists by the time `create_team` is first CALLED — `supabase db reset` guarantees this by applying migrations in filename order. This latitude does NOT extend to `LANGUAGE sql` functions: their bodies ARE validated at CREATE time, so any SQL-language helper must be ordered strictly after every table it references. Ordering requirement here: the `team_members` migration (Task 8) must carry an EARLIER timestamp than `rpc_create_team`. Practically: run Task 8's `migration new` before this one.
+> **Forward reference:** `create_team` is `LANGUAGE plpgsql`, whose body is NOT schema-checked at CREATE time (default `check_function_bodies=on` skips plpgsql bodies), so its reference to `public.team_members` is fine as long as that table exists by the time `create_team` is first CALLED - `supabase db reset` guarantees this by applying migrations in filename order. This latitude does NOT extend to `LANGUAGE sql` functions: their bodies ARE validated at CREATE time, so any SQL-language helper must be ordered strictly after every table it references. Ordering requirement here: the `team_members` migration (Task 8) must carry an EARLIER timestamp than `rpc_create_team`. Practically: run Task 8's `migration new` before this one.
 >
-> **RLS-bypass invariant (load-bearing):** `create_team` is `SECURITY DEFINER`, so its inserts into `teams`/`team_members` run as the function owner. This bypasses those tables' RLS **only because** the owner (the migration/`postgres` role) OWNS the tables and table owners bypass RLS — and we never set `FORCE ROW LEVEL SECURITY` on them. Two preconditions, true by default here: (a) all migrations run as the table-owning role; (b) `FORCE ROW LEVEL SECURITY` is not enabled. The client-facing policies (`teams_insert_own`, `team_members_insert_admin`) still govern DIRECT client writes — that is why Task 9 can assert a non-admin's direct insert is denied (42501) even though the RPC path succeeds.
+> **RLS-bypass invariant (load-bearing):** `create_team` is `SECURITY DEFINER`, so its inserts into `teams`/`team_members` run as the function owner. This bypasses those tables' RLS **only because** the owner (the migration/`postgres` role) OWNS the tables and table owners bypass RLS - and we never set `FORCE ROW LEVEL SECURITY` on them. Two preconditions, true by default here: (a) all migrations run as the table-owning role; (b) `FORCE ROW LEVEL SECURITY` is not enabled. The client-facing policies (`teams_insert_own`, `team_members_insert_admin`) still govern DIRECT client writes - that is why Task 9 can assert a non-admin's direct insert is denied (42501) even though the RPC path succeeds.
 
 - [ ] **Step 4: Apply + run tests**
 
@@ -659,7 +659,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — table not found.
+Expected: FAIL - table not found.
 
 - [ ] **Step 3: Write the migration**
 
@@ -761,7 +761,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — `add_guest_member` does not exist; roster insert policies missing.
+Expected: FAIL - `add_guest_member` does not exist; roster insert policies missing.
 
 - [ ] **Step 3a: Write the team_members RLS migration**
 
@@ -880,7 +880,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — `team_invites` table / `accept_invite` missing.
+Expected: FAIL - `team_invites` table / `accept_invite` missing.
 
 - [ ] **Step 3a: Write the team_invites migration**
 
@@ -1046,7 +1046,7 @@ rollback;
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `supabase test db`
-Expected: FAIL — claim table/RPCs missing.
+Expected: FAIL - claim table/RPCs missing.
 
 - [ ] **Step 3a: Write the guest_claims table migration**
 
@@ -1249,13 +1249,13 @@ rollback;
 - [ ] **Step 2: Run it to verify it passes (all prior tasks complete)**
 
 Run: `supabase db reset && supabase test db`
-Expected: PASS — all test files green, including `11-integration` (6 tests).
+Expected: PASS - all test files green, including `11-integration` (6 tests).
 
 - [ ] **Step 3: Write the README**
 
 Create `Projects/cricket-app/backend/README.md`:
 ```markdown
-# Cricket App — Backend (Identity & Teams)
+# Cricket App - Backend (Identity & Teams)
 
 Supabase (Postgres + RLS) backend. Auth is Google/Apple social login (configured in the Supabase dashboard, not in code).
 
@@ -1266,8 +1266,8 @@ Supabase (Postgres + RLS) backend. Auth is Google/Apple social login (configured
 4. Run tests: `supabase test db`
 
 ## What's here
-- `supabase/migrations/` — schema, RLS, RPCs (one object per file, applied in filename order).
-- `supabase/tests/` — pgTAP tests, one file per migration; `00-setup.sql` loads pgTAP + basejump helpers.
+- `supabase/migrations/` - schema, RLS, RPCs (one object per file, applied in filename order).
+- `supabase/tests/` - pgTAP tests, one file per migration; `00-setup.sql` loads pgTAP + basejump helpers.
 
 ## Key RPCs
 - `create_team(name, city, logo_url) -> team_id`
@@ -1313,11 +1313,25 @@ git commit -m "test(cricket-backend): end-to-end integration test + backend READ
 
 This plan was adversarially verified by a 4-dimension workflow (pgTAP API, basejump helpers, Supabase CLI/RLS, RPC error-code logic) before execution. Fixes applied:
 
-- **[blocker] Test-helper bootstrap** moved from a `tests/00-setup.sql` file (which would be rolled back per-file and assumed `dbdev` was pre-installed) into `supabase/seed.sql`, with the correct `dbdev` bootstrap from `database.dev` and the **required** `version '0.0.6'` pin (control default is 0.0.5; latest published is 0.0.6 — verified against the registry). Offline vendoring fallback documented.
+- **[blocker] Test-helper bootstrap** moved from a `tests/00-setup.sql` file (which would be rolled back per-file and assumed `dbdev` was pre-installed) into `supabase/seed.sql`, with the correct `dbdev` bootstrap from `database.dev` and the **required** `version '0.0.6'` pin (control default is 0.0.5; latest published is 0.0.6 - verified against the registry). Offline vendoring fallback documented.
 - **[blocker] Tasks 4 & 7 RLS no-op UPDATE tests** rewritten: a USING-filtered UPDATE affects 0 rows and throws nothing, so the broken `throws_ok(..., null, ...)` (also ambiguous at parse time) became `lives_ok` + an `is()` row-unchanged assertion. Plan counts bumped 4→5 in both files.
 - **[major] `accept_invite`** made concurrency-safe via `on conflict ... do nothing` + re-select (was a read-then-insert race that could raise 23505).
 - **[major] `approve_guest_claim`** gained three guards (pending-request-exists, claimer-not-already-member, already-claimed) + a re-approval test (Task 11 plan 5→6). **`request_guest_claim`** no longer reopens an approved claim.
 - **[major] Forward-reference & RLS-bypass rationale** corrected (plpgsql bodies skip create-time schema checks but SQL-language bodies don't; SECURITY DEFINER bypasses RLS only because the owner owns the tables and FORCE RLS is off).
 - **[minor]** Recursion-avoidance note completed (non-inlining, not just SECURITY DEFINER); `auth.uid()` must stay schema-qualified.
 
-**Confirmed correct by verification (do not re-touch):** all pgTAP signatures; `\gset` inside `begin/rollback` under `supabase test db`; `auth.uid()` resolving to the caller inside SECURITY DEFINER bodies; `authenticate_as` setting both role and JWT sub; RLS deny-by-default making the "fails first" steps valid; the `throws_ok(..., '42501'/'23514'/'P0001', null, ...)` calls in Tasks 8 & 9 (NULL is the errmsg, not the errcode — those are correct).
+**Confirmed correct by verification (do not re-touch):** all pgTAP signatures; `\gset` inside `begin/rollback` under `supabase test db`; `auth.uid()` resolving to the caller inside SECURITY DEFINER bodies; `authenticate_as` setting both role and JWT sub; RLS deny-by-default making the "fails first" steps valid; the `throws_ok(..., '42501'/'23514'/'P0001', null, ...)` calls in Tasks 8 & 9 (NULL is the errmsg, not the errcode, those are correct).
+
+---
+
+## Execution findings (2026-06-15) - what changed vs the plan during the build
+
+The full plan was executed test-first (every task observed red then green). Final state: 12 test files, 60 pgTAP assertions, all PASS. Three things had to be adjusted that the plan/verification did not anticipate:
+
+1. **Explicit `authenticated` grants were required on every table.** The local `supabase db reset` does NOT auto-grant DML to the `authenticated` role (Supabase prod does, via default privileges). With RLS enabled but no table grant, `authenticated` got `permission denied for table ...` rather than an RLS row filter. Fix applied: each table's RLS migration adds `grant select, insert, update[, delete] on <table> to authenticated;` (profiles: select/insert/update; teams, team_members, team_invites: all four; guest_claim_requests: select only, since writes go through SECURITY DEFINER RPCs).
+
+2. **psql does NOT interpolate `:'var'` inside `$$..$$` dollar-quoted strings.** The guest-claims and integration tests originally passed a `\gset` variable (`:'_m'`) inside a `throws_ok`/`lives_ok` dollar-quoted SQL string, which reached the server literally and raised `42601 syntax error at or near ":"`. Fix: inside dollar-quoted assertion strings, identify the row with a subquery (e.g. the non-captain `role='player'` membership of the team) instead of a `:var`. `:'var'` is fine in bare SQL (the `is()`/`isnt()` calls), just not inside `$$..$$`.
+
+3. **Integration test plan count.** The plan listed `plan(6)` but the integration test has 7 assertions; corrected to `plan(7)`.
+
+**Migration order as actually built** (timestamps enforce it): enums -> profiles -> profiles_rls -> teams -> team_members (table) -> authz_helpers -> teams_rls -> rpc_create_team -> team_members_rls -> rpc_add_guest_member -> team_invites -> rpc_accept_invite -> guest_claims -> rpc_guest_claims. Note `team_members` (table) is created BEFORE `authz_helpers`, because the `is_team_member`/`is_team_admin` helpers are LANGUAGE sql (validated at CREATE time) and reference `team_members`.
