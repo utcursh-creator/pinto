@@ -1,0 +1,14 @@
+begin;
+select plan(10);
+select has_type('public','match_status','match_status enum');
+select has_type('public','innings_status','innings_status enum');
+select has_type('public','toss_decision','toss_decision enum');
+select has_type('public','ball_type','ball_type enum');
+select has_type('public','pitch_type','pitch_type enum');
+select has_type('public','noball_secondary_kind','noball_secondary_kind enum');
+select has_type('public','bats_hand','bats_hand enum');
+select has_type('public','wicket_type','wicket_type enum');
+select has_type('public','result_type','result_type enum');
+select has_type('public','margin_method','margin_method enum');
+select * from finish();
+rollback;

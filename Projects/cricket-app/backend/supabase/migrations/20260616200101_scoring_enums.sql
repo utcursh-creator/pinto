@@ -1,0 +1,10 @@
+create type public.match_status          as enum ('setup','live','innings_break','complete','abandoned');
+create type public.innings_status        as enum ('in_progress','completed');
+create type public.toss_decision         as enum ('bat','bowl');
+create type public.ball_type             as enum ('leather','tennis','tape','other');
+create type public.pitch_type            as enum ('turf','matting','cement','astroturf','other');
+create type public.noball_secondary_kind as enum ('off_bat','bye','leg_bye');
+create type public.bats_hand             as enum ('RHB','LHB');
+create type public.wicket_type           as enum ('bowled','caught','lbw','run_out','stumped','hit_wicket','retired_out','retired_not_out','obstructing','timed_out','hit_ball_twice');
+create type public.result_type           as enum ('win_by_runs','win_by_wickets','tie','tie_superover','win_dls','win_vjd','no_result','abandoned','conceded','forfeit','walkover','awarded');
+create type public.margin_method         as enum ('normal','DLS','VJD');
