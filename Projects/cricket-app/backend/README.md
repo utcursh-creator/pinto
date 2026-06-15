@@ -33,3 +33,26 @@ RLS is enabled on every table and enforced in Postgres. Cross-table checks (is t
 ## Deploy (later)
 - `supabase link` to a hosted project, then `supabase db push` to apply migrations (seed.sql is not pushed).
 - Configure Google + Apple providers and redirect URLs in the dashboard Auth settings.
+
+## Scoring Core (sub-project #2)
+
+Event-sourced ball-by-ball scoring. A ball is a fact in `deliveries` (ordered by a monotonic per-innings `seq`); the entire scorecard is a single pure fold, `compute_innings_state(innings_id) -> jsonb`, which is the ONLY home for cricket rules. Corrections re-fold; there are no hand-maintained totals.
+
+### Tables
+- `matches` (teams, scorer, overs, balls_per_over, toss, venue/city/ball_type/pitch_type, rules jsonb, result jsonb), `match_squad` (playing XI: batting order, captain, keeper), `innings` (opening pair, target, revised_overs), `deliveries` (decomposed extras, generated `is_legal`, wagon_x/y/zone, fold-stamped striker/non_striker).
+- `team_members.bats` added for wagon-wheel orientation.
+
+### The fold output (compute_innings_state)
+runs/wickets/legal_balls/over, extras breakdown, batting card (+ did_not_bat), bowling card (overs/maidens/runs/wickets/economy/dots/wides/no-balls), fall_of_wickets, partnerships (+ current), per_over (Manhattan), worm, striker/non_striker/free_hit_active, crr/rrr/runs_required/balls_remaining/wickets_remaining, innings_status, result, orphaned_deliveries.
+
+### Scoring RPCs (SECURITY DEFINER, scorer-gated, advisory-locked per innings)
+- `create_match`, `add_squad_member`, `start_innings`
+- `record_ball` (folds to stamp strike; rejects illegal dismissals on no-ball/free-hit/wide; enforces no consecutive overs unless `rules.allow_consecutive_overs`)
+- `undo_last_ball`, `edit_ball`, `delete_ball`, `insert_ball` (full correction; the fold re-derives the cascade)
+- `set_match_result` (no_result / abandoned / manual winner)
+
+### Live broadcast
+Supabase Realtime Broadcast-from-database: an AFTER INSERT/UPDATE/DELETE trigger on `deliveries` calls `realtime.broadcast_changes('match:<id>', ...)`. Live scores are public (login-free), so the `realtime.messages` receive policy is open to `authenticated, anon` on `match:%` topics. Clients re-fold on every event.
+
+### Rule scope (v1)
+Standard limited-overs, full fidelity (all extras, all 11 dismissals, free-hit chaining, engine-owned strike). Out of scope: DLS/VJD calculation, powerplays, super over, Test/multi-day, custom gully variants (the schema supports >2 innings and rule toggles for later). Cross-match stats (MVP, milestones, career, H2H, NRR) belong to a Stats sub-project; tournaments to a Tournaments sub-project.
