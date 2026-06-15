@@ -449,7 +449,7 @@ create policy "deliveries_write_scorer" on public.deliveries for all to authenti
 
 ## PHASE 2 - THE FOLD (compute_innings_state), incremental TDD
 
-Each fold task replaces the function with `create or replace` and adds one rule-family plus its tests. The function signature is fixed: `compute_innings_state(_innings_id uuid) returns jsonb`. It is PURE (no writes). Implementation pattern: load match+innings config; load batting squad ordered; loop `for d in select * from deliveries where innings_id=_innings_id order by seq loop ... end loop` maintaining PL/pgSQL variables (team_runs, wickets, legal_balls, legal_balls_this_over, striker, non_striker, bowler, free_hit boolean, jsonb accumulators for batters/bowlers/extras/fow/partnerships/per_over/worm); then assemble and return jsonb. Helper sub-logic implements the spec's verified rule matrix (design spec sections "Delivery outcome matrix", "Dismissals", "Stat derivations").
+Each fold task replaces the function with `create or replace` and adds one rule-family plus its tests. The function signature is fixed: `compute_innings_state(_innings_id uuid) returns jsonb`. It is PURE (no writes). Define it `SECURITY INVOKER` (the caller already passes RLS for read) with `SET search_path = public` for hygiene. For the chart/series accumulators, build them with `jsonb_agg(... order by ...)` over a final pass rather than per-ball `acc := acc || ...` concatenation (the latter is O(n^2)); correctness is identical, this is just to keep large innings fast. Implementation pattern: load match+innings config; load batting squad ordered; loop `for d in select * from deliveries where innings_id=_innings_id order by seq loop ... end loop` maintaining PL/pgSQL variables (team_runs, wickets, legal_balls, legal_balls_this_over, striker, non_striker, bowler, free_hit boolean, jsonb accumulators for batters/bowlers/extras/fow/partnerships/per_over/worm); then assemble and return jsonb. Helper sub-logic implements the spec's verified rule matrix (design spec sections "Delivery outcome matrix", "Dismissals", "Stat derivations").
 
 ### Task 9: fold skeleton - totals
 TDD: test that an innings with three legal singles returns `runs=3, wickets=0, legal_balls=3, over='0.3'` and extras zero. Implement the loop computing team_runs = sum(runs_off_bat + extra_wides + extra_no_ball_penalty + extra_byes + extra_leg_byes + extra_penalty), legal_balls = count where is_legal, wickets = count where wicket_type is not null and not in (retired_not_out), and the X.Y over string. Return `jsonb_build_object('runs',...,'wickets',...,'legal_balls',...,'over',...,'extras',jsonb_build_object('wides',...,'no_balls',...,'byes',...,'leg_byes',...,'penalty',...))`. Test file `28-fold-totals.test.sql`. Commit.
@@ -503,7 +503,65 @@ TDD: scorer sets `no_result` (winner null) -> matches.status='complete', result 
 
 ### Task 22: deliveries broadcast trigger + realtime policy
 **Files:** `.../20260616202201_broadcast.sql`; `supabase/tests/41-broadcast.test.sql`.
-TDD (broadcast itself is hard to assert in pgTAP, so test the contract): the trigger function exists and is attached AFTER INSERT/UPDATE/DELETE on deliveries; inserting a delivery via record_ball does NOT error (the broadcast is exception-safe). Implement a SECURITY DEFINER function `SET search_path = ''` that resolves match_id via innings and calls `realtime.broadcast_changes('match:'||match_id::text, tg_op, tg_op, tg_table_name, tg_table_schema, new, old)`, wrapped so an error never aborts the write; attach the trigger; add the `realtime.messages` SELECT policy `to authenticated using (realtime.messages.extension in ('broadcast') and realtime.topic() like 'match:%')`. Commit (`feat(cricket-scoring): realtime broadcast trigger + messages policy`).
+
+**Privacy model (decided):** live scores are PUBLIC, like CricHeroes' login-free live pages. The realtime receive policy is intentionally open (any viewer, incl. logged-out, may watch any match). This matches the spec's public-read RLS. It is a deliberate product choice, not an oversight; if private matches are ever wanted, scope the policy by `matches` membership instead.
+
+- [ ] **Step 1: Failing test** - `supabase/tests/41-broadcast.test.sql` (the broadcast itself is hard to assert in pgTAP, so test the CONTRACT: the function + trigger exist and a real `record_ball` does not error because the broadcast is exception-safe):
+```sql
+begin;
+select plan(2);
+select has_function('public','broadcast_delivery_change','broadcast trigger fn exists');
+select has_trigger('public','deliveries','deliveries_broadcast','broadcast trigger attached');
+select * from finish();
+rollback;
+```
+(A fuller "record_ball does not error" assertion lives in the Task 23 integration test, where a full match context exists.)
+
+- [ ] **Step 2: Run, expect FAIL.**
+
+- [ ] **Step 3: Migration** - `20260616202201_broadcast.sql`. Note `coalesce(NEW, OLD)` so DELETE (where NEW is NULL) still resolves the innings; `SET search_path = ''` so every reference is fully qualified; exception-safe so a Realtime hiccup never aborts ball entry:
+```sql
+create or replace function public.broadcast_delivery_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  _match_id uuid;
+  _rec public.deliveries := coalesce(NEW, OLD);
+begin
+  select i.match_id into _match_id from public.innings i where i.id = _rec.innings_id;
+  perform realtime.broadcast_changes(
+    'match:' || _match_id::text,  -- topic
+    tg_op,                        -- event
+    tg_op,                        -- operation
+    tg_table_name,                -- table
+    tg_table_schema,              -- schema
+    NEW,                          -- new record
+    OLD                           -- old record
+  );
+  return null;
+exception when others then
+  return null;  -- never abort the write on a broadcast failure
+end;
+$$;
+
+create trigger deliveries_broadcast
+  after insert or update or delete on public.deliveries
+  for each row execute function public.broadcast_delivery_change();
+
+-- Public live viewing: any viewer (incl. anon/logged-out) may RECEIVE a match's broadcast.
+-- Deliberate per the spec's public-read decision (CricHeroes-style login-free live scores).
+-- No INSERT policy on realtime.messages: clients are read-only; the SECURITY DEFINER trigger writes.
+create policy "match_broadcast_receive"
+  on realtime.messages for select to authenticated, anon
+  using (realtime.messages.extension = 'broadcast' and realtime.topic() like 'match:%');
+```
+
+- [ ] **Step 4: Run, expect PASS.**
+
+- [ ] **Step 5: Commit** (`feat(cricket-scoring): realtime broadcast trigger + public receive policy`).
 
 ### Task 23: end-to-end integration test + README
 **Files:** `supabase/tests/42-integration.test.sql`; update `Projects/cricket-app/backend/README.md`.
