@@ -35,6 +35,7 @@ A nugget is never discarded for lacking a proof tie. Every nugget carries SOME e
 **Depth + horizon + precision (per `utkarsh_braindump.md` territory):**
 - LONG-HORIZON, not current-year: pull 2030+/2050 outlooks, trajectories, forecasts. Current-year-only data is too weak for this territory.
 - TECHNICAL-DEEP: frontier research/architecture (arXiv-grade), not business summaries.
+- PRIMARY RESEARCH PAPERS are the deepest layer (the whole point): actively search + read actual papers (arXiv, Semantic Scholar, OpenReview, Papers with Code) on AI, ANTI-AI / critical findings, experiments, and behavior; extract the REAL finding and TRANSLATE it meaningfully for the audience. Do not stop at news/secondary coverage when a primary paper exists. OpenReview peer reviews are a source of honest critique to mine.
 - FACTUAL PRECISION is existential: contrarian content dies on ONE fabricated claim. Every specific (a strike, a kidnapping, a model spec, a stat) needs a PRIMARY source before it enters a nugget or draft. Flag unverified claims; never let them through QA.
 - CONTRARIAN INVERSION: take the consensus take, find the sharper/truer inversion (e.g. "redundancy makes you safe" -> "redundancy multiplies the attack surface while solving the least likely failure mode").
 

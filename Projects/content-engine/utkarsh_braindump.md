@@ -50,7 +50,14 @@ on Menlo enterprise-spend data was the WRONG territory; this file corrects it.
 - **Datacenter land/water tension.** Billionaire land grabs conflate three different things: datacenter infra, private land-banking, and actual conservation (different actors, similar optics). The honest position: the infrastructure cost is real and undersold AND the tech has legitimate value, not contradictory. We're currently bad at honestly accounting the cost-benefit.
 
 ## Sources for THIS territory (supersedes the 5 business sources for this content)
-- Frontier research: arXiv (architecture: NSA, MLA, Titans, Mamba, diffusion LLMs, TurboQuant), Epoch AI (efficiency/compute/scaling trends), Anthropic + DeepMind + OpenAI research/interpretability.
+**DEEPEST LAYER (the whole point): PRIMARY RESEARCH PAPERS.** The engine must reach actual published papers and TRANSLATE them meaningfully for the audience, not stop at news or secondary coverage. The depth comes from the papers; the reach comes from the translation. Pull from:
+- arXiv (cs.AI, cs.CL, cs.LG, cs.CR security, stat.ML) - free public API, the spine.
+- Semantic Scholar (free API: abstracts, citations, influential-paper ranking), OpenReview (ICLR/NeurIPS peer reviews = the honest critique of a paper), Papers with Code (results + reproducibility).
+- ANTI-AI / CRITICAL research: papers on AI limitations, reasoning failures, where models break, replication/eval failures, sycophancy + deception findings, pilot-failure studies. Gold for contrarian content.
+- BEHAVIOR / EXPERIMENTS: alignment, interpretability, emergent behavior, eval/benchmark studies, red-team papers, human-AI interaction experiments.
+- Lab research: Anthropic / DeepMind / OpenAI / FAIR publications + interpretability work.
+The job at each stage: take a dense paper's REAL finding and translate it into a meaningful, accessible nugget for his audience.
+- Frontier synthesis (secondary): Epoch AI (efficiency/compute/scaling trends).
 - Long-horizon / forecasting: AI-2027-style scenarios, Epoch AI projections, Metaculus AI, Situational-Awareness-type essays, Import AI (Jack Clark, policy+research).
 - Security / military: Rest of World, Defense News, AI-security research, mech-interp work, datacenter/HBM supply-chain reporting.
 - Strategy framing (keep): Stratechery.
