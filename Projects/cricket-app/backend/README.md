@@ -56,3 +56,29 @@ Supabase Realtime Broadcast-from-database: an AFTER INSERT/UPDATE/DELETE trigger
 
 ### Rule scope (v1)
 Standard limited-overs, full fidelity (all extras, all 11 dismissals, free-hit chaining, engine-owned strike). Out of scope: DLS/VJD calculation, powerplays, super over, Test/multi-day, custom gully variants (the schema supports >2 innings and rule toggles for later). Cross-match stats (MVP, milestones, career, H2H, NRR) belong to a Stats sub-project; tournaments to a Tournaments sub-project.
+
+## Matchmaking & Discovery (sub-project #3)
+
+The app's core differentiator: a geo-targeted feed that connects players and teams nearby. Additive to Identity/Scoring (free-text `city` stays; this adds location tables and PostGIS).
+
+### Geo + privacy
+- PostGIS (`extensions` schema). Locations are `geography(Point,4326)`; distances/radii are METRES.
+- Home location lives in PRIVATE tables (`profile_locations`, `team_locations`) with NO client SELECT (owner-only). They are read ONLY inside SECURITY DEFINER RPCs. Set via `set_my_location(lat,lng)` / `set_team_location(...)`.
+- Discovery returns COARSENED distance (rounded to 100m), never coordinates. It is post-centric, so player-to-player coordinates are never exposed.
+
+### Looking-for posts + feed
+- `looking_for_posts`: `mode` (player_seeking_team / team_seeking_players / team_seeking_opponent), author/team, the game's own `geog` + place label, match_at/overs/skill/slots_needed, status, expires_at.
+- `discover_posts(lat, lng, radius_m, mode?, max_overs?, on_or_after?, skill?)` -> open, unexpired posts within radius (GiST + `ST_DWithin`), ordered by the `<->` KNN operator against the anchor point, returning each post + `approx_m`.
+- Lifecycle RPCs: `create_looking_for_post`, `cancel_post`, `mark_post_filled`. Joining a team after connecting reuses the existing invite/claim flow.
+
+### Connect
+- `post_replies`: public comment thread per post (RLS: read all authenticated; write own).
+- Private 1:1 DM: `dm_threads` (canonical `user_lo<user_hi` pair) + `dm_participants` + `dm_messages`. `get_or_create_dm_thread(other)` is idempotent. RLS is participant-gated via the `is_thread_participant` SECURITY DEFINER helper.
+- Realtime: an AFTER INSERT trigger on `dm_messages` calls `realtime.broadcast_changes('dm:<thread>', ...)`. The `realtime.messages` receive policy is PARTICIPANT-SCOPED and `authenticated`-only; clients MUST subscribe with `{ config: { private: true } }` after `realtime.setAuth(token)`.
+
+### PostGIS rules (for future edits)
+- SECURITY DEFINER functions use `set search_path = ''` and therefore fully-qualify every PostGIS call (`extensions.st_dwithin`, `extensions.st_distance`, `extensions.st_setsrid`, `extensions.st_makepoint`, `::extensions.geography`, `operator(extensions.<->)`). Point builder is lng-FIRST: `st_setsrid(st_makepoint(LNG, LAT), 4326)`.
+- The PostGIS-enabling migration is hand-written (never `db diff`, which emits duplicate `CREATE TYPE` that breaks reset).
+
+### Out of scope (v1)
+Push notifications, geo-filtered realtime feed PUSH (feed is pull/refresh), group chat, a players-near-me directory, moderation/blocking beyond auth gating.
