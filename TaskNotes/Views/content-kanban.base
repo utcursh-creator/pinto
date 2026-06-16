@@ -1,0 +1,16 @@
+filters:
+  and:
+    - file.hasTag("content-card")
+views:
+  - type: tasknotesKanban
+    name: Content Pipeline
+    groupBy:
+      property: stage
+      direction: ASC
+    order:
+      - stage
+      - type
+      - file.name
+    options:
+      columnWidth: 300
+      hideEmptyColumns: false
