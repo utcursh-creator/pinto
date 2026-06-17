@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "dev.pitch.pitch_app"
-    compileSdk = flutter.compileSdkVersion
+    // device_info_plus (via supabase_flutter) requires compileSdk 36; the
+    // Flutter default is still 35, so pin it here.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
