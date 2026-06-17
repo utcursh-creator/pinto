@@ -4,7 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/discover/presentation/discover_screen.dart';
+import '../../features/discover/presentation/location_screen.dart';
+import '../../features/discover/presentation/my_posts_screen.dart';
+import '../../features/discover/presentation/new_post_composer.dart';
+import '../../features/discover/presentation/post_detail_screen.dart';
 import '../../features/matches/presentation/matches_screen.dart';
+import '../../features/messages/presentation/dm_inbox_screen.dart';
+import '../../features/messages/presentation/dm_thread_screen.dart';
 import '../../features/onboarding/presentation/create_profile_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -74,6 +80,38 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.discover,
                 builder: (context, state) => const DiscoverScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'compose',
+                    builder: (context, state) => const NewPostComposer(),
+                  ),
+                  GoRoute(
+                    path: 'my-posts',
+                    builder: (context, state) => const MyPostsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'location',
+                    builder: (context, state) => const LocationScreen(),
+                  ),
+                  GoRoute(
+                    path: 'post/:postId',
+                    builder: (context, state) => PostDetailScreen(
+                      postId: state.pathParameters['postId']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'messages',
+                    builder: (context, state) => const DmInboxScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':threadId',
+                        builder: (context, state) => DmThreadScreen(
+                          threadId: state.pathParameters['threadId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

@@ -14,4 +14,12 @@ class Routes {
   static const String myTeams = '/profile/teams';
   static const String createTeam = '/profile/teams/create';
   static String teamPage(String teamId) => '/profile/teams/$teamId';
+
+  // Discover / Matchmaking (slice 3) - nested under the Discover branch.
+  static const String compose = '/discover/compose';
+  static const String myPosts = '/discover/my-posts';
+  static const String location = '/discover/location';
+  static const String messages = '/discover/messages';
+  static String postDetail(String postId) => '/discover/post/$postId';
+  static String dmThread(String threadId) => '/discover/messages/$threadId';
 }
