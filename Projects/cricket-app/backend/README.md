@@ -52,7 +52,7 @@ runs/wickets/legal_balls/over, extras breakdown, batting card (+ did_not_bat), b
 - `set_match_result` (no_result / abandoned / manual winner)
 
 ### Live broadcast
-Supabase Realtime Broadcast-from-database: an AFTER INSERT/UPDATE/DELETE trigger on `deliveries` calls `realtime.broadcast_changes('match:<id>', ...)`. Live scores are public (login-free), so the `realtime.messages` receive policy is open to `authenticated, anon` on `match:%` topics. Clients re-fold on every event.
+Supabase Realtime Broadcast-from-database: an AFTER INSERT/UPDATE/DELETE trigger on `deliveries` calls `realtime.broadcast_changes('match:<id>', ...)`. Live scores are public (login-free), so the `realtime.messages` receive policy is open to `authenticated, anon` on `match:%` topics. Clients re-fold on every event. The Flutter client must `signInAnonymously()` before subscribing so the WebSocket gets a token even for anon viewers (see sub-project #4).
 
 ### Rule scope (v1)
 Standard limited-overs, full fidelity (all extras, all 11 dismissals, free-hit chaining, engine-owned strike). Out of scope: DLS/VJD calculation, powerplays, super over, Test/multi-day, custom gully variants (the schema supports >2 innings and rule toggles for later). Cross-match stats (MVP, milestones, career, H2H, NRR) belong to a Stats sub-project; tournaments to a Tournaments sub-project.
@@ -82,3 +82,14 @@ The app's core differentiator: a geo-targeted feed that connects players and tea
 
 ### Out of scope (v1)
 Push notifications, geo-filtered realtime feed PUSH (feed is pull/refresh), group chat, a players-near-me directory, moderation/blocking beyond auth gating.
+
+## Frontend-prep additive changes (sub-project #4)
+
+Closes the gaps an audit of the wireframes found before the Flutter build. All additive; 244 pgTAP tests pass.
+
+- **Post flair (required)**: `lf_flair` enum (`loser_pays` / `practice_match` / `corporate_match`), NOT NULL on `looking_for_posts`. `create_looking_for_post` takes a required `_flair` (after `_mode`); `discover_posts` takes an optional `_flair` filter and returns `flair` per row.
+- **Scorer reassignment**: `transfer_scorer(match_id, new_scorer_id)` - advisory-locked, status-gated (setup/live/innings_break), caller = current scorer or admin of either team, new scorer = member of either team, eligibility validated even on a same-scorer no-op.
+- **Login-free viewing**: anon SELECT policies on `matches / innings / deliveries / match_squad / team_members / teams`, gated by `matches.status in ('live','innings_break','complete','abandoned')`. Registered names via `public_profile_minimal(profile_id)` (display_name / photo_url / batting_style only); guest names via the gated `team_members` policy. Client must `signInAnonymously()` for the realtime WebSocket.
+- **Wagon-wheel hint**: `record_ball` returns `table(delivery_id, wagon_applicable)`. `wagon_applicable` is true only for a directional bat shot (no wide/bye/leg-bye, any no-ball off the bat, dismissal in caught/run_out), so both clients share one server-owned prompt rule.
+
+See `../2026-06-17-frontend-prep-backend-design.md` and `-plan.md`.
