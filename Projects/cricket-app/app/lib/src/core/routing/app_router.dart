@@ -11,6 +11,10 @@ import '../../features/discover/presentation/post_detail_screen.dart';
 import '../../features/matches/presentation/matches_screen.dart';
 import '../../features/messages/presentation/dm_inbox_screen.dart';
 import '../../features/messages/presentation/dm_thread_screen.dart';
+import '../../features/scoring/presentation/match_squads_screen.dart';
+import '../../features/scoring/presentation/scoring_console_screen.dart';
+import '../../features/scoring/presentation/start_match_screen.dart';
+import '../../features/scoring/presentation/toss_openers_screen.dart';
 import '../../features/onboarding/presentation/create_profile_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -121,6 +125,30 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.matches,
                 builder: (context, state) => const MatchesScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) => const StartMatchScreen(),
+                  ),
+                  GoRoute(
+                    path: ':matchId/squads',
+                    builder: (context, state) => MatchSquadsScreen(
+                      matchId: state.pathParameters['matchId']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':matchId/toss',
+                    builder: (context, state) => TossOpenersScreen(
+                      matchId: state.pathParameters['matchId']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':matchId/score',
+                    builder: (context, state) => ScoringConsoleScreen(
+                      matchId: state.pathParameters['matchId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

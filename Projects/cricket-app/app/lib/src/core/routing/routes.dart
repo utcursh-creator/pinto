@@ -22,4 +22,10 @@ class Routes {
   static const String messages = '/discover/messages';
   static String postDetail(String postId) => '/discover/post/$postId';
   static String dmThread(String threadId) => '/discover/messages/$threadId';
+
+  // Scoring (slice 4) - nested under the Matches branch.
+  static const String startMatch = '/matches/new';
+  static String matchSquads(String matchId) => '/matches/$matchId/squads';
+  static String matchToss(String matchId) => '/matches/$matchId/toss';
+  static String scoreMatch(String matchId) => '/matches/$matchId/score';
 }

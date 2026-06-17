@@ -1,15 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/platform/platform.dart';
+import '../../../core/routing/routes.dart';
+import '../../scoring/data/match_providers.dart';
 
-class MatchesScreen extends StatelessWidget {
+class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const AdaptiveScaffold(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matches = ref.watch(myMatchesProvider);
+    final cupertino = isCupertino(context);
+    return AdaptiveScaffold(
       title: 'Matches',
-      body: Center(child: Text('Your matches')),
+      actions: [
+        if (cupertino)
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => context.push(Routes.startMatch),
+          ),
+      ],
+      floatingActionButton: cupertino
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => context.push(Routes.startMatch),
+              icon: const Icon(Icons.add),
+              label: const Text('Start a match'),
+            ),
+      body: matches.when(
+        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+        error: (e, _) => Center(child: Text('Could not load matches.\n$e')),
+        data: (rows) => rows.isEmpty
+            ? const Center(child: Text('No matches yet. Start one.'))
+            : ListView.separated(
+                itemCount: rows.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, i) {
+                  final m = rows[i];
+                  final status = m['status'] as String?;
+                  return ListTile(
+                    leading: const Icon(Icons.sports_cricket),
+                    title: Text('${m['overs_limit']}-over match'),
+                    subtitle: Text(
+                      '${status ?? ''}'
+                      '${m['venue'] != null ? '  -  ${m['venue']}' : ''}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push(Routes.scoreMatch(m['id'] as String)),
+                  );
+                },
+              ),
+      ),
     );
   }
 }

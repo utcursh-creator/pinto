@@ -5,6 +5,7 @@ import 'package:pitch_app/src/app.dart';
 import 'package:pitch_app/src/core/auth/auth_gate.dart';
 import 'package:pitch_app/src/core/auth/auth_providers.dart';
 import 'package:pitch_app/src/features/discover/presentation/discover_screen.dart';
+import 'package:pitch_app/src/features/scoring/data/match_providers.dart';
 
 void main() {
   testWidgets('a ready user lands on the 3-tab shell (Discover branch)', (
@@ -33,6 +34,7 @@ void main() {
         overrides: [
           authGateProvider.overrideWithValue(AuthGate.ready),
           anonBootstrapProvider.overrideWith((ref) async {}),
+          myMatchesProvider.overrideWith((ref) async => []),
         ],
         child: const PitchApp(),
       ),
@@ -42,6 +44,6 @@ void main() {
     await tester.tap(find.text('Matches'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your matches'), findsOneWidget);
+    expect(find.text('No matches yet. Start one.'), findsOneWidget);
   });
 }
