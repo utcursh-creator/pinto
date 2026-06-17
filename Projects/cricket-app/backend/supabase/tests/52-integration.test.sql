@@ -6,7 +6,7 @@ select tests.authenticate_as('cap@m.dev'); insert into public.profiles(id,displa
 
 -- player posts "need a team" at Mumbai (lat 19.07, lng 72.87)
 select tests.authenticate_as('player@m.dev');
-select public.create_looking_for_post('player_seeking_team', 19.07, 72.87, 'free Sunday, batter', null, null, null, null, 'intermediate', null, 'Bandra') as _post \gset
+select public.create_looking_for_post('player_seeking_team', 'practice_match', 19.07, 72.87, 'free Sunday, batter', null, null, null, null, 'intermediate', null, 'Bandra') as _post \gset
 
 -- captain ~3km away (lng +0.03) discovers it within 10km, filtered to that mode
 select tests.authenticate_as('cap@m.dev');
