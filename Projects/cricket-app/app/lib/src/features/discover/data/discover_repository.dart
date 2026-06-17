@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,6 +13,23 @@ class DiscoverRepository {
 
   String get _uid => _c.auth.currentSession!.user.id;
 
+  /// Uploads a post photo to the user's own folder in the public bucket and
+  /// returns its CDN URL.
+  Future<String> uploadPostImage(Uint8List bytes, String ext) async {
+    final contentType = switch (ext.toLowerCase()) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+    final path = '$_uid/${DateTime.now().microsecondsSinceEpoch}.$ext';
+    await _c.storage.from('post-images').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType),
+        );
+    return _c.storage.from('post-images').getPublicUrl(path);
+  }
+
   Future<String> createPost({
     required String mode,
     required String flair,
@@ -23,6 +42,8 @@ class DiscoverRepository {
     String? skill,
     int? slotsNeeded,
     DateTime? matchAt,
+    List<String>? imageUrls,
+    String? linkUrl,
   }) async {
     final params = <String, dynamic>{
       '_mode': mode,
@@ -41,6 +62,8 @@ class DiscoverRepository {
     if (skill != null) params['_skill'] = skill;
     if (slotsNeeded != null) params['_slots_needed'] = slotsNeeded;
     if (matchAt != null) params['_match_at'] = matchAt.toIso8601String();
+    if (imageUrls != null && imageUrls.isNotEmpty) params['_image_urls'] = imageUrls;
+    if (linkUrl != null && linkUrl.isNotEmpty) params['_link_url'] = linkUrl;
     final id = await _c.rpc('create_looking_for_post', params: params);
     return id as String;
   }

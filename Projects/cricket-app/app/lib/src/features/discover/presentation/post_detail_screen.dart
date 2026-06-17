@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -91,6 +92,36 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     if ((p['description'] as String?)?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 12),
                       Text(p['description'] as String),
+                    ],
+                    for (final url
+                        in ((p['image_urls'] as List?) ?? const [])
+                            .cast<String>()) ...[
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(url),
+                      ),
+                    ],
+                    if ((p['link_url'] as String?)?.isNotEmpty ?? false) ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () => launchUrl(
+                          Uri.parse(p['link_url'] as String),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.link, size: 18),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                p['link_url'] as String,
+                                style: const TextStyle(color: Color(0xFF0F6E56)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                     if (!isMine) ...[
                       const SizedBox(height: 16),

@@ -9,6 +9,9 @@ import '../data/discover_models.dart';
 import '../data/discover_providers.dart';
 import 'flair_chip.dart';
 
+int _imageCount(Map<String, dynamic> post) =>
+    ((post['image_urls'] as List?) ?? const []).length;
+
 /// The headline screen: a geo-targeted feed of looking-for posts near the
 /// anchor, filterable by mode + flair, with reply / message actions.
 class DiscoverScreen extends ConsumerStatefulWidget {
@@ -198,6 +201,22 @@ class _PostCard extends ConsumerWidget {
               if (desc != null && desc.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
+              if (_imageCount(post) > 0 || (post['link_url'] as String?) != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (_imageCount(post) > 0) ...[
+                      const Icon(Icons.photo_outlined, size: 16),
+                      const SizedBox(width: 4),
+                      Text('${_imageCount(post)}',
+                          style: Theme.of(context).textTheme.bodySmall),
+                      const SizedBox(width: 12),
+                    ],
+                    if ((post['link_url'] as String?) != null)
+                      const Icon(Icons.link, size: 16),
+                  ],
+                ),
               ],
             ],
           ),

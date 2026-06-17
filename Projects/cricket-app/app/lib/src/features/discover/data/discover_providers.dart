@@ -62,7 +62,8 @@ final postProvider = FutureProvider.family<Map<String, dynamic>?, String>((
       .from('looking_for_posts')
       .select(
         'id, author_id, team_id, mode, flair, title, description, place_label, '
-        'match_at, overs, skill, slots_needed, status, profiles(display_name)',
+        'match_at, overs, skill, slots_needed, status, image_urls, link_url, '
+        'profiles(display_name)',
       )
       .eq('id', id)
       .maybeSingle();

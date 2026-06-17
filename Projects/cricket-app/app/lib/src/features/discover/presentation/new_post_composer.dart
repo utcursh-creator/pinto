@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -23,7 +24,10 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
   String? _teamId; // required for team_seeking_*
   final _details = TextEditingController();
   final _place = TextEditingController();
+  final _link = TextEditingController();
+  final List<String> _imageUrls = [];
   bool _busy = false;
+  bool _uploading = false;
   String? _error;
 
   bool get _needsTeam => _mode != 'player_seeking_team';
@@ -32,7 +36,28 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
   void dispose() {
     _details.dispose();
     _place.dispose();
+    _link.dispose();
     super.dispose();
+  }
+
+  Future<void> _addPhotos() async {
+    final picked = await ImagePicker().pickMultiImage(limit: 6, imageQuality: 80);
+    if (picked.isEmpty) return;
+    setState(() => _uploading = true);
+    try {
+      final repo = ref.read(discoverRepositoryProvider);
+      for (final x in picked) {
+        if (_imageUrls.length >= 6) break;
+        final bytes = await x.readAsBytes();
+        final ext = x.name.contains('.') ? x.name.split('.').last : 'jpg';
+        final url = await repo.uploadPostImage(bytes, ext);
+        if (mounted) setState(() => _imageUrls.add(url));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Photo upload failed: $e');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   Future<void> _post() async {
@@ -58,6 +83,8 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             teamId: _needsTeam ? _teamId : null,
             description: _details.text.trim(),
             placeLabel: _place.text.trim(),
+            imageUrls: _imageUrls,
+            linkUrl: _link.text.trim(),
           );
       ref.invalidate(discoverFeedProvider);
       ref.invalidate(myPostsProvider);
@@ -164,6 +191,71 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             maxLines: 3,
             decoration: const InputDecoration(labelText: 'Details'),
           ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _link,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              labelText: 'Link (optional)',
+              hintText: 'https://...',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: (_uploading || _imageUrls.length >= 6)
+                    ? null
+                    : _addPhotos,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: Text('Add photos (${_imageUrls.length}/6)'),
+              ),
+              if (_uploading) ...[
+                const SizedBox(width: 12),
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                ),
+              ],
+            ],
+          ),
+          if (_imageUrls.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 84,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _imageUrls.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, i) => Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        _imageUrls[i],
+                        width: 84,
+                        height: 84,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _imageUrls.removeAt(i)),
+                        child: const CircleAvatar(
+                          radius: 11,
+                          backgroundColor: Colors.black54,
+                          child: Icon(Icons.close, size: 14, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           FilledButton(
             onPressed: _busy ? null : _post,

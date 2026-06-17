@@ -41,6 +41,10 @@ dependencies:
   go_router: ^17.3.0
   # Supabase client (auth, Postgres/RPC, realtime, storage).
   supabase_flutter: ^2.15.0
+  # Photo attachments on posts.
+  image_picker: ^1.2.2
+  # Open attached links / tappable URLs.
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

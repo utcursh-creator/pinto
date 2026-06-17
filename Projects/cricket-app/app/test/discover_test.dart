@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,20 +36,34 @@ void main() {
     expect(find.text('1.2 km'), findsOneWidget);
   });
 
-  testWidgets('New post composer requires a flair', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [myTeamsProvider.overrideWith((ref) async => [])],
-        child: const MaterialApp(home: NewPostComposer()),
-      ),
-    );
-    await tester.pumpAndSettle();
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('New post composer requires a flair on $platform', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [myTeamsProvider.overrideWith((ref) async => [])],
+            child: const MaterialApp(home: NewPostComposer()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Add photos (0/6)'), findsOneWidget);
 
-    await tester.tap(find.text('Post'));
-    await tester.pumpAndSettle();
+        final post = find.widgetWithText(FilledButton, 'Post');
+        await tester.ensureVisible(post);
+        await tester.pumpAndSettle();
+        await tester.tap(post);
+        await tester.pumpAndSettle();
 
-    expect(find.text('Pick a flair.'), findsOneWidget);
-  });
+        expect(find.text('Pick a flair.', skipOffstage: false), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  }
 
   testWidgets('DM inbox lists a conversation', (tester) async {
     await tester.pumpWidget(
