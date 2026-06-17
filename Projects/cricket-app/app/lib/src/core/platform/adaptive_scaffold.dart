@@ -31,7 +31,13 @@ class AdaptiveScaffold extends StatelessWidget {
               ? null
               : Row(mainAxisSize: MainAxisSize.min, children: actions!),
         ),
-        child: SafeArea(child: body),
+        // CupertinoPageScaffold provides no Material ancestor; Material widgets
+        // (TextField, ListTile, Chip, ...) need one. A transparent Material adds
+        // the ancestor without changing the Cupertino look.
+        child: Material(
+          type: MaterialType.transparency,
+          child: SafeArea(child: body),
+        ),
       );
     }
     return Scaffold(
