@@ -12,7 +12,7 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _mt \gset
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- record a legal single
-select isnt(public.record_ball(:'_in'::uuid, :'_bw'::uuid, 1), null, 'record_ball returns a delivery id');
+select isnt((select delivery_id from public.record_ball(:'_in'::uuid, :'_bw'::uuid, 1)), null, 'record_ball returns a delivery id');
 select is((select count(*)::int from public.deliveries where innings_id = :'_in'::uuid), 1, 'one delivery recorded');
 select is((select striker_id from public.deliveries where innings_id = :'_in'::uuid and seq = 1)::text, (:'_s'::uuid)::text, 'striker stamped from the fold (opening striker)');
 
