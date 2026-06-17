@@ -6,9 +6,13 @@ import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/discover/presentation/discover_screen.dart';
 import '../../features/matches/presentation/matches_screen.dart';
 import '../../features/onboarding/presentation/create_profile_screen.dart';
+import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/adaptive_tab_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/teams/presentation/create_team_screen.dart';
+import '../../features/teams/presentation/my_teams_screen.dart';
+import '../../features/teams/presentation/team_page_screen.dart';
 import '../auth/auth_gate.dart';
 import 'router_refresh.dart';
 import 'routes.dart';
@@ -88,6 +92,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.profile,
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) => const EditProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'teams',
+                    builder: (context, state) => const MyTeamsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'create',
+                        builder: (context, state) => const CreateTeamScreen(),
+                      ),
+                      GoRoute(
+                        path: ':teamId',
+                        builder: (context, state) => TeamPageScreen(
+                          teamId: state.pathParameters['teamId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
