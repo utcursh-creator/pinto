@@ -22,7 +22,20 @@ class ProfileScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Could not load profile.\n$e')),
         data: (profile) {
           if (profile == null) {
-            return const Center(child: Text('No profile yet.'));
+            // Anonymous session (no profile row) -> offer sign-in.
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Sign in to set up your profile and teams.'),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => context.push(Routes.signIn),
+                    child: const Text('Sign in'),
+                  ),
+                ],
+              ),
+            );
           }
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 12),
