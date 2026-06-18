@@ -93,3 +93,13 @@ Closes the gaps an audit of the wireframes found before the Flutter build. All a
 - **Wagon-wheel hint**: `record_ball` returns `table(delivery_id, wagon_applicable)`. `wagon_applicable` is true only for a directional bat shot (no wide/bye/leg-bye, any no-ball off the bat, dismissal in caught/run_out), so both clients share one server-owned prompt rule.
 
 See `../2026-06-17-frontend-prep-backend-design.md` and `-plan.md`.
+
+## Post attachments (photos + link)
+
+- `looking_for_posts.image_urls text[] not null default '{}'` + `link_url text`.
+- Public Storage bucket `post-images` (5 MiB; jpeg/png/webp) created in a migration. RLS on `storage.objects`: authenticated INSERT/DELETE only into the uploader's own `<uid>/` folder (`(storage.foldername(name))[1] = auth.uid()::text`); public SELECT (feed images load via CDN).
+- `create_looking_for_post` takes optional `_image_urls text[]` + `_link_url text` (appended last); `discover_posts` returns `image_urls` + `link_url`.
+- Total: **251 pgTAP tests**.
+
+---
+**For the full development index, current state, run/test/seed commands, the verification protocol, and the slice roadmap, see `../CLAUDE.md` (the canonical entry point).**
