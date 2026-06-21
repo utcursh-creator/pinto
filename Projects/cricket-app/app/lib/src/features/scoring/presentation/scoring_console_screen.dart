@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 
@@ -86,6 +88,13 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
 
     return AdaptiveScaffold(
       title: 'Live scoring',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.visibility_outlined),
+          tooltip: 'Watch (public view)',
+          onPressed: () => context.push(Routes.viewMatch(widget.matchId)),
+        ),
+      ],
       body: (match.isLoading || innings.isLoading || squad.isLoading)
           ? const Center(child: CircularProgressIndicator.adaptive())
           : _content(

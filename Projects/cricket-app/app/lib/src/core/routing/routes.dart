@@ -28,4 +28,5 @@ class Routes {
   static String matchSquads(String matchId) => '/matches/$matchId/squads';
   static String matchToss(String matchId) => '/matches/$matchId/toss';
   static String scoreMatch(String matchId) => '/matches/$matchId/score';
+  static String viewMatch(String matchId) => '/matches/$matchId/view';
 }

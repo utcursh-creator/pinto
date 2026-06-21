@@ -64,6 +64,38 @@ final currentInningsProvider =
           .maybeSingle();
     });
 
+/// All innings of a match, oldest first (for the viewer's innings switcher).
+final matchInningsListProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, matchId) async {
+      final c = ref.watch(supabaseClientProvider);
+      final rows = await c
+          .from('innings')
+          .select(
+            'id, innings_number, batting_team_id, bowling_team_id, status, target',
+          )
+          .eq('match_id', matchId)
+          .order('innings_number');
+      return List<Map<String, dynamic>>.from(rows as List);
+    });
+
+/// Map of {teamId: name} for a match's two teams. RLS-safe for anon viewers
+/// (the teams of a live/complete match are readable via the gated policy).
+final matchTeamNamesProvider =
+    FutureProvider.family<Map<String, String>, String>((ref, matchId) async {
+      final match = await ref.watch(matchProvider(matchId).future);
+      if (match == null) return {};
+      final ids = [match['team_a_id'], match['team_b_id']]
+          .whereType<String>()
+          .toList();
+      if (ids.isEmpty) return {};
+      final c = ref.watch(supabaseClientProvider);
+      final rows = await c.from('teams').select('id, name').inFilter('id', ids);
+      return {
+        for (final r in (rows as List).cast<Map<String, dynamic>>())
+          r['id'] as String: (r['name'] as String?) ?? 'Team',
+      };
+    });
+
 /// The full computed innings state (the fold) - score, cards, strike, rates.
 final inningsStateProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, inningsId) async {

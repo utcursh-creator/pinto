@@ -40,7 +40,10 @@ class MatchesScreen extends ConsumerWidget {
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, i) {
                   final m = rows[i];
+                  final id = m['id'] as String;
                   final status = m['status'] as String?;
+                  final finished = status == 'complete' || status == 'abandoned';
+                  final started = status != 'setup' && status != null;
                   return ListTile(
                     leading: const Icon(Icons.sports_cricket),
                     title: Text('${m['overs_limit']}-over match'),
@@ -48,9 +51,18 @@ class MatchesScreen extends ConsumerWidget {
                       '${status ?? ''}'
                       '${m['venue'] != null ? '  -  ${m['venue']}' : ''}',
                     ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () =>
-                        context.push(Routes.scoreMatch(m['id'] as String)),
+                    trailing: started
+                        ? IconButton(
+                            icon: const Icon(Icons.visibility_outlined),
+                            tooltip: 'Watch',
+                            onPressed: () =>
+                                context.push(Routes.viewMatch(id)),
+                          )
+                        : const Icon(Icons.chevron_right),
+                    // Finished matches can't be scored: open the read-only view.
+                    onTap: () => context.push(
+                      finished ? Routes.viewMatch(id) : Routes.scoreMatch(id),
+                    ),
                   );
                 },
               ),

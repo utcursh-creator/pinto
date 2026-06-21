@@ -45,9 +45,15 @@ dependencies:
   image_picker: ^1.2.2
   # Open attached links / tappable URLs.
   url_launcher: ^6.3.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+
+  # Drives the real app on the simulator for end-to-end verification
+  # (slice 5 viewer walkthrough against the live local Supabase).
+  integration_test:
     sdk: flutter
 
   # Riverpod lint rules (3.x: wired via the top-level `plugins:` block in
