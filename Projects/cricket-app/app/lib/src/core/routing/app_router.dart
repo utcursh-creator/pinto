@@ -129,7 +129,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (context, state) => const StartMatchScreen(),
+                    builder: (context, state) => StartMatchScreen(
+                      initialOpponentId:
+                          state.uri.queryParameters['opponent'],
+                    ),
                   ),
                   GoRoute(
                     path: ':matchId/squads',

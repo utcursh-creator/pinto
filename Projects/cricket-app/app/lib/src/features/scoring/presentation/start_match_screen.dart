@@ -10,7 +10,11 @@ import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 
 class StartMatchScreen extends ConsumerStatefulWidget {
-  const StartMatchScreen({super.key});
+  const StartMatchScreen({this.initialOpponentId, super.key});
+
+  /// When arriving from a "Propose a match" bridge on a team_seeking_opponent
+  /// post, the opponent team is pre-selected.
+  final String? initialOpponentId;
 
   @override
   ConsumerState<StartMatchScreen> createState() => _StartMatchScreenState();
@@ -23,6 +27,12 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
   final _venue = TextEditingController();
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _teamB = widget.initialOpponentId;
+  }
 
   @override
   void dispose() {

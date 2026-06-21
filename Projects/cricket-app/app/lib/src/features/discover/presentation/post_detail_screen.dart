@@ -132,6 +132,19 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         icon: const Icon(Icons.chat_bubble_outline),
                         label: const Text('Message'),
                       ),
+                      // Keystone bridge: turn a team-seeking-opponent post into a
+                      // real match, carrying the poster's team in as the opponent.
+                      if (p['mode'] == 'team_seeking_opponent' &&
+                          p['team_id'] != null) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => context.push(
+                            Routes.proposeMatch(p['team_id'] as String),
+                          ),
+                          icon: const Icon(Icons.sports_cricket),
+                          label: const Text('Propose a match'),
+                        ),
+                      ],
                     ],
                     const Divider(height: 32),
                     Text('Replies', style: Theme.of(context).textTheme.titleSmall),
