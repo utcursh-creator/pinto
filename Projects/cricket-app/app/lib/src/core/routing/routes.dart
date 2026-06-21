@@ -29,6 +29,7 @@ class Routes {
   static String proposeMatch(String opponentTeamId) =>
       '/matches/new?opponent=$opponentTeamId';
   static String matchSquads(String matchId) => '/matches/$matchId/squads';
+  static const String liveMatches = '/matches/live';
   static String matchToss(String matchId) => '/matches/$matchId/toss';
   static String scoreMatch(String matchId) => '/matches/$matchId/score';
   static String viewMatch(String matchId) => '/matches/$matchId/view';

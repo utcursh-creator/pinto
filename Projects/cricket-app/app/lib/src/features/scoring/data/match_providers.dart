@@ -104,6 +104,19 @@ final inningsStateProvider =
       return Map<String, dynamic>.from(res as Map);
     });
 
+/// Matches that are live or between innings, for the public "Watch live" list.
+/// Readable by anyone (incl. anon) via the status-gated RLS policy; team names
+/// embed through the gated teams policy.
+final liveMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final c = ref.watch(supabaseClientProvider);
+  final rows = await c
+      .from('matches')
+      .select('id, status, venue, overs_limit, team_a:team_a_id(name), team_b:team_b_id(name)')
+      .inFilter('status', ['live', 'innings_break'])
+      .order('created_at', ascending: false);
+  return List<Map<String, dynamic>>.from(rows as List);
+});
+
 /// Matches the current user is the scorer of (the Matches tab list).
 final myMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final me = ref.watch(currentSessionProvider)?.user.id;

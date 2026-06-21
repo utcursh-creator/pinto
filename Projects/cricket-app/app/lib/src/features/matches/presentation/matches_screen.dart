@@ -17,6 +17,11 @@ class MatchesScreen extends ConsumerWidget {
     return AdaptiveScaffold(
       title: 'Matches',
       actions: [
+        IconButton(
+          icon: const Icon(Icons.sensors),
+          tooltip: 'Watch live',
+          onPressed: () => context.push(Routes.liveMatches),
+        ),
         if (cupertino)
           IconButton(
             icon: const Icon(Icons.add),
