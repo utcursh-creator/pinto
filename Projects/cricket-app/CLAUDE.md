@@ -36,12 +36,14 @@ For every screen / wiring / integration, "verified" means ALL of:
 ## Build state (as of 2026-06-19)
 - **Backend: 4 sub-projects COMPLETE, 251 pgTAP tests green** (59 migrations, 51 test files). Local-only.
   1. Identity & Teams; 2. Scoring Core (event-sourced fold); 3. Matchmaking & Discovery (PostGIS + DMs); 4. Frontend-prep (flair, transfer_scorer, anon viewing, wagon hint) + post attachments (photos/link + Storage bucket).
-- **Flutter frontend (sub-project 5): foundation + slices 2,3,4 DONE; attachments DONE. 19 widget tests green, analyze clean. Builds + runs on iOS sim AND Android apk.**
+- **Flutter frontend (sub-project 5): foundation + slices 2,3,4,5 DONE; attachments DONE. 27 widget tests green, analyze clean. Builds + runs on iOS sim AND Android apk.**
   - s1 Foundation: Riverpod (manual providers) + go_router + supabase_flutter; platform-adaptive 3-tab shell (Discover/Matches/Profile); onboarding gate (AuthGate); dev-auth shim.
   - s2 Identity: Profile/Edit/My teams/Create team/Team page+roster.
   - s3 Discover (headline): geo feed + flair filters + composer (flair + photos + link) + post detail+replies + realtime DMs + my-posts + location.
   - s4 Scoring: match-setup wizard (teams->squads->toss->openers) + live scoring console (run pad/extras/wicket/undo, fold-driven) + matches list.
-- **REMAINING**: slice 5 Live viewer (read-only scorecard+charts off the fold + `match:<id>` realtime broadcast, login-free); slice 6 discover->match keystone bridge + gap screens (captain claim-inbox, find-live-matches, transfer-scorer UI, pending-invites) + fix go_router deep-link cold-start.
+  - s5 Live viewer (commit eb50318): read-only MatchViewerScreen (Live/Scorecard/Charts/Info) off compute_innings_state + `match:<id>` realtime re-fold, login-free; fl_chart Manhattan+worm; status-aware Matches nav + Watch action. Verified via integration_test (flutter drive on iOS sim vs live Supabase). NEW: `integration_test/` + `test_driver/` harness (screenshots -> /tmp/pitch_shots) is the no-computer-use way to drive the real app.
+- **REMAINING**: slice 6 discover->match keystone bridge + gap screens (captain claim-inbox, find-live-matches, transfer-scorer UI, pending-invites) + fix go_router deep-link cold-start.
+- **Known backend bug (being fixed in a separate worktree session)**: `record_ball` consecutive-over guard false-positives when a new over's first ball is a wide/no-ball + same bowler continues. Do NOT duplicate that fix here.
 
 ## Document index (read the relevant one before touching its area)
 Backend design+plan pairs (`Projects/cricket-app/`):
