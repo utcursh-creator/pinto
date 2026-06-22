@@ -1,0 +1,76 @@
+---
+type: reference
+date: 2026-06-23
+project: cricket-app
+tags: [cricket-app, auth, oauth, provisioning]
+---
+
+# Google / Apple sign-in - provisioning checklist
+
+The OAuth **code is wired** (`app/lib/src/features/auth/data/oauth_sign_in.dart`,
+buttons in `sign_in_screen.dart`). It uses the native ID-token flow Supabase
+recommends for mobile: Google native on iOS+Android, Apple native on iOS
+(Android falls back to the Supabase browser flow; the Apple button is gated to
+iOS for v1). Until the items below are provisioned, the Google button reports
+"not configured" and the buttons surface a friendly error - nothing crashes.
+The local `kDebugMode` email/password shim (`dev@pitch.local` / `password123`)
+is untouched and stays the working local path.
+
+Verified against current docs via workflow wf_039c5889-a39 (2026). Packages:
+`google_sign_in ^7.2.0`, `sign_in_with_apple ^8.1.0`, `crypto ^3.0.7`,
+`supabase_flutter ^2.15.0`.
+
+## What only YOU can do (accounts/credentials)
+
+### A. Hosted Supabase (prerequisite)
+- Create a hosted Supabase project. Note the **project ref** and the callback
+  URL `https://<project-ref>.supabase.co/auth/v1/callback`.
+- `supabase link` + `supabase db push` to apply the 60 migrations (seed.sql is
+  local-only and not pushed).
+- Build the app against it: `--dart-define SUPABASE_URL=https://<ref>.supabase.co --dart-define SUPABASE_PUBLISHABLE_KEY=<publishable key>`.
+
+### B. Google (both platforms)
+1. Google Cloud project + OAuth consent screen.
+2. **Web** OAuth client - add redirect URI `https://<ref>.supabase.co/auth/v1/callback`. Copy its **Client ID** (= `GOOGLE_WEB_CLIENT_ID` / serverClientId) + secret.
+3. **iOS** OAuth client, Bundle ID `dev.pitch.pitchApp`. Copy its **Client ID** (= `GOOGLE_IOS_CLIENT_ID`) and note its **reversed** client id (`com.googleusercontent.apps.NNNN-xxxx`).
+4. Android signing SHA-1(s): `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android` (debug), plus release + Play App Signing SHA-1.
+5. **Android** OAuth client for each SHA-1, package `dev.pitch.pitch_app`.
+6. Supabase Dashboard > Auth > Providers > **Google**: enable; paste Web Client ID + secret; in **Authorized Client IDs** list all ids comma-separated, web id FIRST: `<web>,<ios>,<android-debug>,<android-release>`. Enable **Skip nonce check** (native iOS Google tokens omit the nonce Supabase expects, else sign-in fails).
+
+### C. Apple (iOS-only, minimal v1)
+1. Apple Developer Program ($99/yr); note the 10-char Team ID.
+2. Identifiers > App ID for `dev.pitch.pitchApp` > enable **Sign in with Apple**.
+3. Supabase Dashboard > Auth > Providers > **Apple**: enable; put `dev.pitch.pitchApp` in **Client IDs**. (For iOS-native only, NO Services ID / .p8 key / generated secret is needed.)
+4. *(Only if you later want Apple on Android/web)* additionally create a Services ID + Sign-in key (.p8) + generate the Supabase secret (a JWT that expires ~6 months - set a reminder), and add `io.supabase.pitch://login-callback` to Supabase > Auth > URL Configuration > Redirect URLs + the platform config in step D3/D4.
+
+### D. Hand the developer these values
+- `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID` (for `--dart-define`), and the **reversed iOS client id** (for Info.plist below).
+
+## Platform config to add (a developer applies these, using YOUR values)
+
+1. **iOS native Google** - `ios/Runner/Info.plist`, add inside the top `<dict>`:
+   ```xml
+   <key>CFBundleURLTypes</key>
+   <array><dict>
+     <key>CFBundleURLSchemes</key>
+     <array><string>com.googleusercontent.apps.YOUR-REVERSED-IOS-CLIENT-ID</string></array>
+   </dict></array>
+   ```
+   (No `GIDClientID` / GoogleService-Info.plist needed - the client id is passed in Dart.)
+2. **iOS native Apple** - in Xcode, Runner target > Signing & Capabilities > + **Sign in with Apple** (writes `Runner.entitlements` with `com.apple.developer.applesignin`). No URL scheme/associated-domain needed.
+3. **Android** - no manifest change for native Google. *(Only for the Apple-on-Android browser fallback)* add inside `<activity android:name=".MainActivity">`:
+   ```xml
+   <intent-filter>
+     <action android:name="android.intent.action.VIEW"/>
+     <category android:name="android.intent.category.DEFAULT"/>
+     <category android:name="android.intent.category.BROWSABLE"/>
+     <data android:scheme="io.supabase.pitch" android:host="login-callback"/>
+   </intent-filter>
+   ```
+4. Keep the scheme identical everywhere (`io.supabase.pitch://login-callback`) if you enable the Android fallback.
+
+## Known caveats (from the verification)
+- The Supabase Dart **reference** page for `signInWithIdToken` still shows the old `google_sign_in` v6 API; this code uses the correct v7 token split (idToken from `.authentication`, accessToken from `.authorizationClient`).
+- `signInWithIdToken` upgrades the boot **anonymous** session to a permanent account - the user id changes; anon-keyed local state is not auto-migrated (out of scope for wiring; revisit if drafts/posts are written pre-login).
+- Apple returns the user's name only on the **first** authorization - captured via `updateUser({full_name})` on first sign-in.
+- Android Google with Play App Signing: register the Play re-signing SHA-1 too, or production sign-in fails silently.

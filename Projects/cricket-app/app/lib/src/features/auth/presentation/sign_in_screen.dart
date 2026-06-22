@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import '../data/oauth_sign_in.dart';
 
 /// Sign-in. The real Google/Apple buttons are stubbed (wired in a later slice
 /// once OAuth providers are configured). In debug builds an email/password
@@ -38,6 +39,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       await action();
     } on AuthException catch (e) {
       setState(() => _message = e.message);
+    } catch (e) {
+      // OAuth plugins throw their own exception types (cancellation, etc.).
+      setState(() => _message = 'Sign-in failed: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -45,7 +49,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final client = ref.read(supabaseClientProvider);
     return AdaptiveScaffold(
       title: 'Sign in',
       body: Padding(
@@ -68,10 +71,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 onPressed: _busy
                     ? null
                     : () => _run(
-                        () => client.auth.signInWithPassword(
-                          email: _email.text.trim(),
-                          password: _password.text,
-                        ),
+                        () => ref
+                            .read(supabaseClientProvider)
+                            .auth
+                            .signInWithPassword(
+                              email: _email.text.trim(),
+                              password: _password.text,
+                            ),
                       ),
                 child: const Text('Sign in (dev)'),
               ),
@@ -80,7 +86,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 onPressed: _busy
                     ? null
                     : () => _run(
-                        () => client.auth.signUp(
+                        () => ref.read(supabaseClientProvider).auth.signUp(
                           email: _email.text.trim(),
                           password: _password.text,
                         ),
@@ -90,18 +96,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               const Divider(height: 32),
             ],
             OutlinedButton(
-              onPressed: () => setState(
-                () => _message = 'Google sign-in is wired in a later slice',
-              ),
+              onPressed: _busy
+                  ? null
+                  : () => _run(
+                      () => ref.read(oAuthServiceProvider).nativeGoogleSignIn(),
+                    ),
               child: const Text('Continue with Google'),
             ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => setState(
-                () => _message = 'Apple sign-in is wired in a later slice',
+            // Sign in with Apple is native on iOS; gated there for v1 (Android
+            // users sign in with Google).
+            if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _busy
+                    ? null
+                    : () => _run(
+                        () => ref.read(oAuthServiceProvider).appleSignIn(),
+                      ),
+                child: const Text('Continue with Apple'),
               ),
-              child: const Text('Continue with Apple'),
-            ),
+            ],
             if (_message != null) ...[
               const SizedBox(height: 16),
               Text(_message!),

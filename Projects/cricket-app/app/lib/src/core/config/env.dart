@@ -15,4 +15,17 @@ class SupabaseEnv {
     'SUPABASE_PUBLISHABLE_KEY',
     defaultValue: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
   );
+
+  /// Google OAuth client IDs for the native sign-in flow. Supplied at build
+  /// time (`--dart-define GOOGLE_WEB_CLIENT_ID=... GOOGLE_IOS_CLIENT_ID=...`).
+  /// Empty by default: until provisioned, the Google button reports "not
+  /// configured" rather than crashing. See ../../../../oauth-provisioning.md.
+  static const String googleWebClientId =
+      String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  static const String googleIosClientId =
+      String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+
+  /// Whether native Google sign-in has its client IDs configured.
+  static bool get googleConfigured =>
+      googleWebClientId.isNotEmpty && googleIosClientId.isNotEmpty;
 }
