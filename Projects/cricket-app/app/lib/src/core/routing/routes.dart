@@ -33,4 +33,5 @@ class Routes {
   static String matchToss(String matchId) => '/matches/$matchId/toss';
   static String scoreMatch(String matchId) => '/matches/$matchId/score';
   static String viewMatch(String matchId) => '/matches/$matchId/view';
+  static String transferScorer(String matchId) => '/matches/$matchId/transfer';
 }

@@ -117,6 +117,35 @@ final liveMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asy
   return List<Map<String, dynamic>>.from(rows as List);
 });
 
+/// Registered members (real users, deduped) of either team in a match - the
+/// people eligible to take over scoring via transfer_scorer.
+final matchScorerCandidatesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, matchId) async {
+      final match = await ref.watch(matchProvider(matchId).future);
+      if (match == null) return [];
+      final ids = [match['team_a_id'], match['team_b_id']]
+          .whereType<String>()
+          .toList();
+      if (ids.isEmpty) return [];
+      final c = ref.watch(supabaseClientProvider);
+      final rows = await c
+          .from('team_members')
+          .select('profile_id, profiles(display_name)')
+          .inFilter('team_id', ids)
+          .not('profile_id', 'is', null);
+      final seen = <String>{};
+      final out = <Map<String, dynamic>>[];
+      for (final r in (rows as List).cast<Map<String, dynamic>>()) {
+        final pid = r['profile_id'] as String?;
+        if (pid == null || !seen.add(pid)) continue;
+        out.add({
+          'profile_id': pid,
+          'name': (r['profiles'] as Map?)?['display_name'] as String? ?? 'Player',
+        });
+      }
+      return out;
+    });
+
 /// Matches the current user is the scorer of (the Matches tab list).
 final myMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final me = ref.watch(currentSessionProvider)?.user.id;

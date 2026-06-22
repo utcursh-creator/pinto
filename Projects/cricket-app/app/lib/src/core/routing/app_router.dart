@@ -17,6 +17,7 @@ import '../../features/scoring/presentation/match_viewer_screen.dart';
 import '../../features/scoring/presentation/scoring_console_screen.dart';
 import '../../features/scoring/presentation/start_match_screen.dart';
 import '../../features/scoring/presentation/toss_openers_screen.dart';
+import '../../features/scoring/presentation/transfer_scorer_screen.dart';
 import '../../features/onboarding/presentation/create_profile_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -160,6 +161,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: ':matchId/view',
                     builder: (context, state) => MatchViewerScreen(
+                      matchId: state.pathParameters['matchId']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':matchId/transfer',
+                    builder: (context, state) => TransferScorerScreen(
                       matchId: state.pathParameters['matchId']!,
                     ),
                   ),

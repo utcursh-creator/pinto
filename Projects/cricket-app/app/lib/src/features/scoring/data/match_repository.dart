@@ -108,6 +108,16 @@ class MatchRepository {
   Future<void> undoLastBall(String inningsId) =>
       _c.rpc('undo_last_ball', params: {'_innings_id': inningsId});
 
+  /// Hand scoring to another registered member of either team.
+  Future<void> transferScorer({
+    required String matchId,
+    required String newScorerId,
+  }) =>
+      _c.rpc('transfer_scorer', params: {
+        '_match_id': matchId,
+        '_new_scorer_id': newScorerId,
+      });
+
   Future<void> setResult({
     required String matchId,
     required String resultType,

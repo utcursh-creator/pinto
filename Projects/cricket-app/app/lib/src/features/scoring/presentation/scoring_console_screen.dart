@@ -90,6 +90,12 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       title: 'Live scoring',
       actions: [
         IconButton(
+          icon: const Icon(Icons.swap_horiz),
+          tooltip: 'Hand over scoring',
+          onPressed: () =>
+              context.push(Routes.transferScorer(widget.matchId)),
+        ),
+        IconButton(
           icon: const Icon(Icons.visibility_outlined),
           tooltip: 'Watch (public view)',
           onPressed: () => context.push(Routes.viewMatch(widget.matchId)),
