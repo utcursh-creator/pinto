@@ -52,6 +52,7 @@ Backend design+plan pairs (`Projects/cricket-app/`):
 - `2026-06-16-scoring-core-design.md` / `2026-06-16-scoring-core-backend-plan.md`
 - `2026-06-16-matchmaking-discovery-design.md` / `2026-06-16-matchmaking-discovery-backend-plan.md`
 - `2026-06-17-frontend-prep-backend-design.md` / `-plan.md` (SP4: flair/transfer/anon/wagon)
+- `2026-06-23-stats-design.md` / `2026-06-23-stats-backend-plan.md` (Stats sub-project, OPENED - build pending product sign-off; re-fold-per-innings approach)
 - `backend/README.md` - the canonical backend reference (all 4 sub-projects + attachments + PostGIS/RLS rules).
 Frontend design+plan (`Projects/cricket-app/`):
 - `2026-06-17-flutter-foundation-design.md` / `-plan.md` (s1; has the verified version/idiom recipe).
