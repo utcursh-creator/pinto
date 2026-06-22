@@ -6,6 +6,8 @@
 	<string>Pitch needs photo access to attach photos to your posts.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Pitch needs camera access to add a photo to your post.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Pitch uses your location to find games and players near you.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

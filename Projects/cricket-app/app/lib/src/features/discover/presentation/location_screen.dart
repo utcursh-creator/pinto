@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/discover_providers.dart';
+import '../data/location_service.dart';
 
-/// Sets the geo anchor the feed searches around. Device GPS is a later
-/// refinement; v1 takes a lat/lng + radius (defaults to the current anchor).
+/// Sets the geo anchor the feed searches around: device GPS (one tap) or a
+/// manual lat/lng + radius (defaults to the current anchor).
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
 
@@ -18,6 +19,8 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   late final TextEditingController _lat;
   late final TextEditingController _lng;
   double _radiusKm = 25;
+  bool _busy = false;
+  String? _message;
 
   @override
   void initState() {
@@ -45,6 +48,27 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     context.pop();
   }
 
+  Future<void> _useGps() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final pos = await ref.read(locationServiceProvider).current();
+      if (!mounted) return;
+      setState(() {
+        _lat.text = pos.lat.toStringAsFixed(5);
+        _lng.text = pos.lng.toStringAsFixed(5);
+      });
+    } on LocationException catch (e) {
+      setState(() => _message = e.message);
+    } catch (e) {
+      setState(() => _message = 'Could not get your location.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
@@ -53,9 +77,25 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Set the area to search for games. (Live GPS coming soon.)',
+            'Set the area to search for games.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _useGps,
+            icon: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location),
+            label: const Text('Use my current location'),
+          ),
+          if (_message != null) ...[
+            const SizedBox(height: 8),
+            Text(_message!, style: const TextStyle(color: Colors.red)),
+          ],
           const SizedBox(height: 16),
           TextField(
             controller: _lat,
