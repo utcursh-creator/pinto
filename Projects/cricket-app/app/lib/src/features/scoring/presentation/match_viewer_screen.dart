@@ -1,13 +1,19 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../data/match_providers.dart';
+import 'match_share_card.dart';
 import 'wagon_field.dart';
 
 const _kInk = Color(0xFF0F2E26);
@@ -37,6 +43,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
   RealtimeChannel? _channel;
   SupabaseClient? _client; // captured for safe teardown (ref is unsafe in dispose)
   List<String> _knownInnings = const [];
+  final GlobalKey _shareKey = GlobalKey();
 
   @override
   void initState() {
@@ -76,6 +83,73 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     super.dispose();
   }
 
+  /// Build a branded summary card and offer to share it as an image.
+  Future<void> _share() async {
+    try {
+      final innings =
+          await ref.read(matchInningsListProvider(widget.matchId).future);
+      if (innings.isEmpty || !mounted) return;
+      final teams =
+          await ref.read(matchTeamNamesProvider(widget.matchId).future);
+      final match = await ref.read(matchProvider(widget.matchId).future);
+      final latest = innings.last;
+      final s =
+          await ref.read(inningsStateProvider(latest['id'] as String).future);
+      if (!mounted) return;
+      final a = teams[match?['team_a_id']] ?? 'Team A';
+      final b = teams[match?['team_b_id']] ?? 'Team B';
+      final crr = s['crr'];
+      await showModalBottomSheet<void>(
+        context: context,
+        builder: (sheetCtx) => SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RepaintBoundary(
+                  key: _shareKey,
+                  child: MatchShareCard(
+                    title: '$a v $b',
+                    battingTeam: teams[latest['batting_team_id']] ?? 'Batting',
+                    score: '${_i(s['runs'])}/${_i(s['wickets'])}',
+                    line: 'Over ${s['over'] ?? '0.0'}'
+                        '${crr != null ? '   -   CRR $crr' : ''}',
+                    status: match?['status'] == 'live'
+                        ? 'LIVE'
+                        : ((match?['status'] as String?) ?? '').toUpperCase(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => _captureAndShare('$a v $b'),
+                  icon: const Icon(Icons.ios_share),
+                  label: const Text('Share image'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      /* non-fatal: surface nothing if the card can't be built */
+    }
+  }
+
+  Future<void> _captureAndShare(String title) async {
+    final boundary =
+        _shareKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return;
+    final image = await boundary.toImage(pixelRatio: 3);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (bytes == null) return;
+    final file = await File('${Directory.systemTemp.path}/pitch_${widget.matchId}.png')
+        .writeAsBytes(bytes.buffer.asUint8List());
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], text: '$title - live on Pitch'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final match = ref.watch(matchProvider(widget.matchId));
@@ -94,6 +168,14 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
 
     return AdaptiveScaffold(
       title: title,
+      actions: [
+        if (ready)
+          IconButton(
+            icon: const Icon(Icons.ios_share),
+            tooltip: 'Share',
+            onPressed: _share,
+          ),
+      ],
       body: !ready
           ? const Center(child: CircularProgressIndicator.adaptive())
           : _body(

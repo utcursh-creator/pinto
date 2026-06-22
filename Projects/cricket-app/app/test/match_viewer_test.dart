@@ -189,6 +189,21 @@ void main() {
       }
     });
 
+    testWidgets('Share action opens a branded card on $platform', (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await _pump(tester);
+        await tester.tap(find.byIcon(Icons.ios_share));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Pitch'), findsOneWidget);
+        expect(find.text('45/2'), findsWidgets);
+        expect(find.widgetWithText(FilledButton, 'Share image'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('Info tab shows venue + toss + format on $platform', (tester) async {
       debugDefaultTargetPlatformOverride = platform;
       try {
