@@ -23,6 +23,7 @@ import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/adaptive_tab_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/teams/presentation/claim_inbox_screen.dart';
 import '../../features/teams/presentation/create_team_screen.dart';
 import '../../features/teams/presentation/my_teams_screen.dart';
 import '../../features/teams/presentation/team_page_screen.dart';
@@ -184,6 +185,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (context, state) => const EditProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'claims',
+                    builder: (context, state) => const ClaimInboxScreen(),
                   ),
                   GoRoute(
                     path: 'teams',

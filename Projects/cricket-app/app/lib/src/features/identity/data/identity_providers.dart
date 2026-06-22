@@ -24,6 +24,26 @@ final teamProvider = FutureProvider.family<Map<String, dynamic>?, String>((
   return client.from('teams').select().eq('id', teamId).maybeSingle();
 });
 
+/// Pending guest-claim requests an admin can act on. RLS already limits rows to
+/// the caller's own requests OR claims on teams they administer; excluding the
+/// caller's own requests leaves exactly the admin inbox.
+final claimInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final session = ref.watch(currentSessionProvider);
+  if (session == null) return [];
+  final client = ref.watch(supabaseClientProvider);
+  final rows = await client
+      .from('guest_claim_requests')
+      .select(
+        'id, membership_id, requested_by, status, '
+        'team_members(guest_name, team_id, teams(name)), '
+        'requester:requested_by(display_name)',
+      )
+      .eq('status', 'pending')
+      .neq('requested_by', session.user.id)
+      .order('created_at');
+  return List<Map<String, dynamic>>.from(rows as List);
+});
+
 /// A team's roster: real members carry a `profiles` object, guests a guest_name.
 final teamRosterProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((

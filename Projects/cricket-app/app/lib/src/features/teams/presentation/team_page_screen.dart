@@ -75,7 +75,13 @@ class TeamPageScreen extends ConsumerWidget {
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ),
-                  for (final member in roster) _MemberTile(member: member),
+                  for (final member in roster)
+                    _MemberTile(
+                      member: member,
+                      onClaim: (uid != null && member['profile_id'] == null)
+                          ? () => _claim(context, ref, member['id'] as String)
+                          : null,
+                    ),
                   if (isAdmin)
                     Padding(
                       padding: const EdgeInsets.all(20),
@@ -123,12 +129,33 @@ class TeamPageScreen extends ConsumerWidget {
         .addGuest(teamId: teamId, guestName: name);
     ref.invalidate(teamRosterProvider(teamId));
   }
+
+  Future<void> _claim(
+    BuildContext context,
+    WidgetRef ref,
+    String membershipId,
+  ) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await ref
+          .read(identityRepositoryProvider)
+          .requestGuestClaim(membershipId);
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Claim request sent to the captain')),
+      );
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member});
+  const _MemberTile({required this.member, this.onClaim});
 
   final Map<String, dynamic> member;
+
+  /// When set (a signed-in viewer looking at a guest row), offers "This is me".
+  final VoidCallback? onClaim;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +168,9 @@ class _MemberTile extends StatelessWidget {
       leading: InitialsAvatar(name: name, radius: 18),
       title: Text(name),
       subtitle: isGuest ? const Text('Guest') : null,
-      trailing: Text(IdentityLabels.teamRole(member['role'] as String?)),
+      trailing: onClaim != null
+          ? TextButton(onPressed: onClaim, child: const Text('This is me'))
+          : Text(IdentityLabels.teamRole(member['role'] as String?)),
     );
   }
 }

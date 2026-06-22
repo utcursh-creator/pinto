@@ -43,6 +43,22 @@ class IdentityRepository {
     );
     return id as String;
   }
+
+  /// Requests to claim a guest membership (becomes the real player behind it,
+  /// pending a team admin's approval).
+  Future<void> requestGuestClaim(String membershipId) =>
+      _client.rpc('request_guest_claim', params: {'_membership_id': membershipId});
+
+  /// Admin-only: approves a guest claim, transferring the guest membership to
+  /// the claimer.
+  Future<void> approveGuestClaim({
+    required String membershipId,
+    required String claimerId,
+  }) =>
+      _client.rpc('approve_guest_claim', params: {
+        '_membership_id': membershipId,
+        '_claimer': claimerId,
+      });
 }
 
 final identityRepositoryProvider = Provider<IdentityRepository>(

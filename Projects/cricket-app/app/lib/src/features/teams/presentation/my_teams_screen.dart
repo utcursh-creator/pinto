@@ -16,6 +16,13 @@ class MyTeamsScreen extends ConsumerWidget {
     final teamsAsync = ref.watch(myTeamsProvider);
     return AdaptiveScaffold(
       title: 'My teams',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.how_to_reg_outlined),
+          tooltip: 'Claim requests',
+          onPressed: () => context.push(Routes.claimInbox),
+        ),
+      ],
       body: teamsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
         error: (e, _) => Center(child: Text('Could not load teams.\n$e')),

@@ -12,6 +12,7 @@ class Routes {
   // Identity (slice 2) - nested under the Profile branch.
   static const String editProfile = '/profile/edit';
   static const String myTeams = '/profile/teams';
+  static const String claimInbox = '/profile/claims';
   static const String createTeam = '/profile/teams/create';
   static String teamPage(String teamId) => '/profile/teams/$teamId';
 
