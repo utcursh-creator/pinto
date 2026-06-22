@@ -26,6 +26,9 @@ final discoverFeedProvider =
       ref,
       q,
     ) async {
+      // Re-fetch when auth changes: discover_posts is authenticated-only, so an
+      // anonymous boot 403s; the feed must reload once the user signs in.
+      ref.watch(currentSessionProvider);
       final c = ref.watch(supabaseClientProvider);
       final rows = await c.rpc('discover_posts', params: {
         '_lat': q.lat,
