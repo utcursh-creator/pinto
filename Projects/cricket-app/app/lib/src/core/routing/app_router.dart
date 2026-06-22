@@ -31,10 +31,37 @@ import '../auth/auth_gate.dart';
 import 'router_refresh.dart';
 import 'routes.dart';
 
+/// Pure onboarding-gate redirect (extracted for testability). Returns the
+/// location to redirect to, or null to stay.
+///
+/// `/watch/...` is a PUBLIC, login-free live view: it bypasses the gate entirely
+/// so a shared/deep link resolves even before auth settles and even for a user
+/// with no profile. This (plus being a top-level route) is the deep-link
+/// cold-start fix - StatefulShellRoute branch routes do not cold-start reliably.
+String? onboardingRedirect(AuthGate gate, String loc) {
+  if (loc.startsWith('/watch/')) return null;
+  switch (gate) {
+    case AuthGate.loading:
+      return loc == Routes.splash ? null : Routes.splash;
+    case AuthGate.anonymous:
+      return loc == Routes.splash ? Routes.discover : null;
+    case AuthGate.needsProfile:
+      return loc == Routes.createProfile ? null : Routes.createProfile;
+    case AuthGate.ready:
+      if (loc == Routes.splash ||
+          loc == Routes.signIn ||
+          loc == Routes.createProfile) {
+        return Routes.discover;
+      }
+      return null;
+  }
+}
+
 /// The app router. The redirect implements the onboarding gate off a single
 /// [AuthGate] value: loading holds on splash, anonymous lands on the (viewable)
 /// shell, a real user with no profile is sent to create-profile, an onboarded
-/// user goes to the shell.
+/// user goes to the shell. The public `/watch/:id` viewer sits outside the
+/// shell so deep/share links cold-start correctly.
 final goRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(routerRefreshProvider);
 
@@ -45,30 +72,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: refresh,
-    redirect: (context, state) {
-      final gate = ref.read(authGateProvider);
-      final loc = state.matchedLocation;
-
-      switch (gate) {
-        case AuthGate.loading:
-          return loc == Routes.splash ? null : Routes.splash;
-        case AuthGate.anonymous:
-          return loc == Routes.splash ? Routes.discover : null;
-        case AuthGate.needsProfile:
-          return loc == Routes.createProfile ? null : Routes.createProfile;
-        case AuthGate.ready:
-          if (loc == Routes.splash ||
-              loc == Routes.signIn ||
-              loc == Routes.createProfile) {
-            return Routes.discover;
-          }
-          return null;
-      }
-    },
+    redirect: (context, state) =>
+        onboardingRedirect(ref.read(authGateProvider), state.matchedLocation),
     routes: [
       GoRoute(
         path: Routes.splash,
         builder: (context, state) => const SplashScreen(),
+      ),
+      // Public, login-free, shareable live view - top-level so deep/share links
+      // cold-start correctly (outside the StatefulShellRoute branches).
+      GoRoute(
+        path: '/watch/:matchId',
+        builder: (context, state) => MatchViewerScreen(
+          matchId: state.pathParameters['matchId']!,
+        ),
       ),
       GoRoute(
         path: Routes.signIn,
@@ -156,12 +173,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: ':matchId/score',
                     builder: (context, state) => ScoringConsoleScreen(
-                      matchId: state.pathParameters['matchId']!,
-                    ),
-                  ),
-                  GoRoute(
-                    path: ':matchId/view',
-                    builder: (context, state) => MatchViewerScreen(
                       matchId: state.pathParameters['matchId']!,
                     ),
                   ),

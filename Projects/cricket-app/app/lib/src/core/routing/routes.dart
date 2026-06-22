@@ -33,6 +33,8 @@ class Routes {
   static const String liveMatches = '/matches/live';
   static String matchToss(String matchId) => '/matches/$matchId/toss';
   static String scoreMatch(String matchId) => '/matches/$matchId/score';
-  static String viewMatch(String matchId) => '/matches/$matchId/view';
+  // Public, login-free, shareable live view. Top-level (NOT under the shell)
+  // so it cold-starts correctly from a deep/share link, unlike a branch route.
+  static String viewMatch(String matchId) => '/watch/$matchId';
   static String transferScorer(String matchId) => '/matches/$matchId/transfer';
 }
