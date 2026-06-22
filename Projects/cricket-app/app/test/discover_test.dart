@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pitch_app/src/core/auth/auth_providers.dart';
 import 'package:pitch_app/src/features/discover/data/discover_providers.dart';
 import 'package:pitch_app/src/features/discover/presentation/discover_screen.dart';
 import 'package:pitch_app/src/features/discover/presentation/new_post_composer.dart';
@@ -13,6 +14,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          isAnonymousProvider.overrideWithValue(false),
           discoverFeedProvider.overrideWith(
             (ref, q) async => [
               <String, dynamic>{
@@ -35,6 +37,34 @@ void main() {
     expect(find.text('Loser pays'), findsWidgets);
     expect(find.text('1.2 km'), findsOneWidget);
   });
+
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('Discover prompts anonymous viewers to sign in on $platform',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              isAnonymousProvider.overrideWithValue(true),
+              // If the feed were queried this would throw; assert it is NOT.
+              discoverFeedProvider.overrideWith(
+                (ref, q) async => throw StateError('feed must not be queried when anonymous'),
+              ),
+            ],
+            child: const MaterialApp(home: DiscoverScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Discover games and players near you'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+        expect(find.textContaining('permission denied'), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  }
 
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
     testWidgets('New post composer requires a flair on $platform', (

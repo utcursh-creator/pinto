@@ -21,6 +21,12 @@ bool isAnonymousSession(Session? session) {
   return session.user.appMetadata['is_anonymous'] == true;
 }
 
+/// Whether the current viewer is anonymous (or signed out). Overridable in
+/// widget tests so screens can gate authed-only content without a real Session.
+final isAnonymousProvider = Provider<bool>((ref) {
+  return isAnonymousSession(ref.watch(currentSessionProvider));
+});
+
 /// On launch with no session, create an anonymous one so the realtime
 /// WebSocket and the backend's anon read policies work for login-free viewing.
 /// Tolerant: if anonymous sign-in is disabled, pure live-viewing still works

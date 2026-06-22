@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
 import '../../../core/routing/routes.dart';
@@ -27,6 +28,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Discovery (discover_posts) is authenticated-only; an anonymous viewer
+    // would just 403. Prompt them to sign in instead of showing an error.
+    if (ref.watch(isAnonymousProvider)) {
+      return const AdaptiveScaffold(title: 'Discover', body: _SignInToDiscover());
+    }
+
     final anchor = ref.watch(anchorProvider);
     final query = DiscoverQuery(
       lat: anchor.lat,
@@ -91,6 +98,42 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SignInToDiscover extends StatelessWidget {
+  const _SignInToDiscover();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.explore_outlined, size: 48, color: Color(0xFF0F6E56)),
+            const SizedBox(height: 16),
+            Text(
+              'Discover games and players near you',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Sign in to post a looking-for ad, reply to teams nearby, and message players.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () => context.push(Routes.signIn),
+              child: const Text('Sign in'),
+            ),
+          ],
+        ),
       ),
     );
   }
