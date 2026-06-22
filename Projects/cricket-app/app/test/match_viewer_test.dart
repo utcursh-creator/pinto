@@ -111,6 +111,11 @@ Future<void> _pump(WidgetTester tester) async {
           ],
         ),
         inningsStateProvider.overrideWith((ref, id) async => _fold()),
+        inningsWagonProvider.overrideWith(
+          (ref, id) async => [
+            {'wagon_x': 0.7, 'wagon_y': 0.4, 'runs_off_bat': 4},
+          ],
+        ),
       ],
       child: const MaterialApp(
         home: MatchViewerScreen(matchId: 'm1', enableRealtime: false),
@@ -172,6 +177,13 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.byKey(const Key('manhattan_chart')), findsOneWidget);
         expect(find.byKey(const Key('worm_chart')), findsOneWidget);
+        // wagon wheel is below the fold in the charts list
+        await tester.scrollUntilVisible(
+          find.byKey(const Key('wagon_chart')),
+          300,
+          scrollable: find.byType(Scrollable).last,
+        );
+        expect(find.byKey(const Key('wagon_chart')), findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }

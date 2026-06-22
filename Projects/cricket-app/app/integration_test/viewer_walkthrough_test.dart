@@ -82,6 +82,16 @@ void main() {
     expect(find.byKey(const Key('worm_chart')), findsOneWidget);
     await shot(tester, '03_charts');
 
+    // scroll down to the wagon wheel and capture it
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('wagon_chart')),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    expect(find.byKey(const Key('wagon_chart')), findsOneWidget);
+    await shot(tester, '03b_wagon');
+
     // INFO tab.
     await tester.tap(find.text('Info'));
     await tester.pumpAndSettle(const Duration(milliseconds: 800));

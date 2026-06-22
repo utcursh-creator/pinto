@@ -68,8 +68,8 @@ class MatchRepository {
     return id as String;
   }
 
-  /// Records a delivery; returns whether the wagon-wheel sheet should prompt.
-  Future<bool> recordBall({
+  /// Records a delivery; returns its id + whether to prompt the wagon sheet.
+  Future<({String? deliveryId, bool wagonApplicable})> recordBall({
     required String inningsId,
     required String bowlerId,
     int runsOffBat = 0,
@@ -102,8 +102,25 @@ class MatchRepository {
     if (fielderId != null) params['_fielder_id'] = fielderId;
     if (crossed != null) params['_crossed'] = crossed;
     final res = await _c.rpc('record_ball', params: params).single();
-    return (res['wagon_applicable'] as bool?) ?? false;
+    return (
+      deliveryId: res['delivery_id'] as String?,
+      wagonApplicable: (res['wagon_applicable'] as bool?) ?? false,
+    );
   }
+
+  /// Attaches a wagon-wheel shot (normalized x/y in [0,1] + zone 1-8) to a ball.
+  Future<void> setDeliveryWagon({
+    required String deliveryId,
+    required double x,
+    required double y,
+    required int zone,
+  }) =>
+      _c.rpc('set_delivery_wagon', params: {
+        '_delivery_id': deliveryId,
+        '_wagon_x': x,
+        '_wagon_y': y,
+        '_wagon_zone': zone,
+      });
 
   Future<void> undoLastBall(String inningsId) =>
       _c.rpc('undo_last_ball', params: {'_innings_id': inningsId});

@@ -8,6 +8,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../data/match_providers.dart';
+import 'wagon_field.dart';
 
 const _kInk = Color(0xFF0F2E26);
 const _kTeal = Color(0xFF0F6E56);
@@ -585,16 +586,25 @@ class _ChartsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(inningsStateProvider(innings['id'] as String));
+    final wagon = ref.watch(inningsWagonProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
       error: (e, _) => Center(child: Text('Could not load charts.\n$e')),
-      data: (s) => _content(s),
+      data: (s) => _content(s, wagon.value ?? const []),
     );
   }
 
-  Widget _content(Map<String, dynamic> s) {
+  Widget _content(Map<String, dynamic> s, List<Map<String, dynamic>> wagonRows) {
     final perOver = _list(s['per_over']);
     final worm = _list(s['worm']);
+    final shots = [
+      for (final r in wagonRows)
+        WagonShot(
+          x: (r['wagon_x'] as num).toDouble(),
+          y: (r['wagon_y'] as num).toDouble(),
+          runs: _i(r['runs_off_bat']),
+        ),
+    ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       children: [
@@ -616,6 +626,21 @@ class _ChartsTab extends ConsumerWidget {
           child: worm.isEmpty
               ? const Center(child: Text('No overs bowled yet.'))
               : LineChart(_worm(worm)),
+        ),
+        const SizedBox(height: 28),
+        const Text('Shots (wagon wheel)', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        SizedBox(
+          key: const Key('wagon_chart'),
+          height: 320,
+          child: Center(
+            child: shots.isEmpty
+                ? const Text('No shots recorded yet.')
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: WagonField(shots: shots),
+                  ),
+          ),
         ),
       ],
     );

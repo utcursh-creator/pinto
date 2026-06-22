@@ -104,6 +104,18 @@ final inningsStateProvider =
       return Map<String, dynamic>.from(res as Map);
     });
 
+/// Recorded wagon-wheel shots for an innings (deliveries with a shot location).
+final inningsWagonProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, inningsId) async {
+      final c = ref.watch(supabaseClientProvider);
+      final rows = await c
+          .from('deliveries')
+          .select('wagon_x, wagon_y, runs_off_bat')
+          .eq('innings_id', inningsId)
+          .not('wagon_x', 'is', null);
+      return List<Map<String, dynamic>>.from(rows as List);
+    });
+
 /// Matches that are live or between innings, for the public "Watch live" list.
 /// Readable by anyone (incl. anon) via the status-gated RLS policy; team names
 /// embed through the gated teams policy.

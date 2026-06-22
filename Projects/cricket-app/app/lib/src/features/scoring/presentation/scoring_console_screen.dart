@@ -6,6 +6,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import 'wagon_field.dart';
 
 /// The live ball-by-ball scorer console. Reads compute_innings_state for the
 /// score/strike, records deliveries via record_ball, re-folds after each ball.
@@ -55,7 +56,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     if (_bowlerId == null || _busy) return;
     setState(() => _busy = true);
     try {
-      await _repo.recordBall(
+      final res = await _repo.recordBall(
         inningsId: inningsId,
         bowlerId: _bowlerId!,
         runsOffBat: runs,
@@ -68,11 +69,61 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         incomingBatterId: incomingId,
       );
       await _afterBall(inningsId, bpo);
+      if (res.wagonApplicable && res.deliveryId != null && mounted) {
+        await _promptWagon(res.deliveryId!);
+      }
     } catch (e) {
       _toast('$e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// After a directional bat shot, ask the scorer where the ball went.
+  Future<void> _promptWagon(String deliveryId) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Where did the ball go?',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetCtx),
+                    child: const Text('Skip'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: WagonField(
+                  onTap: (x, y, zone) async {
+                    try {
+                      await _repo.setDeliveryWagon(
+                        deliveryId: deliveryId,
+                        x: x,
+                        y: y,
+                        zone: zone,
+                      );
+                    } catch (_) {/* non-fatal: skip the shot */}
+                    if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _toast(String msg) {
