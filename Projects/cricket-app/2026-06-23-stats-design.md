@@ -105,10 +105,13 @@ H2H, MVP/ratings (no per-player award data), leaderboards/rankings, NRR
 opposition/venue/phase splits, materialized rollups, standalone pages for
 unclaimed guests.
 
-## Related backend note
-The stored `deliveries.striker_id` drifting after `edit_ball`/`insert_ball` is
-not a stats bug (the fold re-derives), but it is a latent footgun for any future
-flat consumer. Tracked separately; stats deliberately never trust the stored
-stamp.
+## Related backend note (RESOLVED 2026-06-23)
+The stored `deliveries.striker_id` previously drifted after `edit_ball`/
+`insert_ball`/`delete_ball`. FIXED in migration `20260623130000_restamp_strike.sql`:
+`restamp_innings_strike(_innings_id)` re-derives the facing pair from the fold
+and the three correction RPCs now call it, so the stored columns are kept
+authoritative (column comments document the invariant). Stats still re-fold (it
+remains the simplest correct path), but direct readers (ball-log,
+wagon-by-batter) can now trust the stamps. pgTAP test 70.
 
 See `2026-06-23-stats-backend-plan.md` for the TDD task plan.
