@@ -33,9 +33,10 @@ For every screen / wiring / integration, "verified" means ALL of:
 4. **Live backend check**: hit the exact RPCs/queries the screen calls as the signed-in dev user (REST or in-app) and confirm real data round-trips.
 5. Commit per slice with the Co-Authored-By trailer. Keep everything LOCAL (do not push/PR without explicit user go - task parked).
 
-## Build state (as of 2026-06-19)
-- **Backend: 4 sub-projects COMPLETE, 251 pgTAP tests green** (59 migrations, 51 test files). Local-only.
-  1. Identity & Teams; 2. Scoring Core (event-sourced fold); 3. Matchmaking & Discovery (PostGIS + DMs); 4. Frontend-prep (flair, transfer_scorer, anon viewing, wagon hint) + post attachments (photos/link + Storage bucket).
+## Build state (as of 2026-06-25)
+- **Backend: 5 sub-projects COMPLETE, 343 pgTAP tests green** (64 test files). Local-only.
+  1. Identity & Teams; 2. Scoring Core (event-sourced fold); 3. Matchmaking & Discovery (PostGIS + DMs); 4. Frontend-prep (flair, transfer_scorer, anon viewing, wagon hint) + post attachments (photos/link + Storage bucket); 5. **Player stats** (re-fold: compute_innings_cards + player_career_stats / player_recent_form / player_public_profile, anon-safe; identity rollup views; commit c225ec5).
+- **Player stats FRONTEND DONE (commit 0ff9f4f)**: login-free `/player/:id` screen (batting/bowling cards + fielding line + last-5 form strip + '-' for undefined ratios + empty state), wired from Profile "My cricket" + team roster rows + shareable deep link. 9 widget tests (both platforms); verified on the iOS sim against live Supabase (Profile -> My cricket -> real career numbers). End-to-end wiring audited: every public RPC anon+authenticated, provider -> screen -> all panels, 3 reachable nav paths.
 - **Flutter frontend (sub-project 5): foundation + slices 2,3,4,5 DONE; attachments DONE. 27 widget tests green, analyze clean. Builds + runs on iOS sim AND Android apk.**
   - s1 Foundation: Riverpod (manual providers) + go_router + supabase_flutter; platform-adaptive 3-tab shell (Discover/Matches/Profile); onboarding gate (AuthGate); dev-auth shim.
   - s2 Identity: Profile/Edit/My teams/Create team/Team page+roster.
@@ -52,7 +53,7 @@ Backend design+plan pairs (`Projects/cricket-app/`):
 - `2026-06-16-scoring-core-design.md` / `2026-06-16-scoring-core-backend-plan.md`
 - `2026-06-16-matchmaking-discovery-design.md` / `2026-06-16-matchmaking-discovery-backend-plan.md`
 - `2026-06-17-frontend-prep-backend-design.md` / `-plan.md` (SP4: flair/transfer/anon/wagon)
-- `2026-06-23-stats-design.md` / `2026-06-23-stats-backend-plan.md` (Stats sub-project, OPENED - build pending product sign-off; re-fold-per-innings approach)
+- `2026-06-23-stats-design.md` / `2026-06-23-stats-backend-plan.md` (Stats sub-project - BUILT end-to-end, backend c225ec5 + frontend 0ff9f4f; re-fold-per-innings approach)
 - `backend/README.md` - the canonical backend reference (all 4 sub-projects + attachments + PostGIS/RLS rules).
 Frontend design+plan (`Projects/cricket-app/`):
 - `2026-06-17-flutter-foundation-design.md` / `-plan.md` (s1; has the verified version/idiom recipe).
