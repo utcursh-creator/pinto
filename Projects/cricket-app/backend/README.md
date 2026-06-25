@@ -99,7 +99,18 @@ See `../2026-06-17-frontend-prep-backend-design.md` and `-plan.md`.
 - `looking_for_posts.image_urls text[] not null default '{}'` + `link_url text`.
 - Public Storage bucket `post-images` (5 MiB; jpeg/png/webp) created in a migration. RLS on `storage.objects`: authenticated INSERT/DELETE only into the uploader's own `<uid>/` folder (`(storage.foldername(name))[1] = auth.uid()::text`); public SELECT (feed images load via CDN).
 - `create_looking_for_post` takes optional `_image_urls text[]` + `_link_url text` (appended last); `discover_posts` returns `image_urls` + `link_url`.
-- Total: **251 pgTAP tests**.
+
+## Player stats (sub-project #5)
+
+Career + recent-form stats derived by RE-FOLDING each innings - no new tables, no flat aggregation (a flat `deliveries` view mis-attributes bowled/caught/lbw/stumped, which `record_ball` leaves with a null `dismissed_player_id`, and drifts after corrections). The fold stays the single source of truth.
+
+- **`compute_innings_cards(innings_id) -> jsonb`** (SECURITY INVOKER, STABLE): a per-player generalization of `compute_innings_state` - identical strike rotation, `count_noball_as_ball_faced` rule, bowler-credited wicket set, maiden over-window and dismissal attribution, but emits `{batting:[{member_id,runs,balls,fours,sixes,dismissed,how_out}], bowling:[{member_id,legal_balls,runs_conceded,wickets,maidens,dots,wides,no_balls}], fielding:[{member_id,catches,run_outs,stumpings}]}`. The two folds are kept in lockstep by divergence-guard assertions in test 61 (cards totals must equal `compute_innings_state` on a shared fixture). `compute_innings_state`'s public jsonb shape is unchanged.
+- **`v_player_key` / `v_player_matches`** (`security_invoker` views, granted to `authenticated` only): identity rollup `player_key = COALESCE(team_members.profile_id, id)` (a claimed user rolls up across teams; an unclaimed guest keys by membership id; `approve_guest_claim` re-keys history at read time with zero backfill) + matches-played from `match_squad` over `status in ('complete','abandoned')`.
+- **`player_career_stats(player_key) -> jsonb`**, **`player_recent_form(player_key, n) -> jsonb`**, **`player_public_profile(profile_id) -> jsonb`** (SECURITY DEFINER, `search_path=''`, granted `anon, authenticated`): batting (Mat/Inns/NO/Runs/HS not-out-aware/Avg/SR/4s/6s/50s/100s/Ducks), bowling (Overs/Balls/Runs/Wkts/BBI/Avg/Econ/SR/Maidens/4w/5w), fielding (Catches/Run-outs/Stumpings), last-N form strip, and a one-round-trip composition wrapper. Undefined ratios return `null` (client renders `-`).
+- **Status policy**: averages/aggregates fold COMPLETE matches only; matches-played counts complete + abandoned; setup/live never leak to anon. `retired_out` counts as a dismissal; 4w bucket = exactly 4. Anon reaches stats only through the definer RPCs (the identity views are not anon-selectable).
+- Total: **343 pgTAP tests** (61-69, 71 added; 70 = strike re-stamp).
+
+See `../2026-06-23-stats-design.md` and `-backend-plan.md`.
 
 ---
 **For the full development index, current state, run/test/seed commands, the verification protocol, and the slice roadmap, see `../CLAUDE.md` (the canonical entry point).**
