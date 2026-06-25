@@ -37,4 +37,7 @@ class Routes {
   // so it cold-starts correctly from a deep/share link, unlike a branch route.
   static String viewMatch(String matchId) => '/watch/$matchId';
   static String transferScorer(String matchId) => '/matches/$matchId/transfer';
+
+  // Public, login-free, shareable player career stats (top-level, like /watch).
+  static String playerStats(String profileId) => '/player/$profileId';
 }

@@ -71,6 +71,14 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               const Divider(height: 1),
               ListTile(
+                leading: const Icon(Icons.bar_chart_outlined),
+                title: const Text('My cricket'),
+                subtitle: const Text('Career batting, bowling and fielding'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    context.push(Routes.playerStats(profile['id'] as String)),
+              ),
+              ListTile(
                 leading: const Icon(Icons.edit_outlined),
                 title: const Text('Edit profile'),
                 trailing: const Icon(Icons.chevron_right),

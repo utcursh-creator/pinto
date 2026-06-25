@@ -18,6 +18,7 @@ import '../../features/scoring/presentation/scoring_console_screen.dart';
 import '../../features/scoring/presentation/start_match_screen.dart';
 import '../../features/scoring/presentation/toss_openers_screen.dart';
 import '../../features/scoring/presentation/transfer_scorer_screen.dart';
+import '../../features/stats/presentation/player_stats_screen.dart';
 import '../../features/onboarding/presentation/create_profile_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -39,7 +40,8 @@ import 'routes.dart';
 /// with no profile. This (plus being a top-level route) is the deep-link
 /// cold-start fix - StatefulShellRoute branch routes do not cold-start reliably.
 String? onboardingRedirect(AuthGate gate, String loc) {
-  if (loc.startsWith('/watch/')) return null;
+  // Public, login-free deep links bypass the onboarding gate entirely.
+  if (loc.startsWith('/watch/') || loc.startsWith('/player/')) return null;
   switch (gate) {
     case AuthGate.loading:
       return loc == Routes.splash ? null : Routes.splash;
@@ -85,6 +87,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/watch/:matchId',
         builder: (context, state) => MatchViewerScreen(
           matchId: state.pathParameters['matchId']!,
+        ),
+      ),
+      // Public, login-free, shareable player career stats - top-level so deep/
+      // share links cold-start correctly (outside the StatefulShellRoute).
+      GoRoute(
+        path: '/player/:profileId',
+        builder: (context, state) => PlayerStatsScreen(
+          profileId: state.pathParameters['profileId']!,
         ),
       ),
       GoRoute(

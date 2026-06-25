@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/routing/routes.dart';
 import '../../identity/data/identity_labels.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
@@ -81,6 +83,13 @@ class TeamPageScreen extends ConsumerWidget {
                       onClaim: (uid != null && member['profile_id'] == null)
                           ? () => _claim(context, ref, member['id'] as String)
                           : null,
+                      // Registered members have a public stats page; guests do
+                      // not until they are claimed.
+                      onOpenStats: member['profile_id'] == null
+                          ? null
+                          : () => context.push(
+                                Routes.playerStats(member['profile_id'] as String),
+                              ),
                     ),
                   if (isAdmin)
                     Padding(
@@ -150,12 +159,15 @@ class TeamPageScreen extends ConsumerWidget {
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member, this.onClaim});
+  const _MemberTile({required this.member, this.onClaim, this.onOpenStats});
 
   final Map<String, dynamic> member;
 
   /// When set (a signed-in viewer looking at a guest row), offers "This is me".
   final VoidCallback? onClaim;
+
+  /// When set (a registered member), tapping the row opens their stats page.
+  final VoidCallback? onOpenStats;
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +180,7 @@ class _MemberTile extends StatelessWidget {
       leading: InitialsAvatar(name: name, radius: 18),
       title: Text(name),
       subtitle: isGuest ? const Text('Guest') : null,
+      onTap: onOpenStats,
       trailing: onClaim != null
           ? TextButton(onPressed: onClaim, child: const Text('This is me'))
           : Text(IdentityLabels.teamRole(member['role'] as String?)),
