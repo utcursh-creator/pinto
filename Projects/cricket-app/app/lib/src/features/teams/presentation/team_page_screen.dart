@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
+import '../../discover/data/discover_providers.dart';
+import '../../discover/data/discover_repository.dart';
+import '../../discover/data/location_service.dart';
 import '../../identity/data/identity_labels.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
@@ -100,6 +103,8 @@ class TeamPageScreen extends ConsumerWidget {
                         label: const Text('Add guest player'),
                       ),
                     ),
+                  const Divider(height: 1),
+                  _HomeGround(teamId: teamId, isAdmin: isAdmin),
                 ],
               );
             },
@@ -185,5 +190,51 @@ class _MemberTile extends StatelessWidget {
           ? TextButton(onPressed: onClaim, child: const Text('This is me'))
           : Text(IdentityLabels.teamRole(member['role'] as String?)),
     );
+  }
+}
+
+/// The team's home ground (geo). Members see it; admins can set it from GPS.
+class _HomeGround extends ConsumerWidget {
+  const _HomeGround({required this.teamId, required this.isAdmin});
+
+  final String teamId;
+  final bool isAdmin;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ground = ref.watch(teamGroundProvider(teamId));
+    final label = ground.value?.label;
+    final hasGround = ground.value != null;
+    return ListTile(
+      leading: const Icon(Icons.stadium_outlined),
+      title: const Text('Home ground'),
+      subtitle: Text(
+        hasGround
+            ? (label ?? 'Saved location')
+            : isAdmin
+                ? 'Not set - tap to use this location'
+                : 'Not set',
+      ),
+      trailing: isAdmin ? const Icon(Icons.my_location) : null,
+      onTap: isAdmin ? () => _setFromGps(context, ref) : null,
+    );
+  }
+
+  Future<void> _setFromGps(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final pos = await ref.read(locationServiceProvider).current();
+      await ref
+          .read(discoverRepositoryProvider)
+          .setTeamLocation(teamId, pos.lat, pos.lng);
+      ref.invalidate(teamGroundProvider(teamId));
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Home ground saved')),
+      );
+    } on LocationException catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 }

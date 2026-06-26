@@ -94,6 +94,47 @@ class DiscoverRepository {
       'body': body,
     });
   }
+
+  /// Persists the caller's home base (used as the default discover anchor).
+  Future<void> setMyLocation(double lat, double lng, {String? label}) =>
+      _c.rpc('set_my_location', params: {
+        '_lat': lat,
+        '_lng': lng,
+        if (label != null && label.isNotEmpty) '_label': label,
+      });
+
+  /// The caller's saved home base, or null if none is set.
+  Future<({double lat, double lng, String? label})?> myHomeLocation() async {
+    final res = await _c.rpc('my_home_location') as List;
+    if (res.isEmpty) return null;
+    final r = res.first as Map<String, dynamic>;
+    return (
+      lat: (r['lat'] as num).toDouble(),
+      lng: (r['lng'] as num).toDouble(),
+      label: r['label'] as String?,
+    );
+  }
+
+  /// Persists a team's home ground (admin only, server-enforced).
+  Future<void> setTeamLocation(String teamId, double lat, double lng, {String? label}) =>
+      _c.rpc('set_team_location', params: {
+        '_team_id': teamId,
+        '_lat': lat,
+        '_lng': lng,
+        if (label != null && label.isNotEmpty) '_label': label,
+      });
+
+  /// A team's saved ground (members only), or null if none is set.
+  Future<({double lat, double lng, String? label})?> teamHomeLocation(String teamId) async {
+    final res = await _c.rpc('team_home_location', params: {'_team_id': teamId}) as List;
+    if (res.isEmpty) return null;
+    final r = res.first as Map<String, dynamic>;
+    return (
+      lat: (r['lat'] as num).toDouble(),
+      lng: (r['lng'] as num).toDouble(),
+      label: r['label'] as String?,
+    );
+  }
 }
 
 final discoverRepositoryProvider = Provider<DiscoverRepository>(

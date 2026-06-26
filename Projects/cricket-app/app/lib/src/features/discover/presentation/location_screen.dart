@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/discover_providers.dart';
+import '../data/discover_repository.dart';
 import '../data/location_service.dart';
 
 /// Sets the geo anchor the feed searches around: device GPS (one tap) or a
-/// manual lat/lng + radius (defaults to the current anchor).
+/// manual lat/lng + radius (defaults to the current anchor). Saving also
+/// persists the point as the user's home base (so the feed re-centres here
+/// next launch).
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
 
@@ -38,14 +42,23 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final lat = double.tryParse(_lat.text.trim());
     final lng = double.tryParse(_lng.text.trim());
     if (lat == null || lng == null) return;
     ref.read(anchorProvider.notifier).set(
           (lat: lat, lng: lng, radiusM: _radiusKm * 1000),
         );
-    context.pop();
+    // Persist as the home base so the feed re-centres here next launch.
+    // Anonymous viewers have no home base (the RPC is authenticated-only).
+    final session = ref.read(currentSessionProvider);
+    if (session != null && !session.user.isAnonymous) {
+      try {
+        await ref.read(discoverRepositoryProvider).setMyLocation(lat, lng);
+        ref.invalidate(homeLocationProvider);
+      } catch (_) {/* non-fatal: the session anchor is still set */}
+    }
+    if (mounted) context.pop();
   }
 
   Future<void> _useGps() async {

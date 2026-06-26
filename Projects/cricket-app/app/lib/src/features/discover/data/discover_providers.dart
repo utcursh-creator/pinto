@@ -3,21 +3,53 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import 'discover_models.dart';
+import 'discover_repository.dart';
 
-/// The geo anchor (lat/lng + radius) the feed searches around. Defaults to
-/// Mumbai; settable from the Location screen. (Device GPS is a later refinement.)
+/// The geo anchor (lat/lng + radius) the feed searches around. Defaults to a
+/// city centre until the user's saved home base loads (or they set one on the
+/// Location screen). [adoptHome] applies the persisted home base only if the
+/// user hasn't already chosen an anchor this session.
 typedef Anchor = ({double lat, double lng, double radiusM});
 
 class AnchorNotifier extends Notifier<Anchor> {
+  bool _userSet = false;
+
   @override
   Anchor build() => (lat: 19.07, lng: 72.87, radiusM: 25000);
 
-  void set(Anchor anchor) => state = anchor;
+  void set(Anchor anchor) {
+    _userSet = true;
+    state = anchor;
+  }
+
+  /// Apply the saved home base as the default, unless the user already picked
+  /// an anchor this session.
+  void adoptHome(double lat, double lng) {
+    if (_userSet) return;
+    state = (lat: lat, lng: lng, radiusM: state.radiusM);
+  }
 }
 
 final anchorProvider = NotifierProvider<AnchorNotifier, Anchor>(
   AnchorNotifier.new,
 );
+
+/// The signed-in user's saved home base (null if unset or anonymous). Drives the
+/// default discover anchor so the feed centres on the user's real area, not a
+/// hardcoded city.
+final homeLocationProvider =
+    FutureProvider<({double lat, double lng, String? label})?>((ref) async {
+  final session = ref.watch(currentSessionProvider);
+  if (session == null || session.user.isAnonymous) return null;
+  return ref.watch(discoverRepositoryProvider).myHomeLocation();
+});
+
+/// A team's saved home ground (members only), or null if unset.
+final teamGroundProvider =
+    FutureProvider.family<({double lat, double lng, String? label})?, String>(
+        (ref, teamId) async {
+  return ref.watch(discoverRepositoryProvider).teamHomeLocation(teamId);
+});
 
 /// The discover feed: open posts near the anchor, with optional mode/flair
 /// filters. Returns coarsened distance (approx_m), never coordinates.

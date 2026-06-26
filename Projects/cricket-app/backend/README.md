@@ -80,6 +80,9 @@ The app's core differentiator: a geo-targeted feed that connects players and tea
 - SECURITY DEFINER functions use `set search_path = ''` and therefore fully-qualify every PostGIS call (`extensions.st_dwithin`, `extensions.st_distance`, `extensions.st_setsrid`, `extensions.st_makepoint`, `::extensions.geography`, `operator(extensions.<->)`). Point builder is lng-FIRST: `st_setsrid(st_makepoint(LNG, LAT), 4326)`.
 - The PostGIS-enabling migration is hand-written (never `db diff`, which emits duplicate `CREATE TYPE` that breaks reset).
 
+### Home-location read-back (self/team only)
+`my_home_location()` and `team_home_location(team_id)` (SECURITY DEFINER, authenticated) return a saved point decoded to lat/lng (the geog column is PostGIS binary). The location tables stay non-broadly-readable (privacy); these expose only the caller's OWN home base and a team ground to its members. The client uses `my_home_location` to default the discover anchor instead of a hardcoded city. pgTAP test 72.
+
 ### Out of scope (v1)
 Push notifications, geo-filtered realtime feed PUSH (feed is pull/refresh), group chat, a players-near-me directory, moderation/blocking beyond auth gating.
 
