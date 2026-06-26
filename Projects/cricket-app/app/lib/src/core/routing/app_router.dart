@@ -27,6 +27,7 @@ import '../../features/shell/presentation/adaptive_tab_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/teams/presentation/claim_inbox_screen.dart';
 import '../../features/teams/presentation/create_team_screen.dart';
+import '../../features/teams/presentation/invite_accept_screen.dart';
 import '../../features/teams/presentation/my_teams_screen.dart';
 import '../../features/teams/presentation/team_page_screen.dart';
 import '../auth/auth_gate.dart';
@@ -41,8 +42,13 @@ import 'routes.dart';
 /// with no profile. This (plus being a top-level route) is the deep-link
 /// cold-start fix - StatefulShellRoute branch routes do not cold-start reliably.
 String? onboardingRedirect(AuthGate gate, String loc) {
-  // Public, login-free deep links bypass the onboarding gate entirely.
-  if (loc.startsWith('/watch/') || loc.startsWith('/player/')) return null;
+  // Public, login-free deep links bypass the onboarding gate entirely. /invite
+  // renders for anyone (the screen prompts anonymous users to sign in).
+  if (loc.startsWith('/watch/') ||
+      loc.startsWith('/player/') ||
+      loc.startsWith('/invite/')) {
+    return null;
+  }
   switch (gate) {
     case AuthGate.loading:
       return loc == Routes.splash ? null : Routes.splash;
@@ -96,6 +102,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/player/:profileId',
         builder: (context, state) => PlayerStatsScreen(
           profileId: state.pathParameters['profileId']!,
+        ),
+      ),
+      // Team invite acceptance from a shared link (top-level; the screen handles
+      // the anonymous case by prompting sign-in).
+      GoRoute(
+        path: '/invite/:token',
+        builder: (context, state) => InviteAcceptScreen(
+          token: state.pathParameters['token']!,
         ),
       ),
       GoRoute(

@@ -59,7 +59,26 @@ class IdentityRepository {
         '_membership_id': membershipId,
         '_claimer': claimerId,
       });
+
+  /// Admin-only: mints a shareable invite token for a team (registered-player
+  /// invite path; guests use add-guest + claim instead).
+  Future<String> createTeamInvite(String teamId) async {
+    final token = await _client.rpc('create_team_invite', params: {'_team_id': teamId});
+    return token as String;
+  }
+
+  /// Redeems an invite token, joining the caller to the team; returns the
+  /// membership id.
+  Future<String> acceptInvite(String token) async {
+    final id = await _client.rpc('accept_invite', params: {'_invite_token': token});
+    return id as String;
+  }
 }
+
+/// The shareable link for an invite token. The path is handled in-app by the
+/// `/invite/:token` route; external universal-link registration is a separate
+/// (credential-boundary) deployment step, like the `/watch` share links.
+String inviteLink(String token) => 'https://pitch.app/invite/$token';
 
 final identityRepositoryProvider = Provider<IdentityRepository>(
   (ref) => IdentityRepository(ref.watch(supabaseClientProvider)),

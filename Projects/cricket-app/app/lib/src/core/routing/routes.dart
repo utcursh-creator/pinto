@@ -42,4 +42,7 @@ class Routes {
 
   // Public, login-free, shareable player career stats (top-level, like /watch).
   static String playerStats(String profileId) => '/player/$profileId';
+
+  // Team invite acceptance (opened from a shared invite link).
+  static String acceptInvite(String token) => '/invite/$token';
 }

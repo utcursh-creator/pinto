@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -96,11 +97,20 @@ class TeamPageScreen extends ConsumerWidget {
                     ),
                   if (isAdmin)
                     Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                       child: OutlinedButton.icon(
                         onPressed: () => _addGuest(context, ref),
                         icon: const Icon(Icons.person_add_alt),
                         label: const Text('Add guest player'),
+                      ),
+                    ),
+                  if (isAdmin)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _invitePlayer(context, ref),
+                        icon: const Icon(Icons.link),
+                        label: const Text('Invite a player'),
                       ),
                     ),
                   const Divider(height: 1),
@@ -142,6 +152,22 @@ class TeamPageScreen extends ConsumerWidget {
         .read(identityRepositoryProvider)
         .addGuest(teamId: teamId, guestName: name);
     ref.invalidate(teamRosterProvider(teamId));
+  }
+
+  Future<void> _invitePlayer(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final token =
+          await ref.read(identityRepositoryProvider).createTeamInvite(teamId);
+      await SharePlus.instance.share(
+        ShareParams(
+          text: 'Join my cricket team on Pitch: ${inviteLink(token)}',
+          subject: 'Pitch team invite',
+        ),
+      );
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 
   Future<void> _claim(
