@@ -118,5 +118,16 @@ Career + recent-form stats derived by RE-FOLDING each innings - no new tables, n
 
 See `../2026-06-23-stats-design.md` and `-backend-plan.md`.
 
+## Tournaments (sub-project #6)
+
+Group-stage + knockout tournaments, organizer-run, reusing the scoring engine: a tournament fixture is an ordinary `matches` row linked by `tournament_matches`, so it flows through the full setup/scoring/live-view/corrections/stats path with no new scoring code. Validated against a 78-capability CricHeroes reverse-engineering pass (`../2026-06-25-cricheroes-tournaments-research.md`).
+
+- **Schema**: `tournaments` (organizer, overs, group_count, qualifiers_per_group, status setup->group_stage->playoffs->complete, champion), `tournament_teams` (team + group_label), `tournament_matches` (match_id -> stage group|semifinal|final + group_label/bracket_slot). Public-read RLS; organizer-only writes (via `is_tournament_organizer`).
+- **RPCs** (organizer-gated mutations SECURITY DEFINER; reads anon+authenticated): `create_tournament`, `add_tournament_team`, `generate_group_fixtures` (round-robin per group), `tournament_standings`, `generate_playoffs` (seed semis A1vB2/B1vA2 from standings), `advance_playoffs` (final from semi winners -> champion), `tournament_leaderboard`, `match_potm`, `tournament_overview` (one-call composition).
+- **Standings + NRR**: re-fold completed group matches via `compute_innings_state`; points (win 2 / tie-no_result 1 / loss 0) + NRR with the ICC **all-out full-quota rule** (a bowled-out side counts its full over quota in the denominator) + tiebreak points -> NRR -> head-to-head -> name. Test 76 pins the all-out rule to an exact NRR of 1.75.
+- **Leaderboard + POTM**: `tournament_leaderboard` ranks most runs/wickets/fielding/4s/6s across the tournament's complete matches via `compute_innings_cards`; `match_potm` = a simple impact score (runs + 20*wkts + 10*dismissals) with a winning-side tiebreak (not the full CricHeroes MVP algorithm).
+- **v1 shape**: 4-qualifier bracket (2 groups x 2 qualifiers) -> semifinals -> final. Out of scope: self-registration, the Smart NRR what-if calculator, bulk/Excel scheduling, byes/seeding for non-power-of-2 brackets, the MVP algorithm, awards/officials directories, monetization, and non-limited-overs formats.
+- pgTAP tests 74-79; full suite **72 files / 396 tests**. See `../2026-06-25-tournaments-design.md` + `-backend-plan.md`.
+
 ---
 **For the full development index, current state, run/test/seed commands, the verification protocol, and the slice roadmap, see `../CLAUDE.md` (the canonical entry point).**
