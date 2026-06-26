@@ -104,6 +104,24 @@ final inningsStateProvider =
       return Map<String, dynamic>.from(res as Map);
     });
 
+/// Every delivery of an innings, in scoring order - the source for the ball-log
+/// / corrections screen. Includes the raw scoring columns so a ball can be
+/// re-specified by edit_ball/insert_ball.
+final inningsDeliveriesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, inningsId) async {
+      final c = ref.watch(supabaseClientProvider);
+      final rows = await c
+          .from('deliveries')
+          .select(
+            'id, seq, bowler_id, striker_id, non_striker_id, runs_off_bat, '
+            'extra_wides, extra_no_ball_penalty, extra_byes, extra_leg_byes, '
+            'is_legal, wicket_type, dismissed_player_id, incoming_batter_id, fielder_id',
+          )
+          .eq('innings_id', inningsId)
+          .order('seq');
+      return List<Map<String, dynamic>>.from(rows as List);
+    });
+
 /// Recorded wagon-wheel shots for an innings (deliveries with a shot location).
 final inningsWagonProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((ref, inningsId) async {

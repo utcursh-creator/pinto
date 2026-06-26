@@ -125,6 +125,73 @@ class MatchRepository {
   Future<void> undoLastBall(String inningsId) =>
       _c.rpc('undo_last_ball', params: {'_innings_id': inningsId});
 
+  /// Corrections. edit_ball is a FULL overwrite of the delivery's scoring
+  /// columns (omitted params reset to 0/null), so callers pass the complete
+  /// intended state of the ball, not a patch.
+  Future<void> editBall({
+    required String deliveryId,
+    int runsOffBat = 0,
+    int wides = 0,
+    int noBallPenalty = 0,
+    int byes = 0,
+    int legByes = 0,
+    String? wicketType,
+    String? dismissedPlayerId,
+    String? incomingBatterId,
+    String? fielderId,
+  }) {
+    final params = <String, dynamic>{
+      '_delivery_id': deliveryId,
+      '_runs_off_bat': runsOffBat,
+      '_extra_wides': wides,
+      '_extra_no_ball_penalty': noBallPenalty,
+      '_extra_byes': byes,
+      '_extra_leg_byes': legByes,
+    };
+    if (wicketType != null) params['_wicket_type'] = wicketType;
+    if (dismissedPlayerId != null) params['_dismissed_player_id'] = dismissedPlayerId;
+    if (incomingBatterId != null) params['_incoming_batter_id'] = incomingBatterId;
+    if (fielderId != null) params['_fielder_id'] = fielderId;
+    return _c.rpc('edit_ball', params: params);
+  }
+
+  /// Inserts a missed delivery after [afterSeq]; the server shifts later balls
+  /// and re-stamps strike. Returns the new delivery id.
+  Future<String> insertBall({
+    required String inningsId,
+    required int afterSeq,
+    required String bowlerId,
+    int runsOffBat = 0,
+    int wides = 0,
+    int noBallPenalty = 0,
+    int byes = 0,
+    int legByes = 0,
+    String? wicketType,
+    String? dismissedPlayerId,
+    String? incomingBatterId,
+    String? fielderId,
+  }) async {
+    final params = <String, dynamic>{
+      '_innings_id': inningsId,
+      '_after_seq': afterSeq,
+      '_bowler_id': bowlerId,
+      '_runs_off_bat': runsOffBat,
+      '_extra_wides': wides,
+      '_extra_no_ball_penalty': noBallPenalty,
+      '_extra_byes': byes,
+      '_extra_leg_byes': legByes,
+    };
+    if (wicketType != null) params['_wicket_type'] = wicketType;
+    if (dismissedPlayerId != null) params['_dismissed_player_id'] = dismissedPlayerId;
+    if (incomingBatterId != null) params['_incoming_batter_id'] = incomingBatterId;
+    if (fielderId != null) params['_fielder_id'] = fielderId;
+    final id = await _c.rpc('insert_ball', params: params);
+    return id as String;
+  }
+
+  Future<void> deleteBall(String deliveryId) =>
+      _c.rpc('delete_ball', params: {'_delivery_id': deliveryId});
+
   /// Hand scoring to another registered member of either team.
   Future<void> transferScorer({
     required String matchId,

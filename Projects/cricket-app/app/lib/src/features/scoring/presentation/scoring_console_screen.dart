@@ -141,6 +141,11 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       title: 'Live scoring',
       actions: [
         IconButton(
+          icon: const Icon(Icons.edit_note),
+          tooltip: 'Ball log / corrections',
+          onPressed: () => context.push(Routes.ballLog(widget.matchId)),
+        ),
+        IconButton(
           icon: const Icon(Icons.swap_horiz),
           tooltip: 'Hand over scoring',
           onPressed: () =>
