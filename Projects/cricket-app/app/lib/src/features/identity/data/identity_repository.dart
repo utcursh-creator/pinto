@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,6 +23,30 @@ class IdentityRepository {
   Future<void> updateMyProfile(Map<String, dynamic> fields) async {
     await _client.from('profiles').update(fields).eq('id', _uid);
   }
+
+  /// Uploads an avatar (profile photo or team logo) to the user's own folder in
+  /// the public `avatars` bucket and returns its CDN URL.
+  Future<String> uploadAvatar(Uint8List bytes, String ext) async {
+    final contentType = switch (ext.toLowerCase()) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+    final path = '$_uid/${DateTime.now().microsecondsSinceEpoch}.$ext';
+    await _client.storage.from('avatars').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
+    return _client.storage.from('avatars').getPublicUrl(path);
+  }
+
+  /// Sets the current user's profile photo.
+  Future<void> setMyPhoto(String url) => updateMyProfile({'photo_url': url});
+
+  /// Sets a team's logo (admin only, enforced by RLS on the teams table).
+  Future<void> setTeamLogo(String teamId, String url) =>
+      _client.from('teams').update({'logo_url': url}).eq('id', teamId);
 
   /// Creates a team (and the caller's captain membership, server-side) and
   /// returns the new team id.

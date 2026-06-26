@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -52,7 +53,16 @@ class TeamPageScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        InitialsAvatar(name: team['name'] as String?, radius: 28),
+                        GestureDetector(
+                          onTap: isAdmin
+                              ? () => _changeLogo(context, ref)
+                              : null,
+                          child: InitialsAvatar(
+                            name: team['name'] as String?,
+                            photoUrl: team['logo_url'] as String?,
+                            radius: 28,
+                          ),
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -154,6 +164,23 @@ class TeamPageScreen extends ConsumerWidget {
     ref.invalidate(teamRosterProvider(teamId));
   }
 
+  Future<void> _changeLogo(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1024);
+    if (picked == null) return;
+    try {
+      final bytes = await picked.readAsBytes();
+      final repo = ref.read(identityRepositoryProvider);
+      final url = await repo.uploadAvatar(bytes, picked.name.split('.').last);
+      await repo.setTeamLogo(teamId, url);
+      ref.invalidate(teamProvider(teamId));
+      messenger?.showSnackBar(const SnackBar(content: Text('Logo updated')));
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   Future<void> _invitePlayer(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     try {
@@ -208,7 +235,11 @@ class _MemberTile extends StatelessWidget {
         ? (member['guest_name'] as String?) ?? 'Guest'
         : (profile?['display_name'] as String?) ?? 'Player';
     return ListTile(
-      leading: InitialsAvatar(name: name, radius: 18),
+      leading: InitialsAvatar(
+        name: name,
+        photoUrl: profile?['photo_url'] as String?,
+        radius: 18,
+      ),
       title: Text(name),
       subtitle: isGuest ? const Text('Guest') : null,
       onTap: onOpenStats,

@@ -76,7 +76,7 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          InitialsAvatar(name: id.displayName, radius: 32),
+          InitialsAvatar(name: id.displayName, photoUrl: id.photoUrl, radius: 32),
           const SizedBox(width: 16),
           Expanded(
             child: Column(

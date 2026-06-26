@@ -7,9 +7,10 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../data/oauth_sign_in.dart';
 
-/// Sign-in. The real Google/Apple buttons are stubbed (wired in a later slice
-/// once OAuth providers are configured). In debug builds an email/password
-/// shim signs in against the local stack so the app is usable now.
+/// Sign-in. The Google/Apple buttons call the native OAuth flow
+/// (oAuthServiceProvider); they surface a friendly error until the OAuth client
+/// IDs are configured (the credential-boundary step). In debug builds an
+/// email/password shim signs in against the local stack so the app is usable now.
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
 

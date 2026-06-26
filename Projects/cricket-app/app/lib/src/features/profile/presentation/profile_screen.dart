@@ -46,6 +46,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     InitialsAvatar(
                       name: profile['display_name'] as String?,
+                      photoUrl: profile['photo_url'] as String?,
                       radius: 32,
                     ),
                     const SizedBox(width: 16),

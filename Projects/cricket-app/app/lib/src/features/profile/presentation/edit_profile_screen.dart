@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/auth/profile_provider.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../identity/data/identity_repository.dart';
+import '../../identity/presentation/initials_avatar.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -21,7 +23,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _bowling;
   String? _batting; // 'right' | 'left'
   String? _role; // batter | bowler | all_rounder | keeper
+  String? _photoUrl;
   bool _busy = false;
+  bool _uploading = false;
   String? _error;
 
   @override
@@ -34,6 +38,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _bowling = TextEditingController(text: (p['bowling_style'] as String?) ?? '');
     _batting = p['batting_style'] as String?;
     _role = p['playing_role'] as String?;
+    _photoUrl = p['photo_url'] as String?;
+  }
+
+  Future<void> _changePhoto() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1024);
+    if (picked == null) return;
+    setState(() => _uploading = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last;
+      final repo = ref.read(identityRepositoryProvider);
+      final url = await repo.uploadAvatar(bytes, ext);
+      await repo.setMyPhoto(url);
+      ref.invalidate(myProfileProvider);
+      if (mounted) setState(() => _photoUrl = url);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not upload photo: $e');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   @override
@@ -79,6 +104,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          Center(
+            child: Column(
+              children: [
+                InitialsAvatar(name: _name.text, photoUrl: _photoUrl, radius: 44),
+                TextButton.icon(
+                  onPressed: _uploading ? null : _changePhoto,
+                  icon: _uploading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.photo_camera_outlined, size: 18),
+                  label: const Text('Change photo'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _name,
             decoration: const InputDecoration(labelText: 'Display name'),
