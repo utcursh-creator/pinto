@@ -35,6 +35,13 @@ class Routes {
   static String scoreMatch(String matchId) => '/matches/$matchId/score';
   // Corrections: the ball-by-ball log for edit/insert/delete.
   static String ballLog(String matchId) => '/matches/$matchId/balls';
+
+  // Tournaments (under the Matches branch + a public top-level page).
+  static const String tournaments = '/matches/tournaments';
+  static const String newTournament = '/matches/tournaments/new';
+  static String manageTournament(String id) => '/matches/tournaments/$id/manage';
+  // Public, login-free, shareable tournament page (top-level, like /watch).
+  static String tournamentPage(String id) => '/tournament/$id';
   // Public, login-free, shareable live view. Top-level (NOT under the shell)
   // so it cold-starts correctly from a deep/share link, unlike a branch route.
   static String viewMatch(String matchId) => '/watch/$matchId';

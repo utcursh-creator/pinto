@@ -11,7 +11,7 @@ final tournamentsListProvider =
   final c = ref.watch(supabaseClientProvider);
   final rows = await c
       .from('tournaments')
-      .select('id, name, status, city, starts_on, champion_team_id')
+      .select('id, name, status, city, starts_on, champion_team_id, organizer_id')
       .order('created_at', ascending: false);
   return List<Map<String, dynamic>>.from(rows as List);
 });

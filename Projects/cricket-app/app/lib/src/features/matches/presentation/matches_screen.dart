@@ -18,6 +18,11 @@ class MatchesScreen extends ConsumerWidget {
       title: 'Matches',
       actions: [
         IconButton(
+          icon: const Icon(Icons.emoji_events_outlined),
+          tooltip: 'Tournaments',
+          onPressed: () => context.push(Routes.tournaments),
+        ),
+        IconButton(
           icon: const Icon(Icons.sensors),
           tooltip: 'Watch live',
           onPressed: () => context.push(Routes.liveMatches),

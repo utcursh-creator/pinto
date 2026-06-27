@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import '../../tournaments/data/tournament_providers.dart';
 import '../data/match_providers.dart';
 import 'match_share_card.dart';
 import 'wagon_field.dart';
@@ -804,14 +805,14 @@ class _ChartsTab extends ConsumerWidget {
 // Info tab
 // ---------------------------------------------------------------------------
 
-class _InfoTab extends StatelessWidget {
+class _InfoTab extends ConsumerWidget {
   const _InfoTab({required this.match, required this.teams});
 
   final Map<String, dynamic> match;
   final Map<String, String> teams;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final a = teams[match['team_a_id']] ?? 'Team A';
     final b = teams[match['team_b_id']] ?? 'Team B';
     final tossWinner = teams[match['toss_winner_id']];
@@ -849,6 +850,13 @@ class _InfoTab extends StatelessWidget {
               : 'Not decided',
         ),
         tile('Status', (match['status'] as String?) ?? '-'),
+        if ((match['status'] as String?) == 'complete')
+          ref.watch(matchPotmProvider(match['id'] as String)).maybeWhen(
+                data: (potm) => potm == null
+                    ? const SizedBox.shrink()
+                    : tile('Player of the match', potm['name'] as String? ?? '-'),
+                orElse: () => const SizedBox.shrink(),
+              ),
       ],
     );
   }

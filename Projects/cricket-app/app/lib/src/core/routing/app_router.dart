@@ -30,6 +30,10 @@ import '../../features/teams/presentation/create_team_screen.dart';
 import '../../features/teams/presentation/invite_accept_screen.dart';
 import '../../features/teams/presentation/my_teams_screen.dart';
 import '../../features/teams/presentation/team_page_screen.dart';
+import '../../features/tournaments/presentation/create_tournament_screen.dart';
+import '../../features/tournaments/presentation/manage_tournament_screen.dart';
+import '../../features/tournaments/presentation/tournament_page_screen.dart';
+import '../../features/tournaments/presentation/tournaments_list_screen.dart';
 import '../auth/auth_gate.dart';
 import 'router_refresh.dart';
 import 'routes.dart';
@@ -46,7 +50,8 @@ String? onboardingRedirect(AuthGate gate, String loc) {
   // renders for anyone (the screen prompts anonymous users to sign in).
   if (loc.startsWith('/watch/') ||
       loc.startsWith('/player/') ||
-      loc.startsWith('/invite/')) {
+      loc.startsWith('/invite/') ||
+      loc.startsWith('/tournament/')) {
     return null;
   }
   switch (gate) {
@@ -110,6 +115,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/invite/:token',
         builder: (context, state) => InviteAcceptScreen(
           token: state.pathParameters['token']!,
+        ),
+      ),
+      // Public, login-free, shareable tournament page (top-level, like /watch).
+      GoRoute(
+        path: '/tournament/:id',
+        builder: (context, state) => TournamentPageScreen(
+          tournamentId: state.pathParameters['id']!,
         ),
       ),
       GoRoute(
@@ -212,6 +224,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => BallLogScreen(
                       matchId: state.pathParameters['matchId']!,
                     ),
+                  ),
+                  GoRoute(
+                    path: 'tournaments',
+                    builder: (context, state) => const TournamentsListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const CreateTournamentScreen(),
+                      ),
+                      GoRoute(
+                        path: ':tid/manage',
+                        builder: (context, state) => ManageTournamentScreen(
+                          tournamentId: state.pathParameters['tid']!,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

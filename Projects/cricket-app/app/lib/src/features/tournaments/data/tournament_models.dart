@@ -224,9 +224,24 @@ class Leaderboard {
       );
 }
 
+class TournamentTeamRef {
+  TournamentTeamRef({required this.teamId, required this.name, required this.groupLabel});
+
+  final String teamId;
+  final String name;
+  final String groupLabel;
+
+  factory TournamentTeamRef.fromJson(Map<String, dynamic> j) => TournamentTeamRef(
+        teamId: j['team_id'] as String,
+        name: (j['name'] as String?) ?? 'Team',
+        groupLabel: (j['group_label'] as String?) ?? 'A',
+      );
+}
+
 class TournamentOverview {
   TournamentOverview({
     required this.info,
+    required this.teams,
     required this.standings,
     required this.fixtures,
     required this.leaderboard,
@@ -234,6 +249,7 @@ class TournamentOverview {
   });
 
   final TournamentInfo info;
+  final List<TournamentTeamRef> teams;
   final List<StandingsGroup> standings;
   final List<Fixture> fixtures;
   final Leaderboard leaderboard;
@@ -248,6 +264,9 @@ class TournamentOverview {
     return TournamentOverview(
       info: TournamentInfo.fromJson(
           (j['tournament'] as Map).cast<String, dynamic>()),
+      teams: ((j['teams'] as List?) ?? const [])
+          .map((e) => TournamentTeamRef.fromJson((e as Map).cast<String, dynamic>()))
+          .toList(),
       standings: ((standings['groups'] as List?) ?? const [])
           .map((e) => StandingsGroup.fromJson((e as Map).cast<String, dynamic>()))
           .toList(),

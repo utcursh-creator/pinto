@@ -1,0 +1,250 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/routing/routes.dart';
+import '../../identity/data/identity_providers.dart';
+import '../data/tournament_models.dart';
+import '../data/tournament_providers.dart';
+import '../data/tournament_repository.dart';
+
+/// Organizer hub. What's shown follows the tournament status: assign teams to
+/// groups + generate fixtures (setup) -> score group matches + generate playoffs
+/// (group_stage) -> score the bracket + advance to the champion (playoffs).
+class ManageTournamentScreen extends ConsumerWidget {
+  const ManageTournamentScreen({required this.tournamentId, super.key});
+
+  final String tournamentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(tournamentOverviewProvider(tournamentId));
+    return AdaptiveScaffold(
+      title: 'Manage tournament',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.visibility_outlined),
+          tooltip: 'Public page',
+          onPressed: () => context.push(Routes.tournamentPage(tournamentId)),
+        ),
+      ],
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+        error: (e, _) => Center(child: Text('Could not load.\n$e')),
+        data: (o) => ListView(
+          padding: const EdgeInsets.only(bottom: 28),
+          children: [
+            _Header(info: o.info),
+            const Divider(height: 1),
+            ...switch (o.info.status) {
+              'setup' => _setup(context, ref, o),
+              'group_stage' => _groupStage(context, ref, o),
+              'playoffs' => _playoffs(context, ref, o),
+              _ => _complete(context, o),
+            },
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---- setup: teams -> groups + generate fixtures ----
+  List<Widget> _setup(BuildContext context, WidgetRef ref, TournamentOverview o) {
+    final byGroup = <String, int>{'A': 0, 'B': 0};
+    for (final t in o.teams) {
+      byGroup[t.groupLabel] = (byGroup[t.groupLabel] ?? 0) + 1;
+    }
+    final canGenerate = (byGroup['A'] ?? 0) >= 2 && (byGroup['B'] ?? 0) >= 2;
+    return [
+      const Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+        child: Text('Teams', style: TextStyle(fontWeight: FontWeight.w500)),
+      ),
+      for (final t in o.teams)
+        ListTile(
+          dense: true,
+          title: Text(t.name),
+          trailing: Wrap(spacing: 6, children: [
+            for (final g in const ['A', 'B'])
+              ChoiceChip(
+                label: Text(g),
+                selected: t.groupLabel == g,
+                onSelected: (_) => _setGroup(ref, t.teamId, g),
+              ),
+          ]),
+        ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        child: OutlinedButton.icon(
+          onPressed: () => _addTeam(context, ref, o),
+          icon: const Icon(Icons.add),
+          label: const Text('Add team'),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+        child: FilledButton(
+          onPressed: canGenerate ? () => _run(context, ref, (r) => r.generateGroupFixtures(tournamentId)) : null,
+          child: const Text('Generate group fixtures'),
+        ),
+      ),
+      if (!canGenerate)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Text('Add at least 2 teams to each group.',
+              style: TextStyle(fontSize: 12)),
+        ),
+    ];
+  }
+
+  // ---- group stage: score group matches + generate playoffs ----
+  List<Widget> _groupStage(BuildContext context, WidgetRef ref, TournamentOverview o) {
+    final group = o.fixturesForStage('group');
+    final allDone = group.isNotEmpty && group.every((f) => f.isComplete);
+    return [
+      _fixtureSection(context, 'Group fixtures', group),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        child: FilledButton(
+          onPressed: allDone ? () => _run(context, ref, (r) => r.generatePlayoffs(tournamentId)) : null,
+          child: const Text('Generate playoffs'),
+        ),
+      ),
+      if (!allDone)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Text('Finish every group match to seed the semifinals.',
+              style: TextStyle(fontSize: 12)),
+        ),
+    ];
+  }
+
+  // ---- playoffs: score the bracket + advance ----
+  List<Widget> _playoffs(BuildContext context, WidgetRef ref, TournamentOverview o) {
+    final semis = o.fixturesForStage('semifinal');
+    final fin = o.fixturesForStage('final');
+    final semisDone = semis.isNotEmpty && semis.every((f) => f.isComplete);
+    final finalDone = fin.isNotEmpty && fin.every((f) => f.isComplete);
+    final label = fin.isEmpty ? 'Advance to final' : 'Crown the champion';
+    final canAdvance = fin.isEmpty ? semisDone : finalDone;
+    return [
+      _fixtureSection(context, 'Semifinals', semis),
+      if (fin.isNotEmpty) _fixtureSection(context, 'Final', fin),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        child: FilledButton(
+          onPressed: canAdvance ? () => _run(context, ref, (r) => r.advancePlayoffs(tournamentId)) : null,
+          child: Text(label),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _complete(BuildContext context, TournamentOverview o) => [
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Column(children: [
+              Icon(Icons.emoji_events,
+                  size: 40, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 8),
+              const Text('Tournament complete'),
+              TextButton(
+                onPressed: () => context.push(Routes.tournamentPage(tournamentId)),
+                child: const Text('View public page'),
+              ),
+            ]),
+          ),
+        ),
+      ];
+
+  Widget _fixtureSection(BuildContext context, String title, List<Fixture> fixtures) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+        child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      ),
+      for (final f in fixtures)
+        ListTile(
+          dense: true,
+          title: Text('${f.teamA}  v  ${f.teamB}'),
+          subtitle: f.groupLabel != null ? Text('Group ${f.groupLabel}') : null,
+          trailing: f.isComplete
+              ? const Text('Done')
+              : FilledButton(
+                  style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact),
+                  onPressed: () => context.push(Routes.scoreMatch(f.matchId)),
+                  child: const Text('Score'),
+                ),
+          onTap: () => context.push(
+              f.isComplete ? Routes.viewMatch(f.matchId) : Routes.scoreMatch(f.matchId)),
+        ),
+    ]);
+  }
+
+  Future<void> _setGroup(WidgetRef ref, String teamId, String group) async {
+    await ref.read(tournamentRepositoryProvider).addTournamentTeam(tournamentId, teamId, group);
+    ref.invalidate(tournamentOverviewProvider(tournamentId));
+  }
+
+  Future<void> _addTeam(BuildContext context, WidgetRef ref, TournamentOverview o) async {
+    final myTeams = await ref.read(myTeamsProvider.future);
+    final existing = o.teams.map((t) => t.teamId).toSet();
+    final options = [
+      for (final r in myTeams)
+        if (r['teams'] != null && !existing.contains((r['teams'] as Map)['id']))
+          r['teams'] as Map<String, dynamic>,
+    ];
+    if (!context.mounted) return;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: options.isEmpty
+            ? const Padding(padding: EdgeInsets.all(24), child: Text('No more teams to add.'))
+            : ListView(shrinkWrap: true, children: [
+                const ListTile(title: Text('Add a team')),
+                for (final t in options)
+                  ListTile(
+                    title: Text((t['name'] as String?) ?? 'Team'),
+                    onTap: () => Navigator.pop(ctx, t['id'] as String),
+                  ),
+              ]),
+      ),
+    );
+    if (picked != null) {
+      await ref.read(tournamentRepositoryProvider).addTournamentTeam(tournamentId, picked, 'A');
+      ref.invalidate(tournamentOverviewProvider(tournamentId));
+    }
+  }
+
+  Future<void> _run(BuildContext context, WidgetRef ref,
+      Future<void> Function(TournamentRepository) action) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await action(ref.read(tournamentRepositoryProvider));
+      ref.invalidate(tournamentOverviewProvider(tournamentId));
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.info});
+  final TournamentInfo info;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Row(children: [
+        Expanded(
+            child: Text(info.name,
+                style: Theme.of(context).textTheme.titleLarge)),
+        Text(info.statusLabel, style: Theme.of(context).textTheme.labelMedium),
+      ]),
+    );
+  }
+}
