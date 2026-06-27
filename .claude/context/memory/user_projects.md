@@ -6,6 +6,15 @@ last_updated: 2026-02-26
 
 # Active Projects
 
+## AI Video Editing SERVICE - "OTT / One Take Tall" (NEW, 2026-06-15)
+- **What it ACTUALLY is** (read the system at /Users/utkarsh/ott): a calibrated SOP-COMPLIANCE FACTORY for high-volume creator/product reel editing. Input = a creator's IG reel + product sheet; output = polished 1080x1920 reel with brand/product/USP typography supers, license-free audio, creator-graphic masking, dense QC. The SOP is GENERAL-PURPOSE; the engine is reusable.
+- **Model = SERVICE, not a tool**: each client onboards with a defined high-volume editing job -> map their process -> calibrate the system (~1 WEEK) -> it executes that job end-to-end at volume with QC. 1-week onboarding = scalable service, not bespoke consulting.
+- **Differentiator (real, defensible)**: encodes a client's exact edit guidelines as ENFORCED rules + vision product-mapping + QC discipline. NOT generic "AI editing" (red ocean). Calibration is the whole pitch.
+- **ICP (corrected)**: influencer-marketing / creator-content agencies that edit at volume. PROOF/reference client = **PulpKey** (pulpkey.com). Target list (Indian influencer agencies): Monk Entertainment (Monk-E), WhizCo, Sociowash, WORD, Chtrbox, One Impression, Grynow Media, Confluencr, Influencer.in.
+- **NOT a fit**: tech-bro talking-head inbound content (no products/SOP to enforce). Earlier "two ICPs" framing was too broad; the real wedge = clone PulpKey across the agency list.
+- **Standing prefs in the OTT system**: NO em-dashes; honest not yes-man; super never covers product/face, big/elderly-readable, no fabricated brands.
+- In progress: in-depth analysis of the target agencies (who edits in-house = buyer vs who only brokers creators = not). See work_status.
+
 ## 1. Yosef Client Work
 - **Status**: Active — primary revenue source
 - **What**: Building AI automations for Yosef and his clients
