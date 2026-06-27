@@ -7,6 +7,18 @@ tags: [cricket-app, auth, oauth, provisioning]
 
 # Google / Apple sign-in - provisioning checklist
 
+## Concrete values (collected 2026-06-27)
+- App identifiers: Android package `dev.pitch.pitch_app`; iOS bundle `dev.pitch.pitchApp`.
+- Debug-keystore SHA-1 (for test builds; add the Play App Signing SHA-1 at store time): `93:8A:C0:0B:ED:94:13:CA:EB:2A:2E:CF:64:1D:05:A1:F8:23:1E:56`.
+- Hosted Supabase project ref `ocejkqihgiinonpyafhl` -> URL `https://ocejkqihgiinonpyafhl.supabase.co`. anon + service_role keys provided by the user (in their protected env; do NOT echo). Free tier.
+- Google Cloud project `cric-app-500700`. WEB OAuth client (for Supabase, already configured in Supabase Auth->Providers->Google): client_id `648807538669-glnujekrp915tlomvv6n88fdmk970vgn.apps.googleusercontent.com` (web client_secret is in Supabase's provider config; not used by the app).
+- DECISION: Google sign-in only for v1; Apple deferred.
+- ANDROID OAuth client: user creating it now with the package + SHA-1 above (the Android client id is NOT used in app code; google_sign_in trusts the app via package+SHA + uses the WEB client id as serverClientId).
+- STILL NEEDED: (a) an iOS-type Google OAuth client (bundle `dev.pitch.pitchApp`) -> need its client id + reversed-client-id for Info.plist; (b) to HOST/migrate the backend, the DB password OR a Supabase access token (anon/service_role can't run DDL).
+- BUILD WIRING (when ready): pass `--dart-define SUPABASE_URL=https://ocejkqihgiinonpyafhl.supabase.co --dart-define SUPABASE_PUBLISHABLE_KEY=<anon> --dart-define GOOGLE_WEB_CLIENT_ID=648807538669-...apps.googleusercontent.com --dart-define GOOGLE_IOS_CLIENT_ID=<ios>` (env.dart reads these). Note: env.dart `googleConfigured` currently requires BOTH web+ios ids; make platform-aware if testing Android-only Google sign-in before the iOS client exists.
+
+
+
 The OAuth **code is wired** (`app/lib/src/features/auth/data/oauth_sign_in.dart`,
 buttons in `sign_in_screen.dart`). It uses the native ID-token flow Supabase
 recommends for mobile: Google native on iOS+Android, Apple native on iOS

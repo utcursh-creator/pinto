@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
+
 /// Build-time configuration. Override with `--dart-define SUPABASE_URL=...`
-/// and `--dart-define SUPABASE_PUBLISHABLE_KEY=...`. The defaults target the
+/// and `--dart-define SUPABASE_PUBLISHABLE_KEY=...` (or
+/// `--dart-define-from-file=hosted_defines.json`). The defaults target the
 /// LOCAL `supabase start` stack (the well-known local key is not a secret).
 class SupabaseEnv {
   const SupabaseEnv._();
@@ -25,7 +28,15 @@ class SupabaseEnv {
   static const String googleIosClientId =
       String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
 
-  /// Whether native Google sign-in has its client IDs configured.
-  static bool get googleConfigured =>
-      googleWebClientId.isNotEmpty && googleIosClientId.isNotEmpty;
+  /// Whether native Google sign-in has the client IDs it needs on THIS platform.
+  /// Android uses the registered Android OAuth client (package + SHA) plus the
+  /// web client as `serverClientId`, so it only needs the web id. iOS also needs
+  /// its own iOS client id (and the reversed-client-id in Info.plist).
+  static bool get googleConfigured {
+    if (googleWebClientId.isEmpty) return false;
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return googleIosClientId.isNotEmpty;
+    }
+    return true;
+  }
 }
