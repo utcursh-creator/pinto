@@ -14,11 +14,14 @@ final currentSessionProvider = Provider<Session?>((ref) {
   return ref.watch(supabaseClientProvider).auth.currentSession;
 });
 
-/// True when there is no session or the session is an anonymous one. Anonymous
-/// users have `is_anonymous: true` in their app metadata.
+/// True when there is no session or the session is an anonymous one. Supabase
+/// exposes anonymity as the TOP-LEVEL `is_anonymous` claim (parsed onto
+/// `User.isAnonymous`); it is NOT in `app_metadata` (that stays `{}` for anon
+/// users), so reading `appMetadata['is_anonymous']` wrongly classified every
+/// anonymous user as a real one and forced them to the create-profile gate.
 bool isAnonymousSession(Session? session) {
   if (session == null) return true;
-  return session.user.appMetadata['is_anonymous'] == true;
+  return session.user.isAnonymous;
 }
 
 /// Whether the current viewer is anonymous (or signed out). Overridable in
