@@ -5,7 +5,7 @@ import 'profile_provider.dart';
 
 /// The single onboarding-gate state, derived from session + profile. The router
 /// switches on this; tests override it directly (no Session/client mocking).
-enum AuthGate { loading, anonymous, needsProfile, ready }
+enum AuthGate { loading, anonymous, needsProfile, ready, error }
 
 final authGateProvider = Provider<AuthGate>((ref) {
   final session = ref.watch(currentSessionProvider);
@@ -14,6 +14,8 @@ final authGateProvider = Provider<AuthGate>((ref) {
   return profile.when(
     data: (row) => row == null ? AuthGate.needsProfile : AuthGate.ready,
     loading: () => AuthGate.loading,
-    error: (_, _) => AuthGate.needsProfile,
+    // AUTH-4: a transient profile-read failure must NOT dump an onboarded user
+    // onto create-profile - surface a retry instead.
+    error: (_, _) => AuthGate.error,
   );
 });

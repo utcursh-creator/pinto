@@ -56,6 +56,9 @@ String? onboardingRedirect(AuthGate gate, String loc) {
   }
   switch (gate) {
     case AuthGate.loading:
+    case AuthGate.error:
+      // Both hold on splash: a spinner while loading, a retry when the profile
+      // read failed (AUTH-4) - never misroute an onboarded user to create-profile.
       return loc == Routes.splash ? null : Routes.splash;
     case AuthGate.anonymous:
       return loc == Routes.splash ? Routes.discover : null;
