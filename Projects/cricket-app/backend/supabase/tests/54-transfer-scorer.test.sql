@@ -62,11 +62,15 @@ select throws_ok(
   $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('mate@m.dev')) $$,
   'P0001', null, 'cannot transfer once the match is complete');
 
--- 7. validate-always: an INELIGIBLE self no-op still raises (neutral scorer not on either team)
-select tests.authenticate_as('neutral@m.dev');
+-- 7. validate-always: an INELIGIBLE self no-op still raises (neutral is the current
+--    scorer but on neither team). create_match now requires a team admin (SEC-5),
+--    so an admin creates the match and scoring is handed to neutral directly.
+select tests.authenticate_as('scorer@m.dev');
 select public.create_match(:'_ta'::uuid, :'_tb'::uuid, 20) as _m2 \gset
+update public.matches set scorer_id = tests.get_supabase_uid('neutral@m.dev') where id = :'_m2'::uuid;
+select tests.authenticate_as('neutral@m.dev');
 select throws_ok(
-  $$ select public.transfer_scorer((select id from public.matches where owner_id = tests.get_supabase_uid('neutral@m.dev')), tests.get_supabase_uid('neutral@m.dev')) $$,
+  $$ select public.transfer_scorer((select id from public.matches where scorer_id = tests.get_supabase_uid('neutral@m.dev')), tests.get_supabase_uid('neutral@m.dev')) $$,
   'P0001', null, 'an ineligible self no-op is still validated and rejected');
 
 select * from finish();
