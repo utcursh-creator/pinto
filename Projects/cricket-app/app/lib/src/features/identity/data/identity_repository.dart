@@ -21,7 +21,17 @@ class IdentityRepository {
   }
 
   Future<void> updateMyProfile(Map<String, dynamic> fields) async {
-    await _client.from('profiles').update(fields).eq('id', _uid);
+    // `phone` is PII and lives in the self-only profile_private table, not on the
+    // public profiles row (SEC-1). Route it there; write the rest to profiles.
+    final rest = Map<String, dynamic>.of(fields);
+    final hasPhone = rest.containsKey('phone');
+    final phone = rest.remove('phone');
+    if (rest.isNotEmpty) {
+      await _client.from('profiles').update(rest).eq('id', _uid);
+    }
+    if (hasPhone) {
+      await _client.from('profile_private').upsert({'id': _uid, 'phone': phone});
+    }
   }
 
   /// Uploads an avatar (profile photo or team logo) to the user's own folder in

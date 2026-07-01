@@ -3,8 +3,8 @@ select plan(5);
 
 select tests.create_supabase_user('p@m.dev');
 select tests.authenticate_as('p@m.dev');
-insert into public.profiles(id, display_name, phone, city, batting_style, playing_role)
-  values (tests.get_supabase_uid('p@m.dev'), 'Pat', '+910000000000', 'Pune', 'right', 'batter');
+insert into public.profiles(id, display_name, city, batting_style, playing_role)
+  values (tests.get_supabase_uid('p@m.dev'), 'Pat', 'Pune', 'right', 'batter');
 select tests.get_supabase_uid('p@m.dev') as _uid \gset
 
 -- become anon and resolve the minimal public view
