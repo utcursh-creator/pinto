@@ -101,8 +101,7 @@ class ProfileScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: OutlinedButton(
-                  onPressed: () =>
-                      ref.read(supabaseClientProvider).auth.signOut(),
+                  onPressed: () => _confirmSignOut(context, ref),
                   child: const Text('Sign out'),
                 ),
               ),
@@ -111,5 +110,39 @@ class ProfileScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  // AUTH-7: confirm, then sign out with feedback (the anon-bootstrap listener
+  // re-establishes a guest session, so the router drops back to Discover).
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You can keep browsing as a guest and sign back in anytime.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(supabaseClientProvider).auth.signOut();
+      messenger.showSnackBar(const SnackBar(content: Text('Signed out')));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not sign out. Please try again.')),
+      );
+    }
   }
 }

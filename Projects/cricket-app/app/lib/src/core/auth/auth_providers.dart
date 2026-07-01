@@ -32,10 +32,30 @@ final isAnonymousProvider = Provider<bool>((ref) {
 
 /// On launch with no session, create an anonymous one so the realtime
 /// WebSocket and the backend's anon read policies work for login-free viewing.
+/// Also re-creates an anonymous session after sign-out (AUTH-2) so viewing +
+/// realtime keep working instead of silently breaking until an app relaunch.
 /// Tolerant: if anonymous sign-in is disabled, pure live-viewing still works
 /// via the anon REST role.
 final anonBootstrapProvider = FutureProvider<void>((ref) async {
   final client = ref.watch(supabaseClientProvider);
+
+  Future<void> ensureAnon() async {
+    if (client.auth.currentSession != null) return;
+    try {
+      await client.auth.signInAnonymously();
+    } on AuthException catch (_) {
+      // tolerated by design
+    }
+  }
+
+  // AUTH-2: whenever we drop to no session (sign-out), restore an anon one.
+  ref.listen(authStateChangesProvider, (_, next) {
+    if (next.value?.event == AuthChangeEvent.signedOut &&
+        client.auth.currentSession == null) {
+      ensureAnon();
+    }
+  });
+
   if (client.auth.currentSession != null) return;
   try {
     await client.auth.signInAnonymously();
