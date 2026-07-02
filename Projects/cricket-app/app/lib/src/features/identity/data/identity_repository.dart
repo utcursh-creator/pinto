@@ -132,6 +132,15 @@ class IdentityRepository {
     return id as String;
   }
 
+  /// TEAM-11: ask to join a team (admin approves/declines).
+  Future<void> requestToJoin(String teamId) =>
+      _client.rpc('request_to_join', params: {'_team_id': teamId});
+
+  /// TEAM-11: admin decision on a join request.
+  Future<void> respondJoinRequest(String requestId, bool approve) =>
+      _client.rpc('respond_join_request',
+          params: {'_request_id': requestId, '_approve': approve});
+
   /// TEAM-3: revoke an outstanding invite (admin update via RLS).
   Future<void> revokeInvite(String inviteId) => _client
       .from('team_invites')

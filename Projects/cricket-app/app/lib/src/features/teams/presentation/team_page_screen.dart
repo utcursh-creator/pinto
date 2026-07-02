@@ -106,6 +106,20 @@ class TeamPageScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  // TEAM-13: the career line - the team is no longer a shell.
+                  _TeamRecordLine(teamId: teamId),
+                  // TEAM-11: a signed-in stranger can ask to join.
+                  if (uid != null && myRow == null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: FilledButton.icon(
+                        onPressed: () => _requestToJoin(context, ref),
+                        icon: const Icon(Icons.group_add_outlined),
+                        label: const Text('Request to join'),
+                      ),
+                    ),
+                  // TEAM-11: admins act on pending join requests inline.
+                  if (isAdmin) _JoinRequests(teamId: teamId),
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
@@ -162,6 +176,9 @@ class TeamPageScreen extends ConsumerWidget {
                     ),
                   const Divider(height: 1),
                   _HomeGround(teamId: teamId, isAdmin: isAdmin),
+                  const Divider(height: 1),
+                  // TEAM-13: recent matches, tap through to the scorecard.
+                  _TeamMatches(teamId: teamId),
                 ],
               );
             },
@@ -169,6 +186,24 @@ class TeamPageScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  /// TEAM-11: send a join request (admin gets a notification).
+  Future<void> _requestToJoin(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await ref.read(identityRepositoryProvider).requestToJoin(teamId);
+      messenger?.showSnackBar(const SnackBar(
+          content: Text('Request sent - the captain will review it')));
+    } catch (e) {
+      final raw = '$e';
+      messenger?.showSnackBar(SnackBar(
+          content: Text(raw.contains('already pending')
+              ? 'Your request is already pending.'
+              : raw.contains('already on this team')
+                  ? 'You are already on this team.'
+                  : 'Could not send the request: $raw')));
+    }
   }
 
   /// TEAM-3/MISS-6: list outstanding invites with uses/expiry and revoke.
@@ -540,11 +575,36 @@ class _HomeGround extends ConsumerWidget {
 
   Future<void> _setFromGps(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
+    // TEAM-8: capture a human ground name so it never reads "Saved location".
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Home ground'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+              labelText: 'Ground name', hintText: 'e.g. Shivaji Park'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Use my location')),
+        ],
+      ),
+    );
+    if (name == null) return;
+    if (!context.mounted) return;
     try {
       final pos = await ref.read(locationServiceProvider).current();
       await ref
           .read(discoverRepositoryProvider)
-          .setTeamLocation(teamId, pos.lat, pos.lng);
+          .setTeamLocation(teamId, pos.lat, pos.lng,
+              label: name.isEmpty ? null : name);
       ref.invalidate(teamGroundProvider(teamId));
       messenger?.showSnackBar(
         const SnackBar(content: Text('Home ground saved')),
@@ -554,5 +614,133 @@ class _HomeGround extends ConsumerWidget {
     } catch (e) {
       messenger?.showSnackBar(SnackBar(content: Text('$e')));
     }
+  }
+}
+
+/// TEAM-13: "P 4 - W 2, L 1, T 1" off team_career_stats.
+class _TeamRecordLine extends ConsumerWidget {
+  const _TeamRecordLine({required this.teamId});
+  final String teamId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(teamStatsProvider(teamId)).value;
+    if (stats == null) return const SizedBox.shrink();
+    final played = (stats['played'] as num?)?.toInt() ?? 0;
+    if (played == 0) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: Text('No completed matches yet.',
+            style: TextStyle(color: Colors.black54, fontSize: 13)),
+      );
+    }
+    final w = (stats['won'] as num?)?.toInt() ?? 0;
+    final l = (stats['lost'] as num?)?.toInt() ?? 0;
+    final t = (stats['tied'] as num?)?.toInt() ?? 0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Text(
+        'Played $played  -  Won $w, Lost $l${t > 0 ? ', Tied $t' : ''}',
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+      ),
+    );
+  }
+}
+
+/// TEAM-11: pending join requests, approve/decline inline (admins only).
+class _JoinRequests extends ConsumerWidget {
+  const _JoinRequests({required this.teamId});
+  final String teamId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requests = ref.watch(pendingJoinRequestsProvider(teamId)).value ??
+        const <Map<String, dynamic>>[];
+    if (requests.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+          child: Text('Join requests',
+              style: TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        for (final r in requests)
+          ListTile(
+            dense: true,
+            leading: InitialsAvatar(
+              name: (r['profiles'] as Map?)?['display_name'] as String?,
+              photoUrl: (r['profiles'] as Map?)?['photo_url'] as String?,
+              radius: 18,
+            ),
+            title: Text(
+                ((r['profiles'] as Map?)?['display_name'] as String?) ??
+                    'Player'),
+            trailing: Wrap(spacing: 4, children: [
+              TextButton(
+                onPressed: () => _respond(ref, r['id'] as String, true),
+                child: const Text('Approve'),
+              ),
+              TextButton(
+                onPressed: () => _respond(ref, r['id'] as String, false),
+                child: const Text('Decline',
+                    style: TextStyle(color: Colors.red)),
+              ),
+            ]),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _respond(WidgetRef ref, String requestId, bool approve) async {
+    try {
+      await ref
+          .read(identityRepositoryProvider)
+          .respondJoinRequest(requestId, approve);
+      ref.invalidate(pendingJoinRequestsProvider(teamId));
+      if (approve) ref.invalidate(teamRosterProvider(teamId));
+    } catch (_) {/* the list refresh reflects reality */}
+  }
+}
+
+/// TEAM-13: the team's recent matches, tap-through to the scorecard.
+class _TeamMatches extends ConsumerWidget {
+  const _TeamMatches({required this.teamId});
+  final String teamId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matches = ref.watch(teamMatchesProvider(teamId)).value ??
+        const <Map<String, dynamic>>[];
+    if (matches.isEmpty) return const SizedBox.shrink();
+    String name(dynamic embed) =>
+        (embed is Map ? embed['name'] as String? : null) ?? 'Team';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+          child: Text('Matches',
+              style: Theme.of(context).textTheme.labelLarge),
+        ),
+        for (final m in matches)
+          ListTile(
+            dense: true,
+            leading: Icon(
+              m['status'] == 'complete' ? Icons.emoji_events_outlined : Icons.sensors,
+              size: 20,
+              color: m['status'] == 'live' ? Colors.red : null,
+            ),
+            title: Text('${name(m['team_a'])}  v  ${name(m['team_b'])}'),
+            subtitle: Text(
+              (m['result'] is Map ? (m['result'] as Map)['note'] as String? : null) ??
+                  (m['status'] == 'live' ? 'Live now' : 'In progress'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => context.push(Routes.viewMatch(m['id'] as String)),
+          ),
+      ],
+    );
   }
 }

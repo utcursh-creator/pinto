@@ -82,3 +82,40 @@ final activeTeamInvitesProvider =
       .order('created_at', ascending: false);
   return List<Map<String, dynamic>>.from(rows as List);
 });
+
+/// TEAM-13: the team's W/L career line (anon-safe RPC off completed matches).
+final teamStatsProvider =
+    FutureProvider.family<Map<String, dynamic>, String>((ref, teamId) async {
+  final client = ref.watch(supabaseClientProvider);
+  final res =
+      await client.rpc('team_career_stats', params: {'_team_id': teamId});
+  return Map<String, dynamic>.from(res as Map);
+});
+
+/// TEAM-13: the team's matches (either side), newest first, with names+result.
+final teamMatchesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, teamId) async {
+  final client = ref.watch(supabaseClientProvider);
+  final rows = await client
+      .from('matches')
+      .select('id, status, overs_limit, result, created_at, '
+          'team_a:team_a_id(name), team_b:team_b_id(name)')
+      .or('team_a_id.eq.$teamId,team_b_id.eq.$teamId')
+      .inFilter('status', ['live', 'innings_break', 'complete'])
+      .order('created_at', ascending: false)
+      .limit(15);
+  return List<Map<String, dynamic>>.from(rows as List);
+});
+
+/// TEAM-11: pending join requests for a team (admin view via RLS).
+final pendingJoinRequestsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, teamId) async {
+  final client = ref.watch(supabaseClientProvider);
+  final rows = await client
+      .from('team_join_requests')
+      .select('id, requester_id, created_at, profiles(display_name, photo_url)')
+      .eq('team_id', teamId)
+      .eq('status', 'pending')
+      .order('created_at');
+  return List<Map<String, dynamic>>.from(rows as List);
+});

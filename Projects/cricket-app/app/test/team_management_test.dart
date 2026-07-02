@@ -44,6 +44,10 @@ Future<void> _pump(WidgetTester tester, {required String viewerRole}) async {
               },
             ]),
         teamGroundProvider.overrideWith((ref, id) async => null),
+        teamStatsProvider.overrideWith((ref, id) async =>
+            {'played': 3, 'won': 2, 'lost': 1, 'tied': 0, 'no_result': 0}),
+        teamMatchesProvider.overrideWith((ref, id) async => []),
+        pendingJoinRequestsProvider.overrideWith((ref, id) async => []),
       ],
       child: const MaterialApp(home: TeamPageScreen(teamId: 't1')),
     ),
@@ -92,6 +96,53 @@ void main() {
         expect(find.text('Leave team'), findsOneWidget);
         expect(find.text('Delete team'), findsNothing);
         expect(find.text('Edit team'), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('a stranger sees the record + Request to join on $platform',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        // viewer 'me' is NOT on the roster this time
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentSessionProvider.overrideWithValue(_session('me')),
+              teamProvider.overrideWith((ref, id) async => {
+                    'id': 't1',
+                    'name': 'Strikers',
+                    'city': 'Mumbai',
+                    'logo_url': null
+                  }),
+              teamRosterProvider.overrideWith((ref, id) async => [
+                    {
+                      'id': 'm-other',
+                      'role': 'captain',
+                      'guest_name': null,
+                      'profile_id': 'p2',
+                      'profiles': {'display_name': 'Rahul', 'photo_url': null},
+                    },
+                  ]),
+              teamGroundProvider.overrideWith((ref, id) async => null),
+              teamStatsProvider.overrideWith((ref, id) async =>
+                  {'played': 3, 'won': 2, 'lost': 1, 'tied': 0, 'no_result': 0}),
+              teamMatchesProvider.overrideWith((ref, id) async => []),
+              pendingJoinRequestsProvider.overrideWith((ref, id) async => []),
+            ],
+            child: const MaterialApp(home: TeamPageScreen(teamId: 't1')),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        // TEAM-13: the record line renders
+        expect(find.textContaining('Played 3'), findsOneWidget);
+        // TEAM-11: the stranger gets a Request to join CTA
+        expect(find.widgetWithText(FilledButton, 'Request to join'),
+            findsOneWidget);
+        // and no manage affordances
+        expect(find.byKey(const Key('team_menu')), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
