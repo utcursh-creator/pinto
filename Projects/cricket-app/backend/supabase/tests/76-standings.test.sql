@@ -23,6 +23,12 @@ select public.add_guest_member(:'_z'::uuid,'z1') as _z1 \gset
 select public.add_guest_member(:'_z'::uuid,'z2') as _z2 \gset
 select public.add_guest_member(:'_z'::uuid,'zb') as _zb \gset
 
+-- enter all three teams into the tournament (group A). The organizer created
+-- them so passes the SEC-8 team-admin gate; standings now seed from these.
+select public.add_tournament_team(:'_t'::uuid, :'_x'::uuid, 'A');
+select public.add_tournament_team(:'_t'::uuid, :'_y'::uuid, 'A');
+select public.add_tournament_team(:'_t'::uuid, :'_z'::uuid, 'A');
+
 -- helper note: bat(_in, bowler, striker, non, runs) inserts `runs` ones over 120
 -- legal balls (not all out, full 20 overs); allout(_in, bowler, s, ns, runs)
 -- inserts `runs` ones then a wicket (all out -> full-quota overs).
