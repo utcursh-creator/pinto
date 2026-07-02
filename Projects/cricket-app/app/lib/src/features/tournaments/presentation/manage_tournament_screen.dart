@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
@@ -76,10 +77,24 @@ class ManageTournamentScreen extends ConsumerWidget {
         ),
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-        child: OutlinedButton.icon(
-          onPressed: () => _addTeam(context, ref, o),
-          icon: const Icon(Icons.add),
-          label: const Text('Add team'),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _addTeam(context, ref, o),
+                icon: const Icon(Icons.add),
+                label: const Text('Add my team'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _inviteTeam(context, ref),
+                icon: const Icon(Icons.link),
+                label: const Text('Invite a team'),
+              ),
+            ),
+          ],
         ),
       ),
       Padding(
@@ -216,6 +231,27 @@ class ManageTournamentScreen extends ConsumerWidget {
     if (picked != null) {
       await ref.read(tournamentRepositoryProvider).addTournamentTeam(tournamentId, picked, 'A');
       ref.invalidate(tournamentOverviewProvider(tournamentId));
+    }
+  }
+
+  // SEC-8: invite a team the organizer does NOT manage. Mints a join token and
+  // shares it; a captain of that team redeems it (their consent), mirroring
+  // CricHeroes' tournament invite link / PIN.
+  Future<void> _inviteTeam(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final token = await ref
+          .read(tournamentRepositoryProvider)
+          .createTournamentInvite(tournamentId);
+      await SharePlus.instance.share(
+        ShareParams(
+          text: 'Add your team to my cricket tournament on Pitch: '
+              '${joinTournamentLink(token)}\nOr enter this code in the app: $token',
+          subject: 'Pitch tournament invite',
+        ),
+      );
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('$e')));
     }
   }
 

@@ -31,6 +31,7 @@ import '../../features/teams/presentation/invite_accept_screen.dart';
 import '../../features/teams/presentation/my_teams_screen.dart';
 import '../../features/teams/presentation/team_page_screen.dart';
 import '../../features/tournaments/presentation/create_tournament_screen.dart';
+import '../../features/tournaments/presentation/join_tournament_screen.dart';
 import '../../features/tournaments/presentation/manage_tournament_screen.dart';
 import '../../features/tournaments/presentation/tournament_page_screen.dart';
 import '../../features/tournaments/presentation/tournaments_list_screen.dart';
@@ -51,6 +52,7 @@ String? onboardingRedirect(AuthGate gate, String loc) {
   if (loc.startsWith('/watch/') ||
       loc.startsWith('/player/') ||
       loc.startsWith('/invite/') ||
+      loc.startsWith('/join-tournament/') ||
       loc.startsWith('/tournament/')) {
     return null;
   }
@@ -117,6 +119,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/invite/:token',
         builder: (context, state) => InviteAcceptScreen(
+          token: state.pathParameters['token']!,
+        ),
+      ),
+      // Tournament join from a shared invite link / PIN (top-level; a team admin
+      // enters THEIR team = consent). SEC-8 CricHeroes-style self-registration.
+      GoRoute(
+        path: '/join-tournament/:token',
+        builder: (context, state) => JoinTournamentScreen(
           token: state.pathParameters['token']!,
         ),
       ),

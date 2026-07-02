@@ -41,6 +41,26 @@ class TournamentRepository {
         '_group_label': group,
       });
 
+  /// Mints a shareable tournament join token (organizer only, in setup). A team
+  /// admin redeems it to enter THEIR team - their redemption is the consent
+  /// (SEC-8, mirroring CricHeroes' invite link / PIN).
+  Future<String> createTournamentInvite(String tournamentId) async {
+    final token = await _c
+        .rpc('create_tournament_invite', params: {'_tournament_id': tournamentId});
+    return token as String;
+  }
+
+  /// Redeems a join token: enters [teamId] (which the caller must admin) into
+  /// the token's tournament, in [group]. Returns the tournament id joined.
+  Future<String> joinTournamentWithToken(String token, String teamId, String group) async {
+    final id = await _c.rpc('join_tournament_with_token', params: {
+      '_invite_token': token,
+      '_team_id': teamId,
+      '_group_label': group,
+    });
+    return id as String;
+  }
+
   Future<void> generateGroupFixtures(String tournamentId) =>
       _c.rpc('generate_group_fixtures', params: {'_tournament_id': tournamentId});
 
@@ -57,3 +77,7 @@ class TournamentRepository {
 final tournamentRepositoryProvider = Provider<TournamentRepository>(
   (ref) => TournamentRepository(ref.watch(supabaseClientProvider)),
 );
+
+/// Shareable link for a tournament join token (mirrors inviteLink). No hosted
+/// domain yet, so the in-app "enter code" fallback carries the same token.
+String joinTournamentLink(String token) => 'https://pitch.app/join-tournament/$token';

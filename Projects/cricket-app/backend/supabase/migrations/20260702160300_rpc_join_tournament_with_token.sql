@@ -5,7 +5,7 @@
 -- sees in setup and can remove). The tournament analogue of accept_invite.
 create or replace function public.join_tournament_with_token(
   _invite_token text, _team_id uuid, _group_label text default 'A'
-) returns void language plpgsql security definer set search_path = public as $$
+) returns uuid language plpgsql security definer set search_path = public as $$
 declare _tid uuid; _tstatus public.tournament_status;
 begin
   if (select auth.uid()) is null then
@@ -35,6 +35,8 @@ begin
   update public.tournament_invites
     set status = 'accepted', redeemed_by = (select auth.uid()), redeemed_team_id = _team_id
     where invite_token = _invite_token;
+
+  return _tid;  -- so the joiner can be routed to the tournament they joined
 end; $$;
 revoke all on function public.join_tournament_with_token(text, uuid, text) from public;
 grant execute on function public.join_tournament_with_token(text, uuid, text) to authenticated;

@@ -52,4 +52,8 @@ class Routes {
 
   // Team invite acceptance (opened from a shared invite link).
   static String acceptInvite(String token) => '/invite/$token';
+
+  // Tournament join (opened from a shared tournament invite link / PIN). Public
+  // top-level like /invite so it cold-starts + bypasses onboarding.
+  static String joinTournament(String token) => '/join-tournament/$token';
 }

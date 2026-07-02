@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(10);
 -- SEC-8 proper fix: a team the organizer does NOT admin enters a tournament only
 -- by that team's own admin redeeming a join token (consent-by-opt-in), mirroring
 -- CricHeroes' invite-link / PIN model. Direct-add stays admin-gated.
@@ -29,8 +29,10 @@ select tests.authenticate_as('capt@s.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('capt@s.dev'), 'Capt');
 select public.create_team('Strikers', 'C') as _team \gset
 
--- the captain redeems the token, dropping THEIR team into group B (b)(g)
-select public.join_tournament_with_token(:'_tok'::text, :'_team'::uuid, 'B');
+-- the captain redeems the token, dropping THEIR team into group B (b)(g). The
+-- RPC returns the tournament id so the joiner can be routed to it.
+select is(public.join_tournament_with_token(:'_tok'::text, :'_team'::uuid, 'B'),
+  :'_t'::uuid, 'redeeming returns the joined tournament id');
 select is(
   (select group_label from public.tournament_teams
      where tournament_id = :'_t'::uuid and team_id = :'_team'::uuid),
