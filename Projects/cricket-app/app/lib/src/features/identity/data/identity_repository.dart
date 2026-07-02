@@ -109,6 +109,20 @@ class IdentityRepository {
     final id = await _client.rpc('accept_invite', params: {'_invite_token': token});
     return id as String;
   }
+
+  /// DISC-8: pre-flight a token to the inviting team's name + redeemability
+  /// (null when the token is unknown), so the invite screen can show a clear
+  /// state before the user taps Join.
+  Future<({String teamName, bool redeemable})?> invitePreview(String token) async {
+    final res =
+        await _client.rpc('team_invite_preview', params: {'_invite_token': token});
+    if (res == null) return null;
+    final m = (res as Map).cast<String, dynamic>();
+    return (
+      teamName: (m['team_name'] as String?) ?? 'a team',
+      redeemable: (m['redeemable'] as bool?) ?? false,
+    );
+  }
 }
 
 /// The shareable link for an invite token. The path is handled in-app by the

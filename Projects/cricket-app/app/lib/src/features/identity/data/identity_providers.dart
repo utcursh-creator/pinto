@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import 'identity_repository.dart';
 
 /// Teams the current user belongs to: each row is {role, teams: {...}}.
 final myTeamsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -57,3 +58,10 @@ final teamRosterProvider =
           .eq('team_id', teamId);
       return List<Map<String, dynamic>>.from(rows as List);
     });
+
+/// DISC-8: pre-flight an invite token -> team name + redeemability (null =
+/// unknown token). Keyed by token.
+final invitePreviewProvider =
+    FutureProvider.family<({String teamName, bool redeemable})?, String>(
+        (ref, token) =>
+            ref.watch(identityRepositoryProvider).invitePreview(token));

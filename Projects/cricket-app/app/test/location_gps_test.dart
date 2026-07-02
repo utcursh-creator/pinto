@@ -29,6 +29,12 @@ void main() {
         await tester.tap(find.text('Use my current location'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+
+        // DISC-4: the area-name field is the primary input; raw coordinates
+        // moved behind the Advanced expander. Expand it to see the values.
+        expect(find.widgetWithText(TextField, 'Area name'), findsOneWidget);
+        await tester.tap(find.textContaining('Advanced'));
+        await tester.pumpAndSettle();
         expect(find.text('12.34000'), findsOneWidget);
         expect(find.text('56.78000'), findsOneWidget);
       } finally {

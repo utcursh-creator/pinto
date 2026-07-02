@@ -22,6 +22,7 @@ class LocationScreen extends ConsumerStatefulWidget {
 class _LocationScreenState extends ConsumerState<LocationScreen> {
   late final TextEditingController _lat;
   late final TextEditingController _lng;
+  final _label = TextEditingController();
   double _radiusKm = 25;
   bool _busy = false;
   String? _message;
@@ -33,12 +34,16 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     _lat = TextEditingController(text: a.lat.toString());
     _lng = TextEditingController(text: a.lng.toString());
     _radiusKm = a.radiusM / 1000;
+    // DISC-4: prefill the saved home label so it doesn't read "Saved location".
+    final home = ref.read(homeLocationProvider).value;
+    if (home?.label != null) _label.text = home!.label!;
   }
 
   @override
   void dispose() {
     _lat.dispose();
     _lng.dispose();
+    _label.dispose();
     super.dispose();
   }
 
@@ -54,7 +59,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final session = ref.read(currentSessionProvider);
     if (session != null && !session.user.isAnonymous) {
       try {
-        await ref.read(discoverRepositoryProvider).setMyLocation(lat, lng);
+        // DISC-4: persist the human place label too, so "home" has a name.
+        await ref.read(discoverRepositoryProvider).setMyLocation(
+              lat,
+              lng,
+              label: _label.text.trim(),
+            );
         ref.invalidate(homeLocationProvider);
       } catch (_) {/* non-fatal: the session anchor is still set */}
     }
@@ -110,18 +120,39 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
             Text(_message!, style: const TextStyle(color: Colors.red)),
           ],
           const SizedBox(height: 16),
+          // DISC-4: a human place name instead of raw coordinates in the UI.
           TextField(
-            controller: _lat,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-            decoration: const InputDecoration(labelText: 'Latitude'),
+            controller: _label,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Area name',
+              hintText: 'e.g. Dadar, Mumbai',
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Raw coordinates are an expert affordance, not the primary UI.
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('Advanced: exact coordinates',
+                style: Theme.of(context).textTheme.labelLarge),
+            children: [
+              TextField(
+                controller: _lat,
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true, signed: true),
+                decoration: const InputDecoration(labelText: 'Latitude'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _lng,
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true, signed: true),
+                decoration: const InputDecoration(labelText: 'Longitude'),
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _lng,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-            decoration: const InputDecoration(labelText: 'Longitude'),
-          ),
-          const SizedBox(height: 20),
           Text('Radius: ${_radiusKm.round()} km'),
           Slider(
             value: _radiusKm,
