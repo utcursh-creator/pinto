@@ -3,7 +3,7 @@
 -- with a winning-side tiebreak.
 -- One match: x1 makes 20 (5 fours) then is caught by zf off zb; z1 makes 5. X wins.
 begin;
-select plan(6);
+select plan(8);
 select tests.create_supabase_user('org@s.dev');
 select tests.authenticate_as('org@s.dev');
 insert into public.profiles(id,display_name) values (tests.get_supabase_uid('org@s.dev'),'Org');
@@ -45,6 +45,12 @@ select is((public.tournament_leaderboard(:'_t'::uuid)->'most_catches'->0->>'memb
 -- POTM: x1 (impact 20, winning side) beats zb (impact 20, losing side) on the tiebreak
 select is((public.match_potm(:'_m'::uuid)->>'member_id'), (:'_x1'::uuid)::text,
   'POTM is x1 (winning-side tiebreak over zb at equal impact)');
+
+-- TOUR-7: rows expose a profile_id key so claimed players can link to /player/:id
+select ok((public.tournament_leaderboard(:'_t'::uuid)->'most_runs'->0) ? 'profile_id',
+  'leaderboard rows carry a profile_id key');
+select ok(public.match_potm(:'_m'::uuid) ? 'profile_id',
+  'POTM carries a profile_id key');
 
 select * from finish();
 rollback;
