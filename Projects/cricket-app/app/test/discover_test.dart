@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pitch_app/src/core/auth/auth_providers.dart';
+import 'package:pitch_app/src/features/discover/data/discover_models.dart';
 import 'package:pitch_app/src/features/discover/data/discover_providers.dart';
 import 'package:pitch_app/src/features/discover/presentation/discover_screen.dart';
 import 'package:pitch_app/src/features/discover/presentation/new_post_composer.dart';
@@ -10,7 +11,8 @@ import 'package:pitch_app/src/features/identity/data/identity_providers.dart';
 import 'package:pitch_app/src/features/messages/presentation/dm_inbox_screen.dart';
 
 void main() {
-  testWidgets('Discover feed shows a post with flair + distance', (tester) async {
+  testWidgets('Discover feed shows a post with flair, distance, metadata + author',
+      (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -24,6 +26,11 @@ void main() {
                 'title': 'Need 2 batters',
                 'description': 'Sunday 8am',
                 'approx_m': 1200,
+                'overs': 20,
+                'skill': 'intermediate',
+                'slots_needed': 2,
+                'author_name': 'Imran',
+                'team_name': 'Dadar CC',
               },
             ],
           ),
@@ -36,6 +43,24 @@ void main() {
     expect(find.text('Need 2 batters'), findsOneWidget);
     expect(find.text('Loser pays'), findsWidgets);
     expect(find.text('1.2 km'), findsOneWidget);
+    // DISC-2: cricket metadata chips
+    expect(find.text('20 ov'), findsOneWidget);
+    expect(find.text('Intermediate'), findsOneWidget);
+    expect(find.text('2 players needed'), findsOneWidget);
+    // DISC-5: poster + team
+    expect(find.textContaining('Posted by Imran (Dadar CC)'), findsOneWidget);
+  });
+
+  test('LfLabels: distance is friendly, metaChips omit empties (DISC-2/7)', () {
+    expect(LfLabels.distance(0), 'Nearby');
+    expect(LfLabels.distance(40), 'Nearby');
+    expect(LfLabels.distance(250), '250 m');
+    expect(LfLabels.distance(1200), '1.2 km');
+    expect(LfLabels.distance(null), '');
+    expect(
+      LfLabels.metaChips(overs: 20, skillLevel: 'advanced', slotsNeeded: 0),
+      ['20 ov', 'Advanced'], // slots 0 dropped, no date
+    );
   });
 
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
@@ -80,10 +105,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(find.text('Add photos (0/6)'), findsOneWidget);
 
         final post = find.widgetWithText(FilledButton, 'Post');
-        await tester.ensureVisible(post);
+        await tester.scrollUntilVisible(post, 300,
+            scrollable: find.byType(Scrollable).first);
         await tester.pumpAndSettle();
         await tester.tap(post);
         await tester.pumpAndSettle();

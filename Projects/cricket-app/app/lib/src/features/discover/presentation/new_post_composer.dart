@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,22 +23,45 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
   String _mode = 'player_seeking_team';
   String? _flair; // required
   String? _teamId; // required for team_seeking_*
+  String? _skill; // optional
+  int _slots = 0; // players needed (team_seeking_players)
+  DateTime? _matchAt; // optional match date/time
   final _details = TextEditingController();
   final _place = TextEditingController();
   final _link = TextEditingController();
+  final _overs = TextEditingController();
   final List<String> _imageUrls = [];
   bool _busy = false;
   bool _uploading = false;
   String? _error;
 
   bool get _needsTeam => _mode != 'player_seeking_team';
+  bool get _needsSlots => _mode == 'team_seeking_players';
 
   @override
   void dispose() {
     _details.dispose();
     _place.dispose();
     _link.dispose();
+    _overs.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickWhen() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _matchAt ?? now,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_matchAt ?? now),
+    );
+    setState(() => _matchAt = DateTime(
+        date.year, date.month, date.day, time?.hour ?? 9, time?.minute ?? 0));
   }
 
   Future<void> _addPhotos() async {
@@ -83,6 +107,10 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             teamId: _needsTeam ? _teamId : null,
             description: _details.text.trim(),
             placeLabel: _place.text.trim(),
+            overs: int.tryParse(_overs.text.trim()),
+            skill: _skill,
+            slotsNeeded: _needsSlots && _slots > 0 ? _slots : null,
+            matchAt: _matchAt,
             imageUrls: _imageUrls,
             linkUrl: _link.text.trim(),
           );
@@ -184,6 +212,58 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
           TextField(
             controller: _place,
             decoration: const InputDecoration(labelText: 'Where (ground / area)'),
+          ),
+          // DISC-1: cricket-specific fields, so a post carries real intent.
+          const SizedBox(height: 16),
+          Text('Skill level (optional)',
+              style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final e in LfLabels.skills.entries)
+                ChoiceChip(
+                  label: Text(e.value),
+                  selected: _skill == e.key,
+                  onSelected: (v) =>
+                      setState(() => _skill = v ? e.key : null),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _overs,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(
+              labelText: 'Overs (optional)',
+              hintText: 'e.g. 20',
+            ),
+          ),
+          if (_needsSlots) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Expanded(child: Text('Players needed')),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: _slots > 0 ? () => setState(() => _slots--) : null,
+                ),
+                Text('$_slots', style: const TextStyle(fontSize: 16)),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => setState(() => _slots++),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _pickWhen,
+            icon: const Icon(Icons.event, size: 18),
+            label: Text(_matchAt == null
+                ? 'Match date & time (optional)'
+                : LfLabels.matchWhen(_matchAt)),
           ),
           const SizedBox(height: 12),
           TextField(

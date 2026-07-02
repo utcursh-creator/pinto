@@ -73,15 +73,20 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     Text(
-                      (p['title'] as String?) ?? LfLabels.mode(p['mode'] as String?),
+                      (p['title'] as String?)?.trim().isNotEmpty ?? false
+                          ? p['title'] as String
+                          : LfLabels.mode(p['mode'] as String?),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         FlairChip(p['flair'] as String?),
-                        const SizedBox(width: 8),
-                        Text(LfLabels.mode(p['mode'] as String?)),
+                        // DISC-6: show the mode label only when it isn't the title.
+                        if ((p['title'] as String?)?.trim().isNotEmpty ?? false) ...[
+                          const SizedBox(width: 8),
+                          Text(LfLabels.mode(p['mode'] as String?)),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -91,6 +96,32 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       '${p['place_label'] != null ? '  -  ${p['place_label']}' : ''}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    // DISC-2: the cricket metadata.
+                    Builder(builder: (context) {
+                      final chips = LfLabels.metaChips(
+                        overs: (p['overs'] as num?)?.toInt(),
+                        skillLevel: p['skill'] as String?,
+                        slotsNeeded: (p['slots_needed'] as num?)?.toInt(),
+                        matchAt: p['match_at'],
+                      );
+                      if (chips.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final c in chips)
+                              Chip(
+                                label: Text(c),
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
                     if ((p['description'] as String?)?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 12),
                       Text(p['description'] as String),

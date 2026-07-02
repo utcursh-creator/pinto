@@ -217,9 +217,18 @@ class _PostCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final title = (post['title'] as String?) ??
-        LfLabels.mode(post['mode'] as String?);
+    final rawTitle = post['title'] as String?;
+    final hasTitle = rawTitle != null && rawTitle.trim().isNotEmpty;
+    final title = hasTitle ? rawTitle : LfLabels.mode(post['mode'] as String?);
     final desc = post['description'] as String?;
+    final author = post['author_name'] as String?;
+    final team = post['team_name'] as String?;
+    final chips = LfLabels.metaChips(
+      overs: (post['overs'] as num?)?.toInt(),
+      skillLevel: post['skill'] as String?,
+      slotsNeeded: (post['slots_needed'] as num?)?.toInt(),
+      matchAt: post['match_at'],
+    );
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
@@ -248,13 +257,34 @@ class _PostCard extends ConsumerWidget {
               Row(
                 children: [
                   FlairChip(post['flair'] as String?),
-                  const SizedBox(width: 8),
-                  Text(
-                    LfLabels.mode(post['mode'] as String?),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  // DISC-6: only show the mode label here when it isn't already
+                  // the title, so it never renders twice.
+                  if (hasTitle) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      LfLabels.mode(post['mode'] as String?),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
               ),
+              // DISC-5: who posted it (and their team).
+              if (author != null && author.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Posted by $author${team != null && team.isNotEmpty ? ' ($team)' : ''}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              // DISC-2: the cricket metadata chips.
+              if (chips.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [for (final c in chips) _MetaChip(c)],
+                ),
+              ],
               if (desc != null && desc.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -279,6 +309,25 @@ class _PostCard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A small pill for a post's cricket metadata (overs / skill / slots / when).
+class _MetaChip extends StatelessWidget {
+  const _MetaChip(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(label, style: theme.textTheme.labelSmall),
     );
   }
 }
