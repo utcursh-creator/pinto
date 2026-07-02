@@ -284,6 +284,97 @@ void main() {
       }
     });
 
+    testWidgets('a deleted/unknown match id shows "Match not found" on '
+        '$platform', (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              matchProvider.overrideWith((ref, id) async => null),
+              matchTeamNamesProvider.overrideWith((ref, id) async => {}),
+              matchInningsListProvider.overrideWith((ref, id) async => []),
+              matchSquadProvider.overrideWith((ref, id) async => []),
+            ],
+            child: const MaterialApp(
+              home: MatchViewerScreen(matchId: 'gone', enableRealtime: false),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Match not found'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('the innings break shows a break banner on $platform',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              matchProvider.overrideWith(
+                (ref, id) async => {
+                  'id': 'm1',
+                  'team_a_id': 'A',
+                  'team_b_id': 'B',
+                  'overs_limit': 20,
+                  'balls_per_over': 6,
+                  'status': 'live',
+                },
+              ),
+              matchTeamNamesProvider.overrideWith(
+                (ref, id) async => {'A': 'Mumbai United', 'B': 'Dadar CC'},
+              ),
+              matchInningsListProvider.overrideWith(
+                (ref, id) async => [
+                  {
+                    'id': 'in1',
+                    'innings_number': 1,
+                    'batting_team_id': 'A',
+                    'bowling_team_id': 'B',
+                    'status': 'completed',
+                    'target': null,
+                  },
+                ],
+              ),
+              matchSquadProvider.overrideWith((ref, id) async => []),
+              inningsStateProvider.overrideWith(
+                (ref, id) async => <String, dynamic>{
+                  'runs': 154,
+                  'wickets': 6,
+                  'over': '20.0',
+                  'striker_id': null,
+                  'non_striker_id': null,
+                  'batting': <dynamic>[],
+                  'bowling': <dynamic>[],
+                  'fall_of_wickets': <dynamic>[],
+                  'per_over': <dynamic>[],
+                  'worm': <dynamic>[],
+                  'extras': <String, dynamic>{},
+                  'innings_status': 'completed',
+                  'result': null,
+                },
+              ),
+              inningsWagonProvider.overrideWith((ref, id) async => []),
+            ],
+            child: const MaterialApp(
+              home: MatchViewerScreen(matchId: 'm1', enableRealtime: false),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('Innings break'), findsOneWidget);
+        expect(find.textContaining('Target 155'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('Info tab shows venue + toss + format on $platform', (tester) async {
       debugDefaultTargetPlatformOverride = platform;
       try {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -43,6 +44,8 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
   String? _scorecardInnings; // selected innings id for the scorecard
   RealtimeChannel? _channel;
   SupabaseClient? _client; // captured for safe teardown (ref is unsafe in dispose)
+  StreamSubscription<AuthState>? _authSub;
+  String? _subscribedToken; // the token the current channel was opened with
   List<String> _knownInnings = const [];
   final GlobalKey _shareKey = GlobalKey();
 
@@ -50,22 +53,40 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
   void initState() {
     super.initState();
     if (widget.enableRealtime) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _subscribe());
+      final c = ref.read(supabaseClientProvider);
+      _client = c;
+      // RT-3: a cold-start deep-linked /watch has no session yet (anon bootstrap
+      // is still in flight). Re-evaluate the subscription whenever auth changes
+      // (session first appears, token refreshes) instead of subscribing once
+      // with a null token.
+      _authSub = c.auth.onAuthStateChange.listen((_) => _ensureSubscribed());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureSubscribed());
     }
   }
 
-  void _subscribe() {
-    final c = ref.read(supabaseClientProvider);
-    _client = c;
-    // The match:<id> topic is public (authenticated + anon receive policy), but
-    // the socket still needs a token: anon viewers were signed in anonymously.
-    c.realtime.setAuth(c.auth.currentSession?.accessToken);
-    final channel = c.channel('match:${widget.matchId}');
+  void _ensureSubscribed() {
+    if (!mounted) return;
+    final c = _client;
+    if (c == null) return;
+    final token = c.auth.currentSession?.accessToken;
+    if (token == null) return; // wait for a session (RT-3)
+    if (_channel != null && _subscribedToken == token) return; // already current
+    final old = _channel;
+    if (old != null) c.removeChannel(old);
+    // RT-1: the topic is private - DB-trigger broadcasts land in realtime.messages
+    // behind the receive RLS policy, which Supabase only evaluates for PRIVATE
+    // channels. A public channel would silently never deliver.
+    c.realtime.setAuth(token);
+    final channel = c.channel(
+      'match:${widget.matchId}',
+      opts: const RealtimeChannelConfig(private: true),
+    );
     for (final op in const ['INSERT', 'UPDATE', 'DELETE']) {
       channel.onBroadcast(event: op, callback: (_) => _refold());
     }
     channel.subscribe();
     _channel = channel;
+    _subscribedToken = token;
   }
 
   void _refold() {
@@ -79,6 +100,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
 
   @override
   void dispose() {
+    _authSub?.cancel();
     final ch = _channel;
     if (ch != null) _client?.removeChannel(ch);
     super.dispose();
@@ -158,13 +180,50 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     final innings = ref.watch(matchInningsListProvider(widget.matchId));
     final squad = ref.watch(matchSquadProvider(widget.matchId));
 
-    final ready = match.hasValue && innings.hasValue && squad.hasValue;
+    final hasError = match.hasError || innings.hasError || squad.hasError;
+    // RT-4: a deleted/forbidden id loads as a null match value, not an error.
+    final notFound = match.hasValue && match.value == null;
+    final ready = match.hasValue &&
+        match.value != null &&
+        innings.hasValue &&
+        squad.hasValue;
     String title = 'Match';
     if (teams.hasValue && match.value != null) {
       final t = teams.value!;
       final a = t[match.value!['team_a_id']];
       final b = t[match.value!['team_b_id']];
       if (a != null && b != null) title = '$a v $b';
+    }
+
+    Widget body;
+    if (notFound) {
+      body = _CenteredMessage(
+        icon: Icons.search_off,
+        title: 'Match not found',
+        message: 'This match may have been deleted or is not public yet.',
+      );
+    } else if (hasError) {
+      // RT-5: surface an error with retry instead of spinning forever.
+      body = _CenteredMessage(
+        icon: Icons.wifi_off,
+        title: "Couldn't load this match",
+        message: 'Check your connection and try again.',
+        onRetry: () {
+          ref.invalidate(matchProvider(widget.matchId));
+          ref.invalidate(matchInningsListProvider(widget.matchId));
+          ref.invalidate(matchSquadProvider(widget.matchId));
+          ref.invalidate(matchTeamNamesProvider(widget.matchId));
+        },
+      );
+    } else if (!ready) {
+      body = const Center(child: CircularProgressIndicator.adaptive());
+    } else {
+      body = _body(
+        match.value!,
+        teams.value ?? const {},
+        innings.value ?? const [],
+        squad.value ?? const [],
+      );
     }
 
     return AdaptiveScaffold(
@@ -177,14 +236,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
             onPressed: _share,
           ),
       ],
-      body: !ready
-          ? const Center(child: CircularProgressIndicator.adaptive())
-          : _body(
-              match.value!,
-              teams.value ?? const {},
-              innings.value ?? const [],
-              squad.value ?? const [],
-            ),
+      body: body,
     );
   }
 
@@ -354,6 +406,11 @@ class _LiveTab extends ConsumerWidget {
     final done =
         match['status'] == 'complete' || match['status'] == 'abandoned';
     final resultText = done ? _resultText() : null;
+    // RT-6: the 1st innings is over but the chase has not started - show a break
+    // banner rather than the stale LIVE layout.
+    final isBreak = !done &&
+        s['innings_status'] == 'completed' &&
+        target == null;
     final freeHit = s['free_hit_active'] == true;
     final perOver = _list(s['per_over']);
     final fow = _list(s['fall_of_wickets']);
@@ -463,7 +520,19 @@ class _LiveTab extends ConsumerWidget {
               ],
             ),
           ),
-        if (freeHit && !done)
+        if (isBreak)
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFFFF3D6),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Text(
+              'Innings break - $battingTeam made $runs/$wkts. '
+              'Target ${runs + 1}.',
+              style: const TextStyle(
+                  color: Color(0xFF8A6D00), fontWeight: FontWeight.bold),
+            ),
+          ),
+        if (freeHit && !done && !isBreak)
           Container(
             width: double.infinity,
             color: const Color(0xFFFFF3D6),
@@ -900,6 +969,48 @@ class _InfoTab extends ConsumerWidget {
                 orElse: () => const SizedBox.shrink(),
               ),
       ],
+    );
+  }
+}
+
+/// Full-screen placeholder for the viewer's not-found / error states (RT-4/5).
+class _CenteredMessage extends StatelessWidget {
+  const _CenteredMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.onRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 20),
+              FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
