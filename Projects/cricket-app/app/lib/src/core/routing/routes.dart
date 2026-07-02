@@ -22,6 +22,7 @@ class Routes {
   static const String search = '/discover/search';
   static const String location = '/discover/location';
   static const String messages = '/discover/messages';
+  static const String notifications = '/discover/notifications';
   static String postDetail(String postId) => '/discover/post/$postId';
   static String dmThread(String threadId) => '/discover/messages/$threadId';
 

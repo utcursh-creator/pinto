@@ -95,6 +95,22 @@ class DiscoverRepository {
     });
   }
 
+  /// DM-4/SEC-4: stamps read_at on the OTHER side's unread messages via the
+  /// secured RPC (table UPDATE on dm_messages is revoked).
+  Future<void> markThreadRead(String threadId) =>
+      _c.rpc('mark_thread_read', params: {'_thread_id': threadId});
+
+  /// SEC-3: block a user (closes the DM channel both ways).
+  Future<void> blockUser(String userId) =>
+      _c.from('blocked_users').insert({'blocker_id': _uid, 'blocked_id': userId});
+
+  /// MISS-2: mark all of the caller's notifications read.
+  Future<void> markNotificationsRead() => _c
+      .from('notifications')
+      .update({'read_at': DateTime.now().toIso8601String()})
+      .eq('recipient_id', _uid)
+      .isFilter('read_at', null);
+
   /// Persists the caller's home base (used as the default discover anchor).
   Future<void> setMyLocation(double lat, double lng, {String? label}) =>
       _c.rpc('set_my_location', params: {

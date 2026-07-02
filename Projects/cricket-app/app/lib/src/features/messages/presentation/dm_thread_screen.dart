@@ -4,10 +4,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import '../../discover/data/discover_providers.dart';
 import '../../discover/data/discover_repository.dart';
 
 /// A 1:1 DM thread. Loads history once, then subscribes to the private
-/// `dm:<threadId>` broadcast channel and appends new messages live.
+/// `dm:<threadId>` broadcast channel and appends new messages live. The header
+/// names the other participant (DM-1); opening marks their messages read
+/// (DM-4); sends are optimistic and survive failure (DM-3); bubbles carry
+/// timestamps (DM-6).
 class DmThreadScreen extends ConsumerStatefulWidget {
   const DmThreadScreen({required this.threadId, super.key});
 
@@ -24,6 +28,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   final Set<String> _ids = {};
   RealtimeChannel? _channel;
   bool _loading = true;
+  bool _sending = false;
 
   SupabaseClient get _c => ref.read(supabaseClientProvider);
   String? get _me => _c.auth.currentSession?.user.id;
@@ -47,6 +52,16 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     if (mounted) setState(() => _loading = false);
     _subscribe();
     _jump();
+    _markRead();
+  }
+
+  /// DM-4: opening the thread clears the unread state (secured RPC) and
+  /// refreshes the inbox badge.
+  Future<void> _markRead() async {
+    try {
+      await ref.read(discoverRepositoryProvider).markThreadRead(widget.threadId);
+      ref.invalidate(dmInboxProvider);
+    } catch (_) {/* non-fatal */}
   }
 
   void _subscribe() {
@@ -69,6 +84,8 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
             _ids.add(id);
             setState(() => _messages.add(record));
             _jump();
+            // an incoming message while the thread is open is instantly read
+            if (record['sender_id'] != _me) _markRead();
           },
         )
         .subscribe();
@@ -83,12 +100,62 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     });
   }
 
+  /// DM-3: optimistic append; the input is only cleared once the insert
+  /// succeeds, and on failure the text is restored with an error.
   Future<void> _send() async {
     final body = _input.text.trim();
-    if (body.isEmpty) return;
-    _input.clear();
-    await ref.read(discoverRepositoryProvider).sendDm(widget.threadId, body);
-    // the broadcast INSERT echoes back and appends for everyone (incl. us).
+    if (body.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    final tempId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final optimistic = <String, dynamic>{
+      'id': tempId,
+      'sender_id': _me,
+      'body': body,
+      'created_at': DateTime.now().toIso8601String(),
+      'pending': true,
+    };
+    setState(() {
+      _messages.add(optimistic);
+      _input.clear();
+    });
+    _jump();
+    try {
+      await ref.read(discoverRepositoryProvider).sendDm(widget.threadId, body);
+      // the broadcast INSERT echoes the real row; drop the local placeholder.
+      if (mounted) {
+        setState(() {
+          _messages.removeWhere((m) => m['id'] == tempId);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.removeWhere((m) => m['id'] == tempId);
+          _input.text = body; // restore so nothing is lost
+        });
+        final raw = '$e';
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text(raw.contains('row-level security')
+                ? 'You cannot message this user.'
+                : 'Message not sent - check your connection.')));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// DM-6: a compact bubble time, day-aware ("14:05" today, "Mon 14:05" else).
+  static String _timeLabel(dynamic createdAt) {
+    final dt = DateTime.tryParse(createdAt?.toString() ?? '')?.toLocal();
+    if (dt == null) return '';
+    final now = DateTime.now();
+    final hm = '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}';
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return hm;
+    }
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return '${days[dt.weekday - 1]} $hm';
   }
 
   @override
@@ -101,8 +168,10 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // DM-1: the header names the person, not "Chat".
+    final other = ref.watch(threadOtherProvider(widget.threadId)).value;
     return AdaptiveScaffold(
-      title: 'Chat',
+      title: (other?['display_name'] as String?) ?? 'Chat',
       body: Column(
         children: [
           Expanded(
@@ -115,6 +184,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                     itemBuilder: (context, i) {
                       final m = _messages[i];
                       final mine = m['sender_id'] == _me;
+                      final pending = m['pending'] == true;
                       return Align(
                         alignment:
                             mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -133,11 +203,25 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                                 : const Color(0xFFEDEDED),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Text(
-                            m['body'] as String,
-                            style: TextStyle(
-                              color: mine ? Colors.white : Colors.black87,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                m['body'] as String,
+                                style: TextStyle(
+                                  color: mine ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                pending ? 'sending...' : _timeLabel(m['created_at']),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: mine ? Colors.white70 : Colors.black45,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -160,7 +244,9 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                       onSubmitted: (_) => _send(),
                     ),
                   ),
-                  IconButton(icon: const Icon(Icons.send), onPressed: _send),
+                  IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: _sending ? null : _send),
                 ],
               ),
             ),

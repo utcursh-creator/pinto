@@ -11,6 +11,7 @@ import '../../features/discover/presentation/post_detail_screen.dart';
 import '../../features/discover/presentation/search_screen.dart';
 import '../../features/matches/presentation/matches_screen.dart';
 import '../../features/messages/presentation/dm_inbox_screen.dart';
+import '../../features/messages/presentation/notifications_screen.dart';
 import '../../features/messages/presentation/dm_thread_screen.dart';
 import '../../features/scoring/presentation/ball_log_screen.dart';
 import '../../features/scoring/presentation/live_matches_screen.dart';
@@ -168,6 +169,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'search',
                     builder: (context, state) => const SearchScreen(),
+                  ),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (context, state) => const NotificationsScreen(),
                   ),
                   GoRoute(
                     path: 'location',

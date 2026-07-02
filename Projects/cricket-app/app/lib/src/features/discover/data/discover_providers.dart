@@ -163,16 +163,79 @@ final dmInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
 
   final msgs = await c
       .from('dm_messages')
-      .select('thread_id, body, created_at')
+      .select('thread_id, body, created_at, sender_id, read_at')
       .inFilter('thread_id', ids)
       .order('created_at', ascending: false);
   final preview = <String, String>{};
-  for (final m in (msgs as List)) {
-    preview.putIfAbsent(m['thread_id'] as String, () => m['body'] as String);
+  final lastAt = <String, String>{};
+  final unread = <String, int>{};
+  for (final m in (msgs as List).cast<Map<String, dynamic>>()) {
+    final t = m['thread_id'] as String;
+    preview.putIfAbsent(t, () => m['body'] as String);
+    lastAt.putIfAbsent(t, () => m['created_at'] as String);
+    // DM-4: unread = the other side's messages I have not read yet.
+    if (m['sender_id'] != me && m['read_at'] == null) {
+      unread[t] = (unread[t] ?? 0) + 1;
+    }
   }
 
-  return [
+  final rows = [
     for (final t in ids)
-      {'thread_id': t, 'other': byThread[t], 'preview': preview[t]},
+      {
+        'thread_id': t,
+        'other': byThread[t],
+        'preview': preview[t],
+        'last_at': lastAt[t],
+        'unread': unread[t] ?? 0,
+      },
   ];
+  // Most recent conversation first (threads with no messages sink).
+  rows.sort((a, b) =>
+      ((b['last_at'] as String?) ?? '').compareTo((a['last_at'] as String?) ?? ''));
+  return rows;
+});
+
+/// Total unread DM count (for the Discover mail badge). Derived off the inbox.
+final dmUnreadCountProvider = Provider<int>((ref) {
+  final inbox = ref.watch(dmInboxProvider).value ?? const [];
+  var n = 0;
+  for (final t in inbox) {
+    n += (t['unread'] as int?) ?? 0;
+  }
+  return n;
+});
+
+/// DM-1: the other participant of a thread (name + photo) for the header.
+final threadOtherProvider =
+    FutureProvider.family<Map<String, dynamic>?, String>((ref, threadId) async {
+  final me = ref.watch(currentSessionProvider)?.user.id;
+  if (me == null) return null;
+  final c = ref.watch(supabaseClientProvider);
+  final row = await c
+      .from('dm_participants')
+      .select('profiles(id, display_name, photo_url)')
+      .eq('thread_id', threadId)
+      .neq('profile_id', me)
+      .maybeSingle();
+  return row?['profiles'] as Map<String, dynamic>?;
+});
+
+/// MISS-2: the caller's notifications, newest first.
+final notificationsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final me = ref.watch(currentSessionProvider)?.user.id;
+  if (me == null) return [];
+  final c = ref.watch(supabaseClientProvider);
+  final rows = await c
+      .from('notifications')
+      .select('id, type, ref_id, body, read_at, created_at')
+      .order('created_at', ascending: false)
+      .limit(50);
+  return List<Map<String, dynamic>>.from(rows as List);
+});
+
+/// Unread notification count (for the bell badge).
+final unreadNotificationsCountProvider = Provider<int>((ref) {
+  final rows = ref.watch(notificationsProvider).value ?? const [];
+  return rows.where((n) => n['read_at'] == null).length;
 });

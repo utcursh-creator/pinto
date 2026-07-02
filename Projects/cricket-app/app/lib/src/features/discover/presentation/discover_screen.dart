@@ -69,7 +69,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           onPressed: () => context.push(Routes.search),
         ),
         IconButton(
-          icon: const Icon(Icons.mail_outline),
+          icon: _Badged(
+            count: ref.watch(unreadNotificationsCountProvider),
+            child: const Icon(Icons.notifications_none),
+          ),
+          tooltip: 'Notifications',
+          onPressed: () => context.push(Routes.notifications),
+        ),
+        IconButton(
+          icon: _Badged(
+            count: ref.watch(dmUnreadCountProvider),
+            child: const Icon(Icons.mail_outline),
+          ),
           onPressed: () => context.push(Routes.messages),
         ),
         IconButton(
@@ -398,6 +409,42 @@ class _MetaChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label, style: theme.textTheme.labelSmall),
+    );
+  }
+}
+
+/// A small unread-count dot over an app-bar icon (DM-4 / MISS-2 badges).
+class _Badged extends StatelessWidget {
+  const _Badged({required this.count, required this.child});
+  final int count;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return child;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned(
+          right: -6,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD7263D),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            constraints: const BoxConstraints(minWidth: 14),
+            child: Text(
+              count > 9 ? '9+' : '$count',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

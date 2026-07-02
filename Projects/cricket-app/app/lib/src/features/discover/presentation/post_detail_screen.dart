@@ -44,9 +44,25 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   Future<void> _messageAuthor(String authorId) async {
-    final threadId =
-        await ref.read(discoverRepositoryProvider).getOrCreateDmThread(authorId);
-    if (mounted) context.push(Routes.dmThread(threadId));
+    // DM-2: an anonymous viewer can't DM - route them to sign in instead of
+    // silently swallowing the RPC's 'not authenticated'.
+    if (ref.read(isAnonymousProvider)) {
+      context.push(Routes.signIn);
+      return;
+    }
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final threadId = await ref
+          .read(discoverRepositoryProvider)
+          .getOrCreateDmThread(authorId);
+      if (mounted) context.push(Routes.dmThread(threadId));
+    } catch (e) {
+      final raw = '$e';
+      messenger?.showSnackBar(SnackBar(
+          content: Text(raw.contains('cannot message')
+              ? 'You cannot message this user.'
+              : 'Could not open the conversation: $raw')));
+    }
   }
 
   @override
