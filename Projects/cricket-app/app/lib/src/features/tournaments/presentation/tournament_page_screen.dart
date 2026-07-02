@@ -333,15 +333,25 @@ class _LeadersTabState extends State<_LeadersTab> {
           const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No data yet.')))
         else
           for (var i = 0; i < entries.length; i++)
-            ListTile(
-              dense: true,
-              leading: Text('${i + 1}',
-                  style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-              title: Text(entries[i].name),
-              trailing: Text('${entries[i].value}',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-            ),
+            _leaderRow(context, i + 1, entries[i]),
       ],
+    );
+  }
+
+  // TOUR-7/STAT-1: a claimed player's row links to their career page; an
+  // unclaimed guest (no profile_id) stays non-tappable.
+  Widget _leaderRow(BuildContext context, int rank, LeaderEntry e) {
+    final claimed = e.profileId != null;
+    return ListTile(
+      dense: true,
+      leading: Text('$rank',
+          style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+      title: Text(e.name),
+      trailing: Text('${e.value}',
+          style: const TextStyle(fontWeight: FontWeight.w600)),
+      onTap: claimed
+          ? () => context.push(Routes.playerStats(e.profileId!))
+          : null,
     );
   }
 }

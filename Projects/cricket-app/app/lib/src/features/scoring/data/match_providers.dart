@@ -186,11 +186,24 @@ final myMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async
   final rows = await c
       .from('matches')
       .select('id, status, overs_limit, venue, created_at, owner_id, result, '
-          'team_a:team_a_id(name), team_b:team_b_id(name)')
+          'team_a:team_a_id(name), team_b:team_b_id(name), '
+          'tournament_matches(tournament_id)')
       .eq('scorer_id', me)
       .order('created_at', ascending: false);
-  return List<Map<String, dynamic>>.from(rows as List);
+  // MTCH-5: tournament fixtures are managed under Tournaments, so keep the
+  // personal Matches tab to the user's own casual games - drop the linked ones.
+  return [
+    for (final m in (rows as List).cast<Map<String, dynamic>>())
+      if (!_isTournamentMatch(m)) m,
+  ];
 });
+
+bool _isTournamentMatch(Map<String, dynamic> m) {
+  final tm = m['tournament_matches'];
+  if (tm == null) return false;
+  if (tm is List) return tm.isNotEmpty;
+  return true; // a single embedded object
+}
 
 /// Embedded-team name off a match row shaped {team_a:{name}} / {team_b:{name}}.
 String embeddedTeamName(dynamic embed) =>

@@ -184,20 +184,33 @@ class ManageTournamentScreen extends ConsumerWidget {
         ListTile(
           dense: true,
           title: Text('${f.teamA}  v  ${f.teamB}'),
-          subtitle: f.groupLabel != null ? Text('Group ${f.groupLabel}') : null,
+          // statusLine now carries the scoreline + winner for completed matches.
+          subtitle: Text([
+            if (f.groupLabel != null) 'Group ${f.groupLabel}',
+            f.statusLine,
+          ].join('  -  ')),
           trailing: f.isComplete
               ? const Text('Done')
               : FilledButton(
                   style: FilledButton.styleFrom(
                       visualDensity: VisualDensity.compact),
-                  onPressed: () => context.push(Routes.scoreMatch(f.matchId)),
-                  child: const Text('Score'),
+                  onPressed: () => context.push(_fixtureDest(f)),
+                  // TOUR-1: a fresh fixture has no squads yet - start the setup
+                  // wizard, don't dead-end at the empty console.
+                  child: Text(f.isUpcoming ? 'Set up' : 'Score'),
                 ),
-          onTap: () => context.push(
-              f.isComplete ? Routes.viewMatch(f.matchId) : Routes.scoreMatch(f.matchId)),
+          onTap: () => context.push(_fixtureDest(f)),
         ),
     ]);
   }
+
+  /// Where tapping a fixture goes: a fresh (setup) fixture -> the squad wizard
+  /// (TOUR-1); a live one -> the console; a finished one -> the read-only view.
+  String _fixtureDest(Fixture f) => f.isComplete
+      ? Routes.viewMatch(f.matchId)
+      : f.isUpcoming
+          ? Routes.matchSquads(f.matchId)
+          : Routes.scoreMatch(f.matchId);
 
   Future<void> _setGroup(WidgetRef ref, String teamId, String group) async {
     await ref.read(tournamentRepositoryProvider).addTournamentTeam(tournamentId, teamId, group);

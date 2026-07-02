@@ -90,4 +90,31 @@ void main() {
     expect(lb.mostCatches.first.value, 5);
     expect(lb.mostSixes.first.value, 11);
   });
+
+  test('completed fixture statusLine shows the scoreline + winner (TOUR-6)', () {
+    final f = Fixture.fromJson({
+      'match_id': 'm1',
+      'stage': 'group',
+      'team_a': 'Mumbai',
+      'team_b': 'Chennai',
+      'team_a_id': 'A',
+      'team_b_id': 'B',
+      'status': 'complete',
+      'result': {'result_type': 'win_by_runs', 'winner_team_id': 'A'},
+      'innings': [
+        {'innings_number': 1, 'batting_team_id': 'A', 'runs': 152, 'wickets': 6},
+        {'innings_number': 2, 'batting_team_id': 'B', 'runs': 134, 'wickets': 9},
+      ],
+    });
+    expect(f.statusLine, 'Mumbai 152/6 beat Chennai 134/9');
+  });
+
+  test('leaderboard rows carry profile_id, null for guests (TOUR-7)', () {
+    final claimed = LeaderEntry.fromJson(
+        {'member_id': 'm', 'profile_id': 'p1', 'name': 'A', 'runs': 10}, 'runs');
+    final guest = LeaderEntry.fromJson(
+        {'member_id': 'm', 'name': 'Guest', 'runs': 5}, 'runs');
+    expect(claimed.profileId, 'p1');
+    expect(guest.profileId, isNull);
+  });
 }

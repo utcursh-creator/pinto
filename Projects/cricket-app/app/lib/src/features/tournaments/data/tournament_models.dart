@@ -121,19 +121,26 @@ class Fixture {
     required this.teamA,
     required this.teamB,
     required this.status,
+    this.teamAId,
+    this.teamBId,
     this.groupLabel,
     this.bracketSlot,
     this.result,
+    this.innings = const [],
   });
 
   final String matchId;
   final String stage; // group | semifinal | final
   final String teamA;
   final String teamB;
+  final String? teamAId;
+  final String? teamBId;
   final String status; // setup | live | innings_break | complete | abandoned
   final String? groupLabel;
   final String? bracketSlot;
   final Map<String, dynamic>? result;
+  // Each: {innings_number, batting_team_id, runs, wickets} (TOUR-6).
+  final List<Map<String, dynamic>> innings;
 
   bool get isLive => status == 'live' || status == 'innings_break';
   bool get isComplete => status == 'complete' || status == 'abandoned';
@@ -146,15 +153,40 @@ class Fixture {
         _ => stage,
       };
 
-  /// A short result/status line for the fixtures list.
+  /// "152/6" for the team that batted with [teamId], or null if it has no innings.
+  String? _scoreFor(String? teamId) {
+    if (teamId == null) return null;
+    for (final i in innings) {
+      if (i['batting_team_id'] == teamId) {
+        return '${i['runs'] ?? 0}/${i['wickets'] ?? 0}';
+      }
+    }
+    return null;
+  }
+
+  /// A short result/status line for the fixtures list. For a completed match it
+  /// shows the actual scoreline + winner (TOUR-6), e.g. "Mumbai 152/6 beat
+  /// Chennai 134/9"; live/upcoming stay simple.
   String get statusLine {
     if (isLive) return 'Live';
     if (isUpcoming) return 'Upcoming';
     final r = result;
-    if (r == null) return statusLabelFor(status);
-    final type = r['result_type'] as String?;
+    final aScore = _scoreFor(teamAId);
+    final bScore = _scoreFor(teamBId);
+    final winnerId = r?['winner_team_id'] as String?;
+    final type = r?['result_type'] as String?;
+    if (aScore != null && bScore != null) {
+      if (winnerId == teamAId) return '$teamA $aScore beat $teamB $bScore';
+      if (winnerId == teamBId) return '$teamB $bScore beat $teamA $aScore';
+      if (type == 'tie' || type == 'tie_superover') {
+        return '$teamA $aScore tied $teamB $bScore';
+      }
+      return '$teamA $aScore, $teamB $bScore';
+    }
+    // No innings scores (e.g. abandoned before play): fall back to the note/type.
+    final note = r?['note'] as String?;
+    if (note != null && note.isNotEmpty) return note;
     return switch (type) {
-      'win_by_runs' || 'win_by_wickets' || 'win_dls' || 'win_vjd' => 'Result in',
       'tie' || 'tie_superover' => 'Tied',
       'no_result' => 'No result',
       'abandoned' => 'Abandoned',
@@ -173,25 +205,39 @@ class Fixture {
         stage: (j['stage'] as String?) ?? 'group',
         teamA: (j['team_a'] as String?) ?? 'Team A',
         teamB: (j['team_b'] as String?) ?? 'Team B',
+        teamAId: j['team_a_id'] as String?,
+        teamBId: j['team_b_id'] as String?,
         status: (j['status'] as String?) ?? 'setup',
         groupLabel: j['group_label'] as String?,
         bracketSlot: j['bracket_slot'] as String?,
         result: (j['result'] as Map?)?.cast<String, dynamic>(),
+        innings: [
+          for (final i in (j['innings'] as List? ?? const []))
+            (i as Map).cast<String, dynamic>(),
+        ],
       );
 }
 
 class LeaderEntry {
-  LeaderEntry({required this.memberId, required this.name, required this.value});
+  LeaderEntry({
+    required this.memberId,
+    required this.name,
+    required this.value,
+    this.profileId,
+  });
 
   final String memberId;
   final String name;
   final int value;
+  // Null for unclaimed guests; when set, the row links to /player/:profileId.
+  final String? profileId;
 
   factory LeaderEntry.fromJson(Map<String, dynamic> j, String valueKey) =>
       LeaderEntry(
         memberId: (j['member_id'] as String?) ?? '',
         name: (j['name'] as String?) ?? 'Player',
         value: _int(j[valueKey]),
+        profileId: j['profile_id'] as String?,
       );
 }
 
