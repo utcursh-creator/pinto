@@ -27,9 +27,14 @@ class Routes {
 
   // Scoring (slice 4) - nested under the Matches branch.
   static const String startMatch = '/matches/new';
-  // Slice 6: pre-seed the wizard with an opponent from a discover post.
-  static String proposeMatch(String opponentTeamId) =>
-      '/matches/new?opponent=$opponentTeamId';
+  // Pre-seed the wizard with an opponent (+ overs, and the poster to notify)
+  // from a discover post (MTCH-7).
+  static String proposeMatch(String opponentTeamId, {int? overs, String? authorId}) {
+    final params = <String>['opponent=$opponentTeamId'];
+    if (overs != null) params.add('overs=$overs');
+    if (authorId != null) params.add('author=$authorId');
+    return '/matches/new?${params.join('&')}';
+  }
   static String matchSquads(String matchId) => '/matches/$matchId/squads';
   static const String liveMatches = '/matches/live';
   static String matchToss(String matchId) => '/matches/$matchId/toss';

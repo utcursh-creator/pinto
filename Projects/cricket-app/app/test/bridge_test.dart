@@ -96,5 +96,36 @@ void main() {
         debugDefaultTargetPlatformOverride = null;
       }
     });
+
+    testWidgets('bridge pre-fills the overs from the post (MTCH-7) on $platform',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              myTeamsProvider.overrideWith((ref) async => []),
+              allTeamsProvider.overrideWith(
+                (ref) async => [
+                  {'id': 'team-b', 'name': 'Dadar CC', 'city': 'Mumbai'},
+                ],
+              ),
+            ],
+            child: const MaterialApp(
+              home: StartMatchScreen(
+                initialOpponentId: 'team-b',
+                initialOvers: '15',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        // the overs field carries the post's overs, not the default 20
+        expect(find.text('15'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
   }
 }

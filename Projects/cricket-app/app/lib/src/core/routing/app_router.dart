@@ -207,6 +207,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => StartMatchScreen(
                       initialOpponentId:
                           state.uri.queryParameters['opponent'],
+                      initialOvers: state.uri.queryParameters['overs'],
+                      proposeToAuthorId: state.uri.queryParameters['author'],
                     ),
                   ),
                   GoRoute(

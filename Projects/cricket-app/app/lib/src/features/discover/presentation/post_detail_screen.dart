@@ -172,7 +172,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         const SizedBox(height: 8),
                         OutlinedButton.icon(
                           onPressed: () => context.push(
-                            Routes.proposeMatch(p['team_id'] as String),
+                            Routes.proposeMatch(
+                              p['team_id'] as String,
+                              overs: (p['overs'] as num?)?.toInt(),
+                              authorId: authorId,
+                            ),
                           ),
                           icon: const Icon(Icons.sports_cricket),
                           label: const Text('Propose a match'),

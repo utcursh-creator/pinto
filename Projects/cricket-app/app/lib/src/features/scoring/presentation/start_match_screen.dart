@@ -5,16 +5,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
+import '../../discover/data/discover_repository.dart';
 import '../../identity/data/identity_providers.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 
 class StartMatchScreen extends ConsumerStatefulWidget {
-  const StartMatchScreen({this.initialOpponentId, super.key});
+  const StartMatchScreen({
+    this.initialOpponentId,
+    this.initialOvers,
+    this.proposeToAuthorId,
+    super.key,
+  });
 
   /// When arriving from a "Propose a match" bridge on a team_seeking_opponent
-  /// post, the opponent team is pre-selected.
+  /// post, the opponent team + overs are pre-selected and, on creation, the
+  /// poster is DM'd the match (MTCH-7).
   final String? initialOpponentId;
+  final String? initialOvers;
+  final String? proposeToAuthorId;
 
   @override
   ConsumerState<StartMatchScreen> createState() => _StartMatchScreenState();
@@ -23,7 +32,10 @@ class StartMatchScreen extends ConsumerStatefulWidget {
 class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
   String? _teamA;
   String? _teamB;
-  final _overs = TextEditingController(text: '20');
+  late final _overs =
+      TextEditingController(text: widget.initialOvers?.trim().isNotEmpty ?? false
+          ? widget.initialOvers!.trim()
+          : '20');
   final _venue = TextEditingController();
   bool _busy = false;
   String? _error;
@@ -62,6 +74,17 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
             overs: overs,
             venue: _venue.text.trim(),
           );
+      // MTCH-7: notify the poster who was seeking an opponent.
+      if (widget.proposeToAuthorId != null) {
+        try {
+          final repo = ref.read(discoverRepositoryProvider);
+          final threadId =
+              await repo.getOrCreateDmThread(widget.proposeToAuthorId!);
+          await repo.sendDm(threadId,
+              'I proposed a match against your team ($overs overs). '
+              "Let's set it up - watch it live once we start: ${Routes.viewMatch(id)}");
+        } catch (_) {/* non-fatal: the match is created regardless */}
+      }
       if (mounted) context.pushReplacement(Routes.matchSquads(id));
     } on PostgrestException catch (e) {
       setState(() => _error = e.message);
@@ -107,11 +130,13 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
               value: _teamB,
               hint: const Text('Choose the opponent'),
               items: [
+                // MTCH-6: don't offer your own team as the opponent.
                 for (final t in rows)
-                  DropdownMenuItem(
-                    value: t['id'] as String,
-                    child: Text(t['name'] as String),
-                  ),
+                  if (t['id'] != _teamA)
+                    DropdownMenuItem(
+                      value: t['id'] as String,
+                      child: Text(t['name'] as String),
+                    ),
               ],
               onChanged: (v) => setState(() => _teamB = v),
             ),
