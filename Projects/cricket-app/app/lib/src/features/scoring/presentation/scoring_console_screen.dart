@@ -137,6 +137,96 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     if (m != null) m.showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  /// SCOR-7: multi-run / combination extras (wide+N, no-ball+N off the bat, N
+  /// byes, N leg-byes) that the quick +1 pad buttons can't express.
+  Future<void> _extras(String inningsId, int bpo) async {
+    String type = 'wide';
+    int runs = 0;
+    String labelFor(String t) => switch (t) {
+          'wide' => 'Wide',
+          'no_ball' => 'No-ball',
+          'byes' => 'Byes',
+          'leg_byes' => 'Leg-byes',
+          _ => t,
+        };
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheet) {
+          final needsRun = type == 'byes' || type == 'leg_byes';
+          final hint = switch (type) {
+            'wide' => 'Extra runs run off the wide (the wide itself counts 1)',
+            'no_ball' => 'Runs off the bat (the no-ball itself counts 1)',
+            'byes' => 'Byes run',
+            'leg_byes' => 'Leg-byes run',
+            _ => '',
+          };
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Extra'),
+                  Wrap(spacing: 8, children: [
+                    for (final t in const ['wide', 'no_ball', 'byes', 'leg_byes'])
+                      ChoiceChip(
+                        label: Text(labelFor(t)),
+                        selected: type == t,
+                        onSelected: (_) => setSheet(() => type = t),
+                      ),
+                  ]),
+                  const SizedBox(height: 12),
+                  Row(children: [
+                    Expanded(child: Text(hint)),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: runs > 0 ? () => setSheet(() => runs--) : null,
+                    ),
+                    Text('$runs', style: const TextStyle(fontSize: 16)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: () => setSheet(() => runs++),
+                    ),
+                  ]),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: (needsRun && runs < 1)
+                        ? null
+                        : () => Navigator.pop(context, true),
+                    child: const Text('Record'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (ok ?? false) {
+      switch (type) {
+        case 'wide':
+          await _record(inningsId, bpo, wides: 1 + runs);
+        case 'no_ball':
+          await _record(inningsId, bpo,
+              noBall: 1,
+              runs: runs,
+              noballSecondaryKind: runs > 0 ? 'off_bat' : null);
+        case 'byes':
+          await _record(inningsId, bpo, byes: runs);
+        case 'leg_byes':
+          await _record(inningsId, bpo, legByes: runs);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final match = ref.watch(matchProvider(widget.matchId));
@@ -303,6 +393,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
           ),
           Row(
             children: [
+              _Btn(label: 'Extras', onTap: () => _extras(inningsId, bpo)),
               _Btn(
                 label: 'WICKET',
                 color: const Color(0xFFFFE5E2),
