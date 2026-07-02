@@ -49,9 +49,12 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     int noBall = 0,
     int byes = 0,
     int legByes = 0,
+    String? noballSecondaryKind,
     String? wicketType,
     String? dismissedId,
     String? incomingId,
+    String? fielderId,
+    bool? crossed,
   }) async {
     if (_bowlerId == null || _busy) return;
     setState(() => _busy = true);
@@ -64,9 +67,12 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         noBallPenalty: noBall,
         byes: byes,
         legByes: legByes,
+        noballSecondaryKind: noballSecondaryKind,
         wicketType: wicketType,
         dismissedPlayerId: dismissedId,
         incomingBatterId: incomingId,
+        fielderId: fielderId,
+        crossed: crossed,
       );
       await _afterBall(inningsId, bpo);
       if (res.wagonApplicable && res.deliveryId != null && mounted) {
@@ -218,6 +224,15 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                 ],
               ),
             ),
+            if (s['free_hit_active'] == true)
+              Container(
+                width: double.infinity,
+                color: const Color(0xFFFFF3CD),
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+                child: const Text('FREE HIT',
+                    style: TextStyle(
+                        color: Color(0xFF8A6D00), fontWeight: FontWeight.bold)),
+              ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -247,7 +262,8 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                 absorbing: _bowlerId == null || _busy,
                 child: Opacity(
                   opacity: _bowlerId == null ? 0.4 : 1,
-                  child: _pad(inningsId, bpo, squad, battingTeam, names, strikerId),
+                  child: _pad(
+                      inningsId, bpo, squad, battingTeam, bowlingTeam, names, s),
                 ),
               ),
             ),
@@ -262,8 +278,9 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     int bpo,
     List<Map<String, dynamic>> squad,
     String battingTeam,
+    String bowlingTeam,
     Map<String, String> names,
-    String? strikerId,
+    Map<String, dynamic> s,
   ) {
     Widget runBtn(int n, {bool boundary = false}) => _Btn(
           label: '$n',
@@ -289,7 +306,8 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
               _Btn(
                 label: 'WICKET',
                 color: const Color(0xFFFFE5E2),
-                onTap: () => _wicket(inningsId, bpo, squad, battingTeam, names, strikerId),
+                onTap: () => _wicket(
+                    inningsId, bpo, squad, battingTeam, bowlingTeam, names, s),
               ),
               _Btn(
                 label: 'Undo',
@@ -330,84 +348,209 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     if (picked != null) setState(() => _bowlerId = picked);
   }
 
+  static const _allWicketTypes = [
+    'bowled', 'caught', 'lbw', 'run_out', 'stumped', 'hit_wicket',
+    'retired_out', 'obstructing', 'timed_out', 'hit_ball_twice',
+  ];
+  // Only these are legal on a free hit (mirrors record_ball's guard).
+  static const _freeHitWicketTypes = ['run_out', 'obstructing', 'hit_ball_twice'];
+
+  static bool _needsWhoOut(String t) =>
+      t == 'run_out' || t == 'obstructing' || t == 'retired_out';
+  static bool _needsFielder(String t) =>
+      t == 'caught' || t == 'stumped' || t == 'run_out';
+  static bool _needsCrossedRuns(String t) => t == 'run_out' || t == 'obstructing';
+
+  String _wicketLabel(String t) => switch (t) {
+        'bowled' => 'Bowled',
+        'caught' => 'Caught',
+        'lbw' => 'LBW',
+        'run_out' => 'Run out',
+        'stumped' => 'Stumped',
+        'hit_wicket' => 'Hit wicket',
+        'retired_out' => 'Retired out',
+        'obstructing' => 'Obstructing',
+        'timed_out' => 'Timed out',
+        'hit_ball_twice' => 'Hit the ball twice',
+        _ => t,
+      };
+
   Future<void> _wicket(
     String inningsId,
     int bpo,
     List<Map<String, dynamic>> squad,
     String battingTeam,
+    String bowlingTeam,
     Map<String, String> names,
-    String? strikerId,
+    Map<String, dynamic> s,
   ) async {
-    final batters = [
-      for (final s in squad)
-        if (s['team_id'] == battingTeam) s['team_member_id'] as String,
+    final strikerId = s['striker_id'] as String?;
+    final nonStrikerId = s['non_striker_id'] as String?;
+    final freeHit = s['free_hit_active'] == true;
+    final wktsRem = (s['wickets_remaining'] as num?)?.toInt() ?? 99;
+    final isLastWicket = wktsRem <= 1;
+
+    // batters already dismissed (from the fold's fall of wickets)
+    final gone = <String>{
+      for (final w in (s['fall_of_wickets'] as List? ?? const []))
+        if ((w as Map)['dismissed_player_id'] != null)
+          w['dismissed_player_id'] as String,
+    };
+    final availableIncoming = [
+      for (final m in squad)
+        if (m['team_id'] == battingTeam)
+          m['team_member_id'] as String,
+    ].where((id) =>
+        id != strikerId && id != nonStrikerId && !gone.contains(id)).toList();
+    final fielders = [
+      for (final m in squad)
+        if (m['team_id'] == bowlingTeam) m['team_member_id'] as String,
     ];
-    String type = 'bowled';
+
+    final types = freeHit ? _freeHitWicketTypes : _allWicketTypes;
+    String type = types.first;
+    String whoOut = 'striker';
+    String? fielder;
+    bool crossed = false;
+    int runs = 0;
     String? incoming;
+
     final ok = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSheet) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('How out?'),
-                Wrap(
-                  spacing: 8,
+        builder: (context, setSheet) {
+          final needIncoming = !isLastWicket;
+          final canRecord = !needIncoming || incoming != null;
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final t in const [
-                      'bowled',
-                      'caught',
-                      'lbw',
-                      'run_out',
-                      'stumped',
-                    ])
-                      ChoiceChip(
-                        label: Text(t),
-                        selected: type == t,
-                        onSelected: (_) => setSheet(() => type = t),
+                    if (freeHit)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text('Free hit - only a run-out counts',
+                            style: TextStyle(color: Color(0xFFB26A00))),
                       ),
+                    const Text('How out?'),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final t in types)
+                          ChoiceChip(
+                            label: Text(_wicketLabel(t)),
+                            selected: type == t,
+                            onSelected: (_) => setSheet(() => type = t),
+                          ),
+                      ],
+                    ),
+                    if (_needsWhoOut(type)) ...[
+                      const SizedBox(height: 12),
+                      const Text('Who is out?'),
+                      Wrap(spacing: 8, children: [
+                        ChoiceChip(
+                          label: Text(names[strikerId] ?? 'Striker'),
+                          selected: whoOut == 'striker',
+                          onSelected: (_) => setSheet(() => whoOut = 'striker'),
+                        ),
+                        ChoiceChip(
+                          label: Text(names[nonStrikerId] ?? 'Non-striker'),
+                          selected: whoOut == 'non_striker',
+                          onSelected: (_) =>
+                              setSheet(() => whoOut = 'non_striker'),
+                        ),
+                      ]),
+                    ],
+                    if (_needsCrossedRuns(type)) ...[
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        const Text('Runs completed'),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed:
+                              runs > 0 ? () => setSheet(() => runs--) : null,
+                        ),
+                        Text('$runs', style: const TextStyle(fontSize: 16)),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: () => setSheet(() => runs++),
+                        ),
+                      ]),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Batters had crossed'),
+                        value: crossed,
+                        onChanged: (v) => setSheet(() => crossed = v),
+                      ),
+                    ],
+                    if (_needsFielder(type)) ...[
+                      const SizedBox(height: 12),
+                      const Text('Fielder'),
+                      DropdownButton<String>(
+                        isExpanded: true,
+                        value: fielder,
+                        hint: const Text('Choose (optional)'),
+                        items: [
+                          for (final id in fielders)
+                            DropdownMenuItem(
+                                value: id, child: Text(names[id] ?? '-')),
+                        ],
+                        onChanged: (v) => setSheet(() => fielder = v),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Text(isLastWicket
+                        ? 'Incoming batter (last wicket - none needed)'
+                        : 'Incoming batter'),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: incoming,
+                      hint: const Text('Choose'),
+                      items: [
+                        for (final id in availableIncoming)
+                          DropdownMenuItem(
+                              value: id, child: Text(names[id] ?? '-')),
+                      ],
+                      onChanged: (v) => setSheet(() => incoming = v),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: canRecord
+                          ? () => Navigator.pop(context, true)
+                          : null,
+                      child: const Text('Record wicket'),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text('Incoming batter'),
-                DropdownButton<String>(
-                  isExpanded: true,
-                  value: incoming,
-                  hint: const Text('Choose'),
-                  items: [
-                    for (final id in batters)
-                      DropdownMenuItem(value: id, child: Text(names[id] ?? '-')),
-                  ],
-                  onChanged: (v) => setSheet(() => incoming = v),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Record wicket'),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
     if (ok ?? false) {
+      final dismissedId = _needsWhoOut(type) && whoOut == 'non_striker'
+          ? nonStrikerId
+          : strikerId;
       await _record(
         inningsId,
         bpo,
+        runs: _needsCrossedRuns(type) ? runs : 0,
         wicketType: type,
-        dismissedId: strikerId,
+        dismissedId: dismissedId,
         incomingId: incoming,
+        fielderId: _needsFielder(type) ? fielder : null,
+        crossed: _needsCrossedRuns(type) ? crossed : null,
       );
     }
   }
