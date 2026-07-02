@@ -68,6 +68,28 @@ class IdentityRepository {
     return id as String;
   }
 
+  /// TEAM-1: remove a membership row (a captain kicking a member, or a member
+  /// leaving - RLS allows admin-or-self).
+  Future<void> removeMember(String membershipId) =>
+      _client.from('team_members').delete().eq('id', membershipId);
+
+  /// TEAM-1: disband a team entirely (admin-only via RLS; memberships cascade).
+  Future<void> deleteTeam(String teamId) =>
+      _client.from('teams').delete().eq('id', teamId);
+
+  /// TEAM-5: change a member's role (admin-only via RLS).
+  Future<void> setMemberRole(String membershipId, String role) =>
+      _client.from('team_members').update({'role': role}).eq('id', membershipId);
+
+  /// TEAM-13: edit the team's name/city (admin-only via RLS).
+  Future<void> updateTeam(String teamId, {String? name, String? city}) {
+    final fields = <String, dynamic>{
+      if (name != null && name.isNotEmpty) 'name': name,
+      'city': ?city,
+    };
+    return _client.from('teams').update(fields).eq('id', teamId);
+  }
+
   /// Adds a guest member (no account) to a team; returns the membership id.
   Future<String> addGuest({
     required String teamId,

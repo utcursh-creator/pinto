@@ -27,7 +27,10 @@ class MyTeamsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
         error: (e, _) => Center(child: Text('Could not load teams.\n$e')),
         data: (rows) {
-          return ListView(
+          return RefreshIndicator.adaptive(
+            // TEAM-12: pull-to-refresh (stale after invite-accept/leave).
+            onRefresh: () async => ref.invalidate(myTeamsProvider),
+            child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
               if (rows.isEmpty)
@@ -37,11 +40,13 @@ class MyTeamsScreen extends ConsumerWidget {
                     child: Text("You're not on any teams yet."),
                   ),
                 ),
+              // TEAM-12: null-guard the embed (a deleted team leaves the row).
               for (final row in rows)
-                _TeamTile(
-                  team: row['teams'] as Map<String, dynamic>,
-                  role: row['role'] as String?,
-                ),
+                if (row['teams'] is Map)
+                  _TeamTile(
+                    team: (row['teams'] as Map).cast<String, dynamic>(),
+                    role: row['role'] as String?,
+                  ),
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: FilledButton.icon(
@@ -51,6 +56,7 @@ class MyTeamsScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
           );
         },
       ),

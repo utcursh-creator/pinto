@@ -52,10 +52,13 @@ final teamRosterProvider =
       teamId,
     ) async {
       final client = ref.watch(supabaseClientProvider);
+      // TEAM-10: captain first (enum order captain/admin/player), then oldest.
       final rows = await client
           .from('team_members')
           .select('id, role, guest_name, profile_id, profiles(display_name, photo_url)')
-          .eq('team_id', teamId);
+          .eq('team_id', teamId)
+          .order('role', ascending: true)
+          .order('created_at', ascending: true);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 

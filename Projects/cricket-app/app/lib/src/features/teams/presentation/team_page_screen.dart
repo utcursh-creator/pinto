@@ -27,8 +27,31 @@ class TeamPageScreen extends ConsumerWidget {
     final uid = ref.watch(currentSessionProvider)?.user.id;
     final team = teamAsync.value;
 
+    // TEAM-1: leave/delete/edit live in the app-bar overflow, gated by the
+    // viewer's own membership row.
+    Map<String, dynamic>? myRow;
+    for (final r in rosterAsync.value ?? const <Map<String, dynamic>>[]) {
+      if (r['profile_id'] == uid) myRow = r;
+    }
+    final myIsAdmin =
+        myRow != null && (myRow['role'] == 'captain' || myRow['role'] == 'admin');
+
     return AdaptiveScaffold(
       title: (team?['name'] as String?) ?? 'Team',
+      actions: [
+        if (myRow != null)
+          PopupMenuButton<String>(
+            key: const Key('team_menu'),
+            onSelected: (v) => _teamAction(context, ref, v, myRow!),
+            itemBuilder: (context) => [
+              if (myIsAdmin)
+                const PopupMenuItem(value: 'edit', child: Text('Edit team')),
+              const PopupMenuItem(value: 'leave', child: Text('Leave team')),
+              if (myIsAdmin)
+                const PopupMenuItem(value: 'delete', child: Text('Delete team')),
+            ],
+          ),
+      ],
       body: teamAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
         error: (e, _) => Center(child: Text('Could not load team.\n$e')),
@@ -94,6 +117,11 @@ class TeamPageScreen extends ConsumerWidget {
                   for (final member in roster)
                     _MemberTile(
                       member: member,
+                      // TEAM-1/5: an admin can remove members + change roles
+                      // (not on their own row - they use Leave team for that).
+                      adminMenu: isAdmin && member['profile_id'] != uid,
+                      onMemberAction: (v) =>
+                          _memberAction(context, ref, v, member),
                       onClaim: (uid != null && member['profile_id'] == null)
                           ? () => _claim(context, ref, member['id'] as String)
                           : null,
@@ -130,6 +158,140 @@ class TeamPageScreen extends ConsumerWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  /// TEAM-1/13: leave / delete / edit from the app-bar overflow.
+  Future<void> _teamAction(BuildContext context, WidgetRef ref, String action,
+      Map<String, dynamic> myRow) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final repo = ref.read(identityRepositoryProvider);
+    switch (action) {
+      case 'leave':
+        final ok = await _confirm(context, 'Leave this team?',
+            'You will be removed from the roster.', 'Leave');
+        if (ok != true || !context.mounted) return;
+        try {
+          await repo.removeMember(myRow['id'] as String);
+          ref.invalidate(myTeamsProvider);
+          ref.invalidate(teamRosterProvider(teamId));
+          messenger
+              ?.showSnackBar(const SnackBar(content: Text('You left the team')));
+          if (context.mounted) context.pop();
+        } catch (e) {
+          messenger?.showSnackBar(SnackBar(content: Text('Could not leave: $e')));
+        }
+      case 'delete':
+        final ok = await _confirm(context, 'Delete this team?',
+            'The team and its roster are permanently removed.', 'Delete',
+            destructive: true);
+        if (ok != true || !context.mounted) return;
+        try {
+          await repo.deleteTeam(teamId);
+          ref.invalidate(myTeamsProvider);
+          messenger
+              ?.showSnackBar(const SnackBar(content: Text('Team deleted')));
+          if (context.mounted) context.pop();
+        } catch (e) {
+          messenger?.showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+        }
+      case 'edit':
+        await _editTeam(context, ref);
+    }
+  }
+
+  /// TEAM-13 (edit part): rename the team / change its city.
+  Future<void> _editTeam(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final team = ref.read(teamProvider(teamId)).value;
+    final name = TextEditingController(text: (team?['name'] as String?) ?? '');
+    final city = TextEditingController(text: (team?['city'] as String?) ?? '');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit team'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: name,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Name')),
+            const SizedBox(height: 8),
+            TextField(
+                controller: city,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'City')),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(identityRepositoryProvider).updateTeam(teamId,
+          name: name.text.trim(), city: city.text.trim());
+      ref.invalidate(teamProvider(teamId));
+      ref.invalidate(myTeamsProvider);
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('Could not save: $e')));
+    }
+  }
+
+  /// TEAM-1/5: per-member admin actions (remove, change role). A guard keeps at
+  /// least one captain: promoting someone to captain is always safe; demoting is
+  /// only offered on non-captain rows here (the admin edits others, not self).
+  Future<void> _memberAction(BuildContext context, WidgetRef ref, String action,
+      Map<String, dynamic> member) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final repo = ref.read(identityRepositoryProvider);
+    try {
+      switch (action) {
+        case 'remove':
+          final ok = await _confirm(context, 'Remove this player?',
+              'They will be taken off the roster.', 'Remove',
+              destructive: true);
+          if (ok != true) return;
+          await repo.removeMember(member['id'] as String);
+        case 'captain':
+        case 'admin':
+        case 'player':
+          await repo.setMemberRole(member['id'] as String, action);
+      }
+      ref.invalidate(teamRosterProvider(teamId));
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('Could not update: $e')));
+    }
+  }
+
+  Future<bool?> _confirm(
+      BuildContext context, String title, String body, String action,
+      {bool destructive = false}) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: destructive
+                ? TextButton.styleFrom(foregroundColor: Colors.red)
+                : null,
+            child: Text(action),
+          ),
+        ],
       ),
     );
   }
@@ -217,9 +379,20 @@ class TeamPageScreen extends ConsumerWidget {
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member, this.onClaim, this.onOpenStats});
+  const _MemberTile({
+    required this.member,
+    this.adminMenu = false,
+    this.onMemberAction,
+    this.onClaim,
+    this.onOpenStats,
+  });
 
   final Map<String, dynamic> member;
+
+  /// TEAM-1/5: when true, the viewer administers this team and this is not
+  /// their own row - offer remove + role changes.
+  final bool adminMenu;
+  final ValueChanged<String>? onMemberAction;
 
   /// When set (a signed-in viewer looking at a guest row), offers "This is me".
   final VoidCallback? onClaim;
@@ -231,21 +404,48 @@ class _MemberTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final profile = member['profiles'] as Map<String, dynamic>?;
     final isGuest = member['profile_id'] == null;
+    final role = member['role'] as String?;
     final name = isGuest
         ? (member['guest_name'] as String?) ?? 'Guest'
         : (profile?['display_name'] as String?) ?? 'Player';
+    // TEAM-5: (C)/(A) badges inline with the name.
+    final badge = switch (role) {
+      'captain' => '  (C)',
+      'admin' => '  (A)',
+      _ => '',
+    };
+    Widget? trailing;
+    if (onClaim != null) {
+      trailing =
+          TextButton(onPressed: onClaim, child: const Text('This is me'));
+    } else if (adminMenu && onMemberAction != null) {
+      trailing = PopupMenuButton<String>(
+        key: Key('member_menu_${member['id']}'),
+        onSelected: onMemberAction,
+        itemBuilder: (context) => [
+          // guests have no account, so roles apply to registered members only
+          if (!isGuest && role != 'captain')
+            const PopupMenuItem(value: 'captain', child: Text('Make captain')),
+          if (!isGuest && role != 'admin')
+            const PopupMenuItem(value: 'admin', child: Text('Make admin')),
+          if (!isGuest && role != 'player')
+            const PopupMenuItem(value: 'player', child: Text('Make player')),
+          const PopupMenuItem(value: 'remove', child: Text('Remove from team')),
+        ],
+      );
+    } else {
+      trailing = Text(IdentityLabels.teamRole(role));
+    }
     return ListTile(
       leading: InitialsAvatar(
         name: name,
         photoUrl: profile?['photo_url'] as String?,
         radius: 18,
       ),
-      title: Text(name),
+      title: Text('$name$badge'),
       subtitle: isGuest ? const Text('Guest') : null,
       onTap: onOpenStats,
-      trailing: onClaim != null
-          ? TextButton(onPressed: onClaim, child: const Text('This is me'))
-          : Text(IdentityLabels.teamRole(member['role'] as String?)),
+      trailing: trailing,
     );
   }
 }
