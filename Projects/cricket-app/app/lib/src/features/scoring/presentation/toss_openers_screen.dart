@@ -38,6 +38,9 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
           final teamB = m['team_b_id'] as String;
+          // M1: real team names, never "Team A"/"Team B".
+          final names = ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
+              const <String, String>{};
           final battingTeam = _tossWinner == null
               ? null
               : (_decision == 'bat'
@@ -61,7 +64,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
                     spacing: 8,
                     children: [
                       ChoiceChip(
-                        label: const Text('Team A'),
+                        label: Text(names[teamA] ?? 'Team A'),
                         selected: _tossWinner == teamA,
                         onSelected: (_) => setState(() {
                           _tossWinner = teamA;
@@ -69,7 +72,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
                         }),
                       ),
                       ChoiceChip(
-                        label: const Text('Team B'),
+                        label: Text(names[teamB] ?? 'Team B'),
                         selected: _tossWinner == teamB,
                         onSelected: (_) => setState(() {
                           _tossWinner = teamB;

@@ -22,9 +22,13 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
   bool _busy = false;
   String? _error;
 
-  Future<void> _next() async {
-    if (_selected.length < 4) {
-      setState(() => _error = 'Pick at least two players per team.');
+  Future<void> _next(String teamA, String teamB) async {
+    // SCOR-14/M3: validate PER TEAM, not just the combined count - otherwise a
+    // side can reach the console with nobody to bat or bowl.
+    final a = _selected.where((id) => _teamOf[id] == teamA).length;
+    final b = _selected.where((id) => _teamOf[id] == teamB).length;
+    if (a < 2 || b < 2) {
+      setState(() => _error = 'Pick at least two players for each team.');
       return;
     }
     setState(() {
@@ -58,6 +62,9 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
           final teamB = m['team_b_id'] as String;
+          // M1: show real team names, never "Team A"/"Team B".
+          final names = ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
+              const <String, String>{};
           return Column(
             children: [
               Expanded(
@@ -65,14 +72,14 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                   children: [
                     _TeamPicker(
                       teamId: teamA,
-                      label: 'Team A',
+                      label: names[teamA] ?? 'Team A',
                       selected: _selected,
                       teamOf: _teamOf,
                       onChanged: () => setState(() {}),
                     ),
                     _TeamPicker(
                       teamId: teamB,
-                      label: 'Team B',
+                      label: names[teamB] ?? 'Team B',
                       selected: _selected,
                       teamOf: _teamOf,
                       onChanged: () => setState(() {}),
@@ -93,7 +100,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                               style: const TextStyle(color: Colors.red)),
                         ),
                       FilledButton(
-                        onPressed: _busy ? null : _next,
+                        onPressed: _busy ? null : () => _next(teamA, teamB),
                         child: Text('Next: toss (${_selected.length} picked)'),
                       ),
                     ],
