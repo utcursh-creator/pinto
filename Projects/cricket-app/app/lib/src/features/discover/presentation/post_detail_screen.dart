@@ -62,7 +62,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         error: (e, _) => Center(child: Text('Could not load post.\n$e')),
         data: (p) {
           if (p == null) return const Center(child: Text('Post not found.'));
-          final author = p['profiles'] as Map<String, dynamic>?;
+          final authorName = p['author_name'] as String?;
+          final teamName = p['team_name'] as String?;
           final authorId = p['author_id'] as String?;
           final isMine = authorId != null && authorId == me;
           return Column(
@@ -85,7 +86,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Posted by ${(author?['display_name'] as String?) ?? 'a player'}'
+                      'Posted by ${authorName ?? 'a player'}'
+                      '${teamName != null ? ' ($teamName)' : ''}'
                       '${p['place_label'] != null ? '  -  ${p['place_label']}' : ''}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),

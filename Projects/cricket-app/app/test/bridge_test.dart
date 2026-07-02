@@ -25,7 +25,8 @@ Future<void> _pumpPost(WidgetTester tester, String mode) async {
             'title': 'Need an opponent Sunday',
             'description': '20 overs at Shivaji Park',
             'place_label': 'Dadar',
-            'profiles': {'display_name': 'Imran'},
+            'author_name': 'Imran',
+            'team_name': 'Dadar CC',
           },
         ),
       ],
@@ -45,6 +46,8 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('Propose a match'), findsOneWidget);
         expect(find.text('Message'), findsOneWidget);
+        // DISC-5: the detail shows the poster's name + team (via post_detail).
+        expect(find.textContaining('Posted by Imran (Dadar CC)'), findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }

@@ -87,21 +87,16 @@ final postRepliesProvider =
       return List<Map<String, dynamic>>.from(rows as List);
     });
 
-/// A single looking-for post by id (with the author's name).
+/// A single looking-for post by id, via the SECURITY DEFINER post_detail RPC
+/// (SEC-2: the raw row with exact geog is no longer client-readable). Returns
+/// the author + team names (DISC-5) and the place_label, never coordinates.
 final postProvider = FutureProvider.family<Map<String, dynamic>?, String>((
   ref,
   id,
 ) async {
   final c = ref.watch(supabaseClientProvider);
-  return c
-      .from('looking_for_posts')
-      .select(
-        'id, author_id, team_id, mode, flair, title, description, place_label, '
-        'match_at, overs, skill, slots_needed, status, image_urls, link_url, '
-        'profiles(display_name)',
-      )
-      .eq('id', id)
-      .maybeSingle();
+  final res = await c.rpc('post_detail', params: {'_post_id': id});
+  return res == null ? null : Map<String, dynamic>.from(res as Map);
 });
 
 /// The current user's own posts (any status), newest first.
