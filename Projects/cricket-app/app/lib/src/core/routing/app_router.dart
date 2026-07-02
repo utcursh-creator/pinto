@@ -8,6 +8,7 @@ import '../../features/discover/presentation/location_screen.dart';
 import '../../features/discover/presentation/my_posts_screen.dart';
 import '../../features/discover/presentation/new_post_composer.dart';
 import '../../features/discover/presentation/post_detail_screen.dart';
+import '../../features/discover/presentation/search_screen.dart';
 import '../../features/matches/presentation/matches_screen.dart';
 import '../../features/messages/presentation/dm_inbox_screen.dart';
 import '../../features/messages/presentation/dm_thread_screen.dart';
@@ -163,6 +164,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'my-posts',
                     builder: (context, state) => const MyPostsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'search',
+                    builder: (context, state) => const SearchScreen(),
                   ),
                   GoRoute(
                     path: 'location',

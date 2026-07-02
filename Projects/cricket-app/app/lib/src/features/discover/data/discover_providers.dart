@@ -99,6 +99,17 @@ final postProvider = FutureProvider.family<Map<String, dynamic>?, String>((
   return res == null ? null : Map<String, dynamic>.from(res as Map);
 });
 
+/// Player + team name search (MISS-3). Returns rows shaped
+/// {kind, id, name, subtitle, photo_url}. Empty for queries under 2 chars.
+final searchProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, query) async {
+  final q = query.trim();
+  if (q.length < 2) return const [];
+  final c = ref.watch(supabaseClientProvider);
+  final rows = await c.rpc('search_players_and_teams', params: {'_query': q});
+  return List<Map<String, dynamic>>.from(rows as List);
+});
+
 /// The current user's own posts (any status), newest first.
 final myPostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final me = ref.watch(currentSessionProvider)?.user.id;

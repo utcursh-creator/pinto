@@ -58,6 +58,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       title: 'Discover',
       actions: [
         IconButton(
+          icon: const Icon(Icons.search),
+          tooltip: 'Search players & teams',
+          onPressed: () => context.push(Routes.search),
+        ),
+        IconButton(
           icon: const Icon(Icons.mail_outline),
           onPressed: () => context.push(Routes.messages),
         ),

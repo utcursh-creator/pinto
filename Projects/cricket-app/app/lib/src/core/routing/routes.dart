@@ -19,6 +19,7 @@ class Routes {
   // Discover / Matchmaking (slice 3) - nested under the Discover branch.
   static const String compose = '/discover/compose';
   static const String myPosts = '/discover/my-posts';
+  static const String search = '/discover/search';
   static const String location = '/discover/location';
   static const String messages = '/discover/messages';
   static String postDetail(String postId) => '/discover/post/$postId';
