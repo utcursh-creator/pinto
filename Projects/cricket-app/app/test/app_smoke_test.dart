@@ -37,6 +37,7 @@ void main() {
           anonBootstrapProvider.overrideWith((ref) async {}),
           isAnonymousProvider.overrideWithValue(false),
           myMatchesProvider.overrideWith((ref) async => []),
+          currentSessionProvider.overrideWithValue(null),
         ],
         child: const PitchApp(),
       ),

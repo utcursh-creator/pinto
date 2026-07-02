@@ -176,15 +176,36 @@ final matchScorerCandidatesProvider =
       return out;
     });
 
-/// Matches the current user is the scorer of (the Matches tab list).
+/// Matches the current user is the scorer of (the Matches tab list). Embeds
+/// both team names and the result so the list can render "A v B - result"
+/// without a second round-trip (MTCH-1).
 final myMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final me = ref.watch(currentSessionProvider)?.user.id;
   if (me == null) return [];
   final c = ref.watch(supabaseClientProvider);
   final rows = await c
       .from('matches')
-      .select('id, status, overs_limit, venue, created_at')
+      .select('id, status, overs_limit, venue, created_at, owner_id, result, '
+          'team_a:team_a_id(name), team_b:team_b_id(name)')
       .eq('scorer_id', me)
       .order('created_at', ascending: false);
   return List<Map<String, dynamic>>.from(rows as List);
 });
+
+/// Embedded-team name off a match row shaped {team_a:{name}} / {team_b:{name}}.
+String embeddedTeamName(dynamic embed) =>
+    (embed is Map ? embed['name'] as String? : null) ?? 'Team';
+
+/// Human one-liner for a match row's stored result jsonb (used by the list).
+String? matchResultLine(Map<String, dynamic> m) {
+  final r = m['result'];
+  if (r is! Map) return null;
+  final note = r['note'] as String?;
+  if (note != null && note.isNotEmpty) return note;
+  return switch (r['result_type'] as String?) {
+    'tie' => 'Match tied',
+    'no_result' => 'No result',
+    'abandoned' => 'Abandoned',
+    _ => 'Completed',
+  };
+}

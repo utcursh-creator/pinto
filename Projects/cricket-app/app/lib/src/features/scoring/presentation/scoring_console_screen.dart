@@ -259,6 +259,8 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
               match.value,
               innings.value,
               squad.value ?? const [],
+              ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
+                  const <String, String>{},
             ),
     );
   }
@@ -267,6 +269,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     Map<String, dynamic>? match,
     Map<String, dynamic>? innings,
     List<Map<String, dynamic>> squad,
+    Map<String, String> teamNames,
   ) {
     if (innings == null) {
       return const Center(child: Text('No innings yet. Finish setup first.'));
@@ -288,6 +291,13 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         final strikerId = s['striker_id'] as String?;
         final nonStrikerId = s['non_striker_id'] as String?;
         final target = innings['target'] as int?;
+        final ended = s['innings_status'] == 'completed';
+        final matchDone = match?['status'] == 'complete' ||
+            match?['status'] == 'abandoned';
+        // Chase line: "Need R off B  (RRR x.xx)".
+        final runsReq = (s['runs_required'] as num?)?.toInt();
+        final ballsRem = (s['balls_remaining'] as num?)?.toInt();
+        final rrr = s['rrr'];
 
         return Column(
           children: [
@@ -311,10 +321,20 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                     '${target != null ? '   -   target $target' : ''}',
                     style: const TextStyle(color: Color(0xFF7DD3B9)),
                   ),
+                  if (target != null && !ended && runsReq != null && ballsRem != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Need $runsReq off $ballsRem'
+                        '${rrr != null ? '   (RRR $rrr)' : ''}',
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ),
                 ],
               ),
             ),
-            if (s['free_hit_active'] == true)
+            if (s['free_hit_active'] == true && !ended)
               Container(
                 width: double.infinity,
                 color: const Color(0xFFFFF3CD),
@@ -323,43 +343,284 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                     style: TextStyle(
                         color: Color(0xFF8A6D00), fontWeight: FontWeight.bold)),
               ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text('On strike: ${names[strikerId] ?? '-'}  *'),
-                  ),
-                  Expanded(child: Text(names[nonStrikerId] ?? '-')),
-                ],
-              ),
-            ),
-            ListTile(
-              dense: true,
-              title: Text(
-                _bowlerId == null
-                    ? 'Select a bowler to start the over'
-                    : 'Bowling: ${names[_bowlerId] ?? '-'}',
-              ),
-              trailing: TextButton(
-                onPressed: () => _pickBowler(squad, bowlingTeam, names),
-                child: Text(_bowlerId == null ? 'Pick' : 'Change'),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: AbsorbPointer(
-                absorbing: _bowlerId == null || _busy,
-                child: Opacity(
-                  opacity: _bowlerId == null ? 0.4 : 1,
-                  child: _pad(
-                      inningsId, bpo, squad, battingTeam, bowlingTeam, names, s),
+            if (ended)
+              Expanded(
+                child: _endPanel(
+                  s: s,
+                  innings: innings,
+                  squad: squad,
+                  teamNames: teamNames,
+                  battingTeam: battingTeam,
+                  bowlingTeam: bowlingTeam,
+                  target: target,
+                  matchDone: matchDone,
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('On strike: ${names[strikerId] ?? '-'}  *'),
+                    ),
+                    Expanded(child: Text(names[nonStrikerId] ?? '-')),
+                  ],
                 ),
               ),
-            ),
+              ListTile(
+                dense: true,
+                title: Text(
+                  _bowlerId == null
+                      ? 'Select a bowler to start the over'
+                      : 'Bowling: ${names[_bowlerId] ?? '-'}',
+                ),
+                trailing: TextButton(
+                  onPressed: () => _pickBowler(squad, bowlingTeam, names),
+                  child: Text(_bowlerId == null ? 'Pick' : 'Change'),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: AbsorbPointer(
+                  absorbing: _bowlerId == null || _busy,
+                  child: Opacity(
+                    opacity: _bowlerId == null ? 0.4 : 1,
+                    child: _pad(
+                        inningsId, bpo, squad, battingTeam, bowlingTeam, names, s),
+                  ),
+                ),
+              ),
+            ],
           ],
         );
       },
+    );
+  }
+
+  /// Shown when the current innings has ended. Three cases:
+  ///  * match already resolved -> just offer the scorecard;
+  ///  * 1st innings done (no target) -> innings break, start the chase;
+  ///  * 2nd innings done (target set) -> the fold's computed result + finish.
+  Widget _endPanel({
+    required Map<String, dynamic> s,
+    required Map<String, dynamic> innings,
+    required List<Map<String, dynamic>> squad,
+    required Map<String, String> teamNames,
+    required String battingTeam,
+    required String bowlingTeam,
+    required int? target,
+    required bool matchDone,
+  }) {
+    final runs = (s['runs'] as num?)?.toInt() ?? 0;
+    final wkts = (s['wickets'] as num?)?.toInt() ?? 0;
+    final battingName = teamNames[battingTeam] ?? 'Batting side';
+
+    Widget wrap(List<Widget> children) => SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
+        );
+
+    if (matchDone) {
+      return wrap([
+        const Text('Match complete',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Text(_resultLine(s['result'], teamNames)),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: () => context.push(Routes.viewMatch(widget.matchId)),
+          child: const Text('View scorecard'),
+        ),
+      ]);
+    }
+
+    if (target == null) {
+      // 1st innings done -> break, then start the chase.
+      final chaseTarget = runs + 1;
+      return wrap([
+        const Text('Innings break',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Text('$battingName finished on $runs/$wkts.'),
+        const SizedBox(height: 4),
+        Text('Target: $chaseTarget   (they must chase $chaseTarget to win)',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: _busy
+              ? null
+              : () => _startSecondInnings(
+                    chaseBatting: bowlingTeam, // sides swap for the 2nd innings
+                    chaseBowling: battingTeam,
+                    squad: squad,
+                    teamNames: teamNames,
+                    target: chaseTarget,
+                  ),
+          child: const Text('Start 2nd innings'),
+        ),
+      ]);
+    }
+
+    // 2nd innings done -> finish with the fold's computed result.
+    return wrap([
+      const Text('Match over',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8),
+      Text(_resultLine(s['result'], teamNames),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 24),
+      FilledButton(
+        onPressed: _busy ? null : () => _finishMatch(s['result'], teamNames),
+        child: const Text('Finish match & view scorecard'),
+      ),
+    ]);
+  }
+
+  /// Human result from the fold's `result` jsonb (win_by_wickets/runs/tie).
+  String _resultLine(dynamic result, Map<String, String> teamNames) {
+    if (result is! Map) return 'Result pending.';
+    final type = result['result_type'] as String?;
+    final winner = teamNames[result['winner_team_id']] ?? 'The winning side';
+    switch (type) {
+      case 'win_by_wickets':
+        final w = (result['margin_wickets'] as num?)?.toInt();
+        final b = (result['balls_remaining'] as num?)?.toInt();
+        return '$winner won by $w wicket${w == 1 ? '' : 's'}'
+            '${b != null ? ' ($b ball${b == 1 ? '' : 's'} left)' : ''}.';
+      case 'win_by_runs':
+        final r = (result['margin_runs'] as num?)?.toInt();
+        return '$winner won by $r run${r == 1 ? '' : 's'}.';
+      case 'tie':
+        return 'Match tied.';
+      default:
+        return 'Match complete.';
+    }
+  }
+
+  Future<void> _finishMatch(dynamic result, Map<String, String> teamNames) async {
+    if (result is! Map) return;
+    setState(() => _busy = true);
+    try {
+      final type = result['result_type'] as String? ?? 'no_result';
+      await _repo.setResult(
+        matchId: widget.matchId,
+        resultType: type,
+        winnerTeamId: result['winner_team_id'] as String?,
+        note: _resultLine(result, teamNames), // the full human result sentence
+      );
+      ref.invalidate(matchProvider(widget.matchId));
+      if (mounted) context.pushReplacement(Routes.viewMatch(widget.matchId));
+    } catch (e) {
+      _toast('$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _startSecondInnings({
+    required String chaseBatting,
+    required String chaseBowling,
+    required List<Map<String, dynamic>> squad,
+    required Map<String, String> teamNames,
+    required int target,
+  }) async {
+    final openers = await _pickTwoOpeners(chaseBatting, squad, teamNames);
+    if (openers == null) return;
+    setState(() => _busy = true);
+    try {
+      await _repo.startInnings(
+        matchId: widget.matchId,
+        inningsNumber: 2,
+        battingTeam: chaseBatting,
+        bowlingTeam: chaseBowling,
+        openingStriker: openers.$1,
+        openingNonStriker: openers.$2,
+        target: target,
+      );
+      ref.invalidate(currentInningsProvider(widget.matchId));
+      ref.invalidate(matchInningsListProvider(widget.matchId));
+      if (mounted) setState(() => _bowlerId = null);
+    } catch (e) {
+      _toast('$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Bottom sheet: pick striker + non-striker for the chasing side.
+  Future<(String, String)?> _pickTwoOpeners(
+    String battingTeam,
+    List<Map<String, dynamic>> squad,
+    Map<String, String> teamNames,
+  ) {
+    final batters = [
+      for (final m in squad)
+        if (m['team_id'] == battingTeam) m,
+    ];
+    String? striker;
+    String? nonStriker;
+    return showModalBottomSheet<(String, String)?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheet) {
+          Widget picker(String label, String? value, ValueChanged<String?> on) =>
+              Row(children: [
+                SizedBox(width: 110, child: Text(label)),
+                Expanded(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: value,
+                    hint: const Text('Choose'),
+                    items: [
+                      for (final b in batters)
+                        DropdownMenuItem(
+                          value: b['team_member_id'] as String,
+                          child: Text(
+                              memberName(b['team_members'] as Map<String, dynamic>)),
+                        ),
+                    ],
+                    onChanged: on,
+                  ),
+                ),
+              ]);
+          final ready =
+              striker != null && nonStriker != null && striker != nonStriker;
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${teamNames[battingTeam] ?? 'Chasing side'} - opening pair',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  picker('Striker', striker, (v) => setSheet(() => striker = v)),
+                  picker('Non-striker', nonStriker,
+                      (v) => setSheet(() => nonStriker = v)),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: ready
+                        ? () => Navigator.pop(context, (striker!, nonStriker!))
+                        : null,
+                    child: const Text('Start chase'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

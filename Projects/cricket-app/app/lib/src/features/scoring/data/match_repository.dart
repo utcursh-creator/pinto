@@ -221,14 +221,21 @@ class MatchRepository {
     required String matchId,
     required String resultType,
     String? winnerTeamId,
+    String? note,
   }) {
     final params = <String, dynamic>{
       '_match_id': matchId,
       '_result_type': resultType,
     };
     if (winnerTeamId != null) params['_winner_team_id'] = winnerTeamId;
+    if (note != null && note.isNotEmpty) params['_note'] = note;
     return _c.rpc('set_match_result', params: params);
   }
+
+  /// Owner-only hard delete of a match (cascades innings/deliveries/squad).
+  /// Used from the Matches list (MTCH-2). Blocked for tournament matches.
+  Future<void> deleteMatch(String matchId) =>
+      _c.rpc('delete_match', params: {'_match_id': matchId});
 }
 
 final matchRepositoryProvider = Provider<MatchRepository>(

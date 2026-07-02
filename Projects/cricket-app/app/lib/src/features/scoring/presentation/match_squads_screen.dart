@@ -136,6 +136,7 @@ class _TeamPicker extends ConsumerWidget {
 
   // SCOR-11: add a guest to THIS side during setup (works for the opponent too).
   Future<void> _addGuest(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final ctrl = TextEditingController();
     final name = await showDialog<String>(
       context: context,
@@ -157,7 +158,6 @@ class _TeamPicker extends ConsumerWidget {
       ),
     );
     if (name == null || name.isEmpty) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       await ref.read(matchRepositoryProvider).addMatchGuest(
             matchId: matchId,
