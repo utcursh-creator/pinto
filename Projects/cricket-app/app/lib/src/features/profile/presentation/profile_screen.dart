@@ -91,11 +91,11 @@ class ProfileScreen extends ConsumerWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(Routes.myTeams),
               ),
-              const ListTile(
-                leading: Icon(Icons.settings_outlined),
-                title: Text('Settings'),
-                trailing: Icon(Icons.chevron_right),
-                enabled: false,
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: const Text('Settings'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(Routes.settings),
               ),
               const Divider(height: 1),
               Padding(

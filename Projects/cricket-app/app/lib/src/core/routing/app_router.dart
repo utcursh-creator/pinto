@@ -25,6 +25,7 @@ import '../../features/stats/presentation/player_stats_screen.dart';
 import '../../features/onboarding/presentation/create_profile_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/settings_screen.dart';
 import '../../features/shell/presentation/adaptive_tab_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/teams/presentation/claim_inbox_screen.dart';
@@ -280,6 +281,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (context, state) => const EditProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'settings',
+                    builder: (context, state) => const SettingsScreen(),
                   ),
                   GoRoute(
                     path: 'claims',

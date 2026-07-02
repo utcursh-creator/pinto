@@ -15,6 +15,7 @@ class Routes {
   static const String claimInbox = '/profile/claims';
   static const String createTeam = '/profile/teams/create';
   static String teamPage(String teamId) => '/profile/teams/$teamId';
+  static const String settings = '/profile/settings';
 
   // Discover / Matchmaking (slice 3) - nested under the Discover branch.
   static const String compose = '/discover/compose';
