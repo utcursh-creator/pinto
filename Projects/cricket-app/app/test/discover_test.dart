@@ -43,12 +43,43 @@ void main() {
     expect(find.text('Need 2 batters'), findsOneWidget);
     expect(find.text('Loser pays'), findsWidgets);
     expect(find.text('1.2 km'), findsOneWidget);
-    // DISC-2: cricket metadata chips
+    // DISC-2: cricket metadata chips (skill also appears as a filter chip, so
+    // expect at least the card's copy)
     expect(find.text('20 ov'), findsOneWidget);
-    expect(find.text('Intermediate'), findsOneWidget);
+    expect(find.text('Intermediate'), findsWidgets);
     expect(find.text('2 players needed'), findsOneWidget);
     // DISC-5: poster + team
     expect(find.textContaining('Posted by Imran (Dadar CC)'), findsOneWidget);
+  });
+
+  testWidgets('feed filter bar offers skill / overs / date filters (DISC-3)',
+      (tester) async {
+    final seenQueries = <DiscoverQuery>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          isAnonymousProvider.overrideWithValue(false),
+          discoverFeedProvider.overrideWith((ref, q) async {
+            seenQueries.add(q);
+            return [];
+          }),
+        ],
+        child: const MaterialApp(home: DiscoverScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // the DISC-3 chips render
+    expect(find.text('Intermediate'), findsOneWidget);
+    expect(find.text('<= 20 ov'), findsOneWidget);
+    expect(find.text('From date'), findsOneWidget);
+    // selecting a skill re-queries with the skill set
+    await tester.tap(find.text('Intermediate'));
+    await tester.pumpAndSettle();
+    expect(seenQueries.last.skill, 'intermediate');
+    // selecting an overs cap re-queries with maxOvers set
+    await tester.tap(find.text('<= 20 ov'));
+    await tester.pumpAndSettle();
+    expect(seenQueries.last.maxOvers, 20);
   });
 
   test('LfLabels: distance is friendly, metaChips omit empties (DISC-2/7)', () {

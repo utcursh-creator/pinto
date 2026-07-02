@@ -68,6 +68,9 @@ final discoverFeedProvider =
         '_radius_m': q.radiusM,
         if (q.mode != null) '_mode': q.mode,
         if (q.flair != null) '_flair': q.flair,
+        if (q.skill != null) '_skill': q.skill,
+        if (q.maxOvers != null) '_max_overs': q.maxOvers,
+        if (q.onOrAfter != null) '_on_or_after': q.onOrAfter!.toIso8601String(),
       });
       return List<Map<String, dynamic>>.from(rows as List);
     });

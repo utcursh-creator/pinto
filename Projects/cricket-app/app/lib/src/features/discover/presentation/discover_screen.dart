@@ -25,6 +25,9 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _mode;
   String? _flair;
+  String? _skill;
+  int? _maxOvers;
+  DateTime? _fromDate;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +53,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       radiusM: anchor.radiusM,
       mode: _mode,
       flair: _flair,
+      skill: _skill,
+      maxOvers: _maxOvers,
+      onOrAfter: _fromDate,
     );
     final feed = ref.watch(discoverFeedProvider(query));
     final cupertino = isCupertino(context);
@@ -88,8 +94,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _FilterBar(
             mode: _mode,
             flair: _flair,
+            skill: _skill,
+            maxOvers: _maxOvers,
+            fromDate: _fromDate,
             onMode: (m) => setState(() => _mode = m),
             onFlair: (f) => setState(() => _flair = f),
+            onSkill: (s) => setState(() => _skill = s),
+            onMaxOvers: (o) => setState(() => _maxOvers = o),
+            onFromDate: (d) => setState(() => _fromDate = d),
             onLocation: () => context.push(Routes.location),
           ),
           Expanded(
@@ -157,16 +169,39 @@ class _FilterBar extends StatelessWidget {
   const _FilterBar({
     required this.mode,
     required this.flair,
+    required this.skill,
+    required this.maxOvers,
+    required this.fromDate,
     required this.onMode,
     required this.onFlair,
+    required this.onSkill,
+    required this.onMaxOvers,
+    required this.onFromDate,
     required this.onLocation,
   });
 
   final String? mode;
   final String? flair;
+  final String? skill;
+  final int? maxOvers;
+  final DateTime? fromDate;
   final ValueChanged<String?> onMode;
   final ValueChanged<String?> onFlair;
+  final ValueChanged<String?> onSkill;
+  final ValueChanged<int?> onMaxOvers;
+  final ValueChanged<DateTime?> onFromDate;
   final VoidCallback onLocation;
+
+  Future<void> _pickFromDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: fromDate ?? now,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (picked != null) onFromDate(picked);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,6 +236,41 @@ class _FilterBar extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                 ],
+              ],
+            ),
+          ),
+          // DISC-3: skill / overs-cap / from-date filters (the RPC already
+          // supported _skill/_max_overs/_on_or_after; this row finally sends them).
+          const SizedBox(height: 6),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final e in LfLabels.skills.entries) ...[
+                  ChoiceChip(
+                    label: Text(e.value),
+                    selected: skill == e.key,
+                    onSelected: (v) => onSkill(v ? e.key : null),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                for (final cap in const [10, 20, 30]) ...[
+                  ChoiceChip(
+                    label: Text('<= $cap ov'),
+                    selected: maxOvers == cap,
+                    onSelected: (v) => onMaxOvers(v ? cap : null),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                FilterChip(
+                  avatar: const Icon(Icons.event, size: 16),
+                  label: Text(fromDate == null
+                      ? 'From date'
+                      : '${fromDate!.day}/${fromDate!.month}'),
+                  selected: fromDate != null,
+                  onSelected: (v) =>
+                      v ? _pickFromDate(context) : onFromDate(null),
+                ),
               ],
             ),
           ),

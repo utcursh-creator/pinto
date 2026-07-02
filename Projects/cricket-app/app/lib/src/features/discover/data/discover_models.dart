@@ -10,6 +10,9 @@ class DiscoverQuery {
     this.radiusM = 25000,
     this.mode,
     this.flair,
+    this.skill,
+    this.maxOvers,
+    this.onOrAfter,
   });
 
   final double lat;
@@ -17,14 +20,27 @@ class DiscoverQuery {
   final double radiusM;
   final String? mode;
   final String? flair;
+  final String? skill; // DISC-3
+  final int? maxOvers; // DISC-3
+  final DateTime? onOrAfter; // DISC-3
 
-  DiscoverQuery copyWith({double? radiusM, Object? mode = _unset, Object? flair = _unset}) =>
+  DiscoverQuery copyWith({
+    double? radiusM,
+    Object? mode = _unset,
+    Object? flair = _unset,
+    Object? skill = _unset,
+    Object? maxOvers = _unset,
+    Object? onOrAfter = _unset,
+  }) =>
       DiscoverQuery(
         lat: lat,
         lng: lng,
         radiusM: radiusM ?? this.radiusM,
         mode: mode == _unset ? this.mode : mode as String?,
         flair: flair == _unset ? this.flair : flair as String?,
+        skill: skill == _unset ? this.skill : skill as String?,
+        maxOvers: maxOvers == _unset ? this.maxOvers : maxOvers as int?,
+        onOrAfter: onOrAfter == _unset ? this.onOrAfter : onOrAfter as DateTime?,
       );
 
   static const _unset = Object();
@@ -36,10 +52,14 @@ class DiscoverQuery {
       other.lng == lng &&
       other.radiusM == radiusM &&
       other.mode == mode &&
-      other.flair == flair;
+      other.flair == flair &&
+      other.skill == skill &&
+      other.maxOvers == maxOvers &&
+      other.onOrAfter == onOrAfter;
 
   @override
-  int get hashCode => Object.hash(lat, lng, radiusM, mode, flair);
+  int get hashCode =>
+      Object.hash(lat, lng, radiusM, mode, flair, skill, maxOvers, onOrAfter);
 }
 
 /// Display labels + helpers for the matchmaking enums.
