@@ -71,6 +71,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                 child: ListView(
                   children: [
                     _TeamPicker(
+                      matchId: widget.matchId,
                       teamId: teamA,
                       label: names[teamA] ?? 'Team A',
                       selected: _selected,
@@ -78,6 +79,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                       onChanged: () => setState(() {}),
                     ),
                     _TeamPicker(
+                      matchId: widget.matchId,
                       teamId: teamB,
                       label: names[teamB] ?? 'Team B',
                       selected: _selected,
@@ -117,6 +119,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
 
 class _TeamPicker extends ConsumerWidget {
   const _TeamPicker({
+    required this.matchId,
     required this.teamId,
     required this.label,
     required this.selected,
@@ -124,11 +127,48 @@ class _TeamPicker extends ConsumerWidget {
     required this.onChanged,
   });
 
+  final String matchId;
   final String teamId;
   final String label;
   final Set<String> selected;
   final Map<String, String> teamOf;
   final VoidCallback onChanged;
+
+  // SCOR-11: add a guest to THIS side during setup (works for the opponent too).
+  Future<void> _addGuest(BuildContext context, WidgetRef ref) async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add guest player'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Add')),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await ref.read(matchRepositoryProvider).addMatchGuest(
+            matchId: matchId,
+            teamId: teamId,
+            guestName: name,
+          );
+      ref.invalidate(teamMembersProvider(teamId));
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('Could not add guest: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -157,6 +197,12 @@ class _TeamPicker extends ConsumerWidget {
                 onChanged();
               },
             ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.person_add_alt_1_outlined, size: 20),
+            title: const Text('Add guest player'),
+            onTap: () => _addGuest(context, ref),
+          ),
         ],
       ),
     );

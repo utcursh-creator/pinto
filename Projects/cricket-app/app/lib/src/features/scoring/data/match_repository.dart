@@ -36,6 +36,21 @@ class MatchRepository {
         '_team_member_id': teamMemberId,
       });
 
+  /// Adds a guest player to a participating team during setup (scorer-gated).
+  /// Returns the new team_member id. (SCOR-11)
+  Future<String> addMatchGuest({
+    required String matchId,
+    required String teamId,
+    required String guestName,
+  }) async {
+    final id = await _c.rpc('add_match_guest', params: {
+      '_match_id': matchId,
+      '_team_id': teamId,
+      '_guest_name': guestName,
+    });
+    return id as String;
+  }
+
   Future<void> setToss({
     required String matchId,
     required String winnerTeamId,
