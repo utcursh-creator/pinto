@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(5);
 -- DISC-8: team_invite_preview resolves a token to the team name + redeemability
 -- without exposing the invite row; unknown tokens return null; a redeemed token
 -- reads as not-redeemable.
@@ -23,10 +23,15 @@ select is((public.team_invite_preview(:'_tok')->>'redeemable')::boolean, true,
 select is(public.team_invite_preview('nope'), null,
   'an unknown token previews as null');
 
--- after redemption the token previews as not-redeemable
+-- MISS-6: invites are multi-use - one redemption leaves it redeemable...
 select public.accept_invite(:'_tok');
+select is((public.team_invite_preview(:'_tok')->>'redeemable')::boolean, true,
+  'a redeemed multi-use invite stays redeemable');
+-- ...but an admin revoke kills it
+select tests.authenticate_as('adm@s.dev');
+update public.team_invites set status = 'expired' where invite_token = :'_tok';
 select is((public.team_invite_preview(:'_tok')->>'redeemable')::boolean, false,
-  'a used invite previews as not redeemable');
+  'a revoked invite previews as not redeemable');
 
 select * from finish();
 rollback;

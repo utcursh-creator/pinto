@@ -68,3 +68,17 @@ final invitePreviewProvider =
     FutureProvider.family<({String teamName, bool redeemable})?, String>(
         (ref, token) =>
             ref.watch(identityRepositoryProvider).invitePreview(token));
+
+/// TEAM-3/MISS-6: a team's outstanding (pending) invites, for the admin manage
+/// sheet. RLS scopes reads to team admins.
+final activeTeamInvitesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, teamId) async {
+  final client = ref.watch(supabaseClientProvider);
+  final rows = await client
+      .from('team_invites')
+      .select('id, invite_token, uses, max_uses, expires_at, created_at')
+      .eq('team_id', teamId)
+      .eq('status', 'pending')
+      .order('created_at', ascending: false);
+  return List<Map<String, dynamic>>.from(rows as List);
+});

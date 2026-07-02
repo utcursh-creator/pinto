@@ -144,11 +144,20 @@ class TeamPageScreen extends ConsumerWidget {
                     ),
                   if (isAdmin)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                       child: OutlinedButton.icon(
                         onPressed: () => _invitePlayer(context, ref),
                         icon: const Icon(Icons.link),
                         label: const Text('Invite a player'),
+                      ),
+                    ),
+                  if (isAdmin)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _manageInvites(context, ref),
+                        icon: const Icon(Icons.link_off),
+                        label: const Text('Manage invites'),
                       ),
                     ),
                   const Divider(height: 1),
@@ -158,6 +167,58 @@ class TeamPageScreen extends ConsumerWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  /// TEAM-3/MISS-6: list outstanding invites with uses/expiry and revoke.
+  Future<void> _manageInvites(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Consumer(builder: (ctx, sheetRef, _) {
+          final invites = sheetRef.watch(activeTeamInvitesProvider(teamId));
+          return invites.when(
+            loading: () => const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator.adaptive())),
+            error: (e, _) => Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Could not load invites.\n$e')),
+            data: (rows) => rows.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('No active invites.'))
+                : ListView(
+                    shrinkWrap: true,
+                    children: [
+                      const ListTile(title: Text('Active invites')),
+                      for (final i in rows)
+                        ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.link, size: 20),
+                          title: Text('Used ${i['uses'] ?? 0}'
+                              '${i['max_uses'] != null ? ' of ${i['max_uses']}' : ''} times'),
+                          subtitle: Text(
+                              'Expires ${(i['expires_at'] as String?)?.split('T').first ?? '-'}'),
+                          trailing: TextButton(
+                            onPressed: () async {
+                              try {
+                                await sheetRef
+                                    .read(identityRepositoryProvider)
+                                    .revokeInvite(i['id'] as String);
+                                sheetRef.invalidate(
+                                    activeTeamInvitesProvider(teamId));
+                              } catch (_) {/* surfaced by the list refresh */}
+                            },
+                            child: const Text('Revoke',
+                                style: TextStyle(color: Colors.red)),
+                          ),
+                        ),
+                    ],
+                  ),
+          );
+        }),
       ),
     );
   }

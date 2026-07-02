@@ -132,6 +132,11 @@ class IdentityRepository {
     return id as String;
   }
 
+  /// TEAM-3: revoke an outstanding invite (admin update via RLS).
+  Future<void> revokeInvite(String inviteId) => _client
+      .from('team_invites')
+      .update({'status': 'expired'}).eq('id', inviteId);
+
   /// DISC-8: pre-flight a token to the inviting team's name + redeemability
   /// (null when the token is unknown), so the invite screen can show a clear
   /// state before the user taps Join.
