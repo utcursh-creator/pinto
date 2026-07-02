@@ -319,6 +319,26 @@ class _LiveTab extends ConsumerWidget {
     );
   }
 
+  /// Human result for a finished match, from the stored `result` jsonb. Prefers
+  /// the note the scorer's console saved; otherwise composes from the type.
+  String _resultText() {
+    final r = match['result'];
+    if (r is! Map) {
+      return match['status'] == 'abandoned' ? 'Match abandoned.' : 'Match complete.';
+    }
+    final note = r['note'] as String?;
+    if (note != null && note.isNotEmpty) return note;
+    final winner = teams[r['winner_team_id']] ?? 'The winning side';
+    return switch (r['result_type'] as String?) {
+      'win_by_wickets' => '$winner won by ${_i(r['margin_wickets'])} wickets.',
+      'win_by_runs' => '$winner won by ${_i(r['margin_runs'])} runs.',
+      'tie' => 'Match tied.',
+      'no_result' => 'No result.',
+      'abandoned' => 'Match abandoned.',
+      _ => 'Match complete.',
+    };
+  }
+
   Widget _content(Map<String, dynamic> s) {
     final runs = _i(s['runs']);
     final wkts = _i(s['wickets']);
@@ -331,6 +351,9 @@ class _LiveTab extends ConsumerWidget {
     final target = innings['target'] as int?;
     final live = match['status'] == 'live' &&
         s['innings_status'] == 'in_progress';
+    final done =
+        match['status'] == 'complete' || match['status'] == 'abandoned';
+    final resultText = done ? _resultText() : null;
     final freeHit = s['free_hit_active'] == true;
     final perOver = _list(s['per_over']);
     final fow = _list(s['fall_of_wickets']);
@@ -409,7 +432,7 @@ class _LiveTab extends ConsumerWidget {
                 '${crr != null ? '   -   CRR $crr' : ''}',
                 style: const TextStyle(color: _kMint),
               ),
-              if (target != null)
+              if (target != null && !done)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
@@ -421,7 +444,26 @@ class _LiveTab extends ConsumerWidget {
             ],
           ),
         ),
-        if (freeHit)
+        if (resultText != null)
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFE1F5EE),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.emoji_events, color: Color(0xFF0F6E56), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    resultText,
+                    style: const TextStyle(
+                        color: Color(0xFF0F4A3A), fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (freeHit && !done)
           Container(
             width: double.infinity,
             color: const Color(0xFFFFF3D6),

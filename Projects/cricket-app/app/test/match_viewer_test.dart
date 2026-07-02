@@ -204,6 +204,86 @@ void main() {
       }
     });
 
+    testWidgets('a completed match shows the result banner on $platform',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              matchProvider.overrideWith(
+                (ref, id) async => {
+                  'id': 'm1',
+                  'team_a_id': 'A',
+                  'team_b_id': 'B',
+                  'overs_limit': 20,
+                  'balls_per_over': 6,
+                  'status': 'complete',
+                  'result': {
+                    'result_type': 'win_by_wickets',
+                    'winner_team_id': 'B',
+                    'note': 'Dadar CC won by 5 wickets (4 balls left).',
+                  },
+                },
+              ),
+              matchTeamNamesProvider.overrideWith(
+                (ref, id) async => {'A': 'Mumbai United', 'B': 'Dadar CC'},
+              ),
+              matchInningsListProvider.overrideWith(
+                (ref, id) async => [
+                  {
+                    'id': 'in2',
+                    'innings_number': 2,
+                    'batting_team_id': 'B',
+                    'bowling_team_id': 'A',
+                    'status': 'completed',
+                    'target': 150,
+                  },
+                ],
+              ),
+              matchSquadProvider.overrideWith((ref, id) async => []),
+              inningsStateProvider.overrideWith(
+                (ref, id) async => <String, dynamic>{
+                  'runs': 150,
+                  'wickets': 5,
+                  'over': '19.2',
+                  'striker_id': null,
+                  'non_striker_id': null,
+                  'batting': <dynamic>[],
+                  'bowling': <dynamic>[],
+                  'fall_of_wickets': <dynamic>[],
+                  'per_over': <dynamic>[],
+                  'worm': <dynamic>[],
+                  'extras': <String, dynamic>{},
+                  'innings_status': 'completed',
+                  'runs_required': 0,
+                  'balls_remaining': 4,
+                  'result': <String, dynamic>{
+                    'result_type': 'win_by_wickets',
+                    'winner_team_id': 'B',
+                    'margin_wickets': 5,
+                    'balls_remaining': 4,
+                  },
+                },
+              ),
+              inningsWagonProvider.overrideWith((ref, id) async => []),
+            ],
+            child: const MaterialApp(
+              home: MatchViewerScreen(matchId: 'm1', enableRealtime: false),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        // The stored result note surfaces as a banner; the chase "Need ..." line
+        // is gone once the match is done.
+        expect(find.textContaining('Dadar CC won by 5 wickets'), findsOneWidget);
+        expect(find.textContaining('Need '), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('Info tab shows venue + toss + format on $platform', (tester) async {
       debugDefaultTargetPlatformOverride = platform;
       try {
