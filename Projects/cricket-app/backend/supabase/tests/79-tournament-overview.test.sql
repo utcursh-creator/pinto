@@ -3,7 +3,7 @@
 -- playoffs -> score -> advance -> final -> advance -> champion). Asserts the
 -- composed overview + that anon can read it.
 begin;
-select plan(7);
+select plan(9);
 select tests.create_supabase_user('org@s.dev');
 select tests.authenticate_as('org@s.dev');
 insert into public.profiles(id,display_name) values (tests.get_supabase_uid('org@s.dev'),'Org');
@@ -67,6 +67,19 @@ select isnt(public.tournament_overview(:'_t'::uuid)->>'champion_team_id', null,
   'anon overview includes the champion');
 select is(jsonb_array_length(public.tournament_overview(:'_t'::uuid)->'fixtures'), 5,
   'overview lists all 5 fixtures (2 group + 2 semis + final)');
+
+-- TOUR-6: each completed fixture carries its two innings scores + winner, so a
+-- tile can render "A 60/0 beat B 30". team_a wins every match 60 to 30.
+select is(
+  (select (f->'innings'->0->>'runs')::int
+     from jsonb_array_elements(public.tournament_overview(:'_t'::uuid)->'fixtures') f
+     where jsonb_array_length(f->'innings') = 2 limit 1),
+  60, 'a completed fixture exposes its first-innings runs');
+select is(
+  (select f->'result'->>'result_type'
+     from jsonb_array_elements(public.tournament_overview(:'_t'::uuid)->'fixtures') f
+     where jsonb_array_length(f->'innings') = 2 limit 1),
+  'win_by_runs', 'a completed fixture exposes its result type + winner');
 
 select * from finish();
 rollback;
