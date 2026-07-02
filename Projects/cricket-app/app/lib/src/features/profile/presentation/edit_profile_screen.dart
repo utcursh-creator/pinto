@@ -45,7 +45,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final picked = await ImagePicker()
         .pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1024);
     if (picked == null) return;
-    setState(() => _uploading = true);
+    setState(() {
+      _uploading = true;
+      _error = null; // PROF-4: a failed upload error is not sticky
+    });
     try {
       final bytes = await picked.readAsBytes();
       final ext = picked.name.split('.').last;
@@ -89,7 +92,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'playing_role': _role,
       });
       ref.invalidate(myProfileProvider);
-      if (mounted) context.pop();
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)
+            ?.showSnackBar(const SnackBar(content: Text('Profile saved')));
+        context.pop();
+      }
     } on PostgrestException catch (e) {
       setState(() => _error = e.message);
     } finally {
@@ -125,6 +132,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _name,
+            onChanged: (_) => setState(() {}), // live initials preview (PROF-4)
             decoration: const InputDecoration(labelText: 'Display name'),
           ),
           const SizedBox(height: 12),

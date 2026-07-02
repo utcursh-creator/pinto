@@ -163,11 +163,13 @@ final matchScorerCandidatesProvider =
           .select('profile_id, profiles(display_name)')
           .inFilter('team_id', ids)
           .not('profile_id', 'is', null);
+      // SCOR-20: you can't hand scoring to yourself.
+      final me = ref.watch(currentSessionProvider)?.user.id;
       final seen = <String>{};
       final out = <Map<String, dynamic>>[];
       for (final r in (rows as List).cast<Map<String, dynamic>>()) {
         final pid = r['profile_id'] as String?;
-        if (pid == null || !seen.add(pid)) continue;
+        if (pid == null || pid == me || !seen.add(pid)) continue;
         out.add({
           'profile_id': pid,
           'name': (r['profiles'] as Map?)?['display_name'] as String? ?? 'Player',
