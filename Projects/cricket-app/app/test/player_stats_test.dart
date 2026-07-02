@@ -108,6 +108,19 @@ void main() {
       expect(s.bowling.bestLabel, '-');
       expect(s.isEmpty, isTrue);
     });
+    test('form batLabel: DNB when never faced a ball, else runs/not-out (STAT-3)', () {
+      String label({required int runs, required int balls, required bool out}) =>
+          FormEntry.fromJson({
+            'match_id': 'm',
+            'bat': {'runs': runs, 'balls': balls, 'out': out},
+            'bowl': const {},
+          }).batLabel;
+      expect(label(runs: 0, balls: 0, out: false), 'DNB'); // did not bat
+      expect(label(runs: 0, balls: 3, out: false), '0*'); // 0 not out, faced 3
+      expect(label(runs: 0, balls: 1, out: true), '0'); // out first ball
+      expect(label(runs: 30, balls: 20, out: false), '30*');
+      expect(label(runs: 42, balls: 30, out: true), '42');
+    });
   });
 
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {

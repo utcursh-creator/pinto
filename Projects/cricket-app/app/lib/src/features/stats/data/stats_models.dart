@@ -170,8 +170,10 @@ class FormEntry {
   final int wickets;
   final int runsConceded;
 
-  /// Batting figure, e.g. `30` or `30*` (not out).
-  String get batLabel => '$runs${out ? '' : '*'}';
+  /// Batting figure, e.g. `30` or `30*` (not out). A player who never faced a
+  /// ball and wasn't dismissed did not bat (STAT-3) - show "DNB", not "0*".
+  String get batLabel =>
+      balls == 0 && !out ? 'DNB' : '$runs${out ? '' : '*'}';
 
   factory FormEntry.fromJson(Map<String, dynamic> j) {
     final bat = (j['bat'] as Map?)?.cast<String, dynamic>() ?? const {};
