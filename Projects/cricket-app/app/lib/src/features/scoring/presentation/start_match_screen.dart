@@ -85,6 +85,8 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
               "Let's set it up - watch it live once we start: ${Routes.viewMatch(id)}");
         } catch (_) {/* non-fatal: the match is created regardless */}
       }
+      // the Matches list is cached; a new match must appear on return
+      ref.invalidate(myMatchesProvider);
       if (mounted) context.pushReplacement(Routes.matchSquads(id));
     } on PostgrestException catch (e) {
       setState(() => _error = e.message);

@@ -513,6 +513,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         note: _resultLine(result, teamNames), // the full human result sentence
       );
       ref.invalidate(matchProvider(widget.matchId));
+      ref.invalidate(myMatchesProvider); // history must show the result
       if (mounted) context.pushReplacement(Routes.viewMatch(widget.matchId));
     } catch (e) {
       _toast('$e');
