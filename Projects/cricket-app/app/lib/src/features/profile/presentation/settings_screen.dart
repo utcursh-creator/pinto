@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -145,15 +146,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: EdgeInsets.fromLTRB(20, 0, 20, 4),
             child: Text('Legal', style: TextStyle(fontWeight: FontWeight.w500)),
           ),
-          const ListTile(
-            leading: Icon(Icons.privacy_tip_outlined),
-            title: Text('Privacy policy'),
-            subtitle: Text('pitch.app/privacy'),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Privacy policy'),
+            subtitle: const Text('pitch.app/privacy'),
+            // MISS-4: store review requires a working link, not dead text
+            onTap: () => launchUrl(Uri.parse('https://pitch.app/privacy'),
+                mode: LaunchMode.externalApplication),
           ),
-          const ListTile(
-            leading: Icon(Icons.description_outlined),
-            title: Text('Terms of service'),
-            subtitle: Text('pitch.app/terms'),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('Terms of service'),
+            subtitle: const Text('pitch.app/terms'),
+            onTap: () => launchUrl(Uri.parse('https://pitch.app/terms'),
+                mode: LaunchMode.externalApplication),
           ),
           const Divider(height: 24),
           const ListTile(

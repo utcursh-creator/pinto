@@ -183,6 +183,9 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
         openingNonStriker: _nonStriker!,
       );
       if (mounted) context.pushReplacement(Routes.scoreMatch(widget.matchId));
+    } catch (e) {
+      // golden-path audit: a silent failure here strands the user at the toss
+      if (mounted) setState(() => _error = 'Could not start the match: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

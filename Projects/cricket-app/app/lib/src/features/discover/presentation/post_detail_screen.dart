@@ -33,11 +33,16 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Future<void> _sendReply() async {
     final body = _reply.text.trim();
     if (body.isEmpty) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
     setState(() => _sending = true);
     try {
       await ref.read(discoverRepositoryProvider).reply(widget.postId, body);
       _reply.clear();
       ref.invalidate(postRepliesProvider(widget.postId));
+    } catch (e) {
+      // golden-path audit: keep the text + tell them (was a silent drop)
+      messenger
+          ?.showSnackBar(SnackBar(content: Text('Could not send reply: $e')));
     } finally {
       if (mounted) setState(() => _sending = false);
     }

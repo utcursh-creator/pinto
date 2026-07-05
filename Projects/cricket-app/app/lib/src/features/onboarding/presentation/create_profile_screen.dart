@@ -35,6 +35,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   // Live handle availability.
   bool _checkingHandle = false;
   bool? _handleFree; // null = unknown / not yet valid
+  bool _checkFailed = false; // availability check errored - save still enforces
   Timer? _debounce;
 
   @override
@@ -71,7 +72,10 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   void _onHandleChanged() {
     _debounce?.cancel();
     final h = _handle.text.trim();
-    setState(() => _handleFree = null);
+    setState(() {
+      _handleFree = null;
+      _checkFailed = false;
+    });
     if (!_handleRe.hasMatch(h)) return;
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       setState(() => _checkingHandle = true);
@@ -83,7 +87,11 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
           setState(() => _handleFree = free as bool);
         }
       } catch (_) {
-        // Final uniqueness is enforced on save; ignore transient check errors.
+        // Final uniqueness is enforced on save (friendly 23505 message), so a
+        // failed availability check must NOT dead-end onboarding: let them save.
+        if (mounted && _handle.text.trim() == h) {
+          setState(() => _checkFailed = true);
+        }
       } finally {
         if (mounted) setState(() => _checkingHandle = false);
       }
@@ -94,7 +102,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   bool get _canSave =>
       _name.text.trim().isNotEmpty &&
       _handleValid &&
-      _handleFree == true &&
+      (_handleFree == true || _checkFailed) &&
       !_busy;
 
   Future<void> _save() async {

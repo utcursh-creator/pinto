@@ -45,6 +45,9 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
         );
       }
       if (mounted) context.pushReplacement(Routes.matchToss(widget.matchId));
+    } catch (e) {
+      // golden-path audit: an aborted squad save must not fail silently
+      if (mounted) setState(() => _error = 'Could not save the squads: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

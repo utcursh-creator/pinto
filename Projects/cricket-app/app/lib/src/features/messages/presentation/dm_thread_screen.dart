@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -166,12 +167,58 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     super.dispose();
   }
 
+  /// SEC-3: confirmed block - closes the DM channel both ways, then leaves.
+  Future<void> _blockUser(String userId, String name) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Block $name?'),
+        content: const Text(
+            'They will no longer be able to message you, and you will not '
+            'be able to message them.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(discoverRepositoryProvider).blockUser(userId);
+      ref.invalidate(dmInboxProvider);
+      messenger?.showSnackBar(SnackBar(content: Text('$name blocked')));
+      if (mounted && context.canPop()) context.pop();
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text('Could not block: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // DM-1: the header names the person, not "Chat".
     final other = ref.watch(threadOtherProvider(widget.threadId)).value;
     return AdaptiveScaffold(
       title: (other?['display_name'] as String?) ?? 'Chat',
+      actions: [
+        // SEC-3 (final audit): the block backend existed with zero call sites.
+        if (other?['id'] != null)
+          PopupMenuButton<String>(
+            onSelected: (_) => _blockUser(
+              other!['id'] as String,
+              (other['display_name'] as String?) ?? 'this user',
+            ),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'block', child: Text('Block user')),
+            ],
+          ),
+      ],
       body: Column(
         children: [
           Expanded(

@@ -290,7 +290,14 @@ class TeamPageScreen extends ConsumerWidget {
               ?.showSnackBar(const SnackBar(content: Text('Team deleted')));
           if (context.mounted) context.pop();
         } catch (e) {
-          messenger?.showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+          // MTCH-4: a team with match/tournament history is FK-protected -
+          // translate the raw violation into a human sentence.
+          final raw = '$e';
+          messenger?.showSnackBar(SnackBar(
+              content: Text(raw.contains('foreign key') || raw.contains('23503')
+                  ? 'This team has match history and cannot be deleted. '
+                      'You can leave it instead.'
+                  : 'Could not delete: $raw')));
         }
       case 'edit':
         await _editTeam(context, ref);
@@ -342,13 +349,24 @@ class TeamPageScreen extends ConsumerWidget {
     }
   }
 
-  /// TEAM-1/5: per-member admin actions (remove, change role). A guard keeps at
-  /// least one captain: promoting someone to captain is always safe; demoting is
-  /// only offered on non-captain rows here (the admin edits others, not self).
+  /// TEAM-1/5: per-member admin actions (remove, change role). Guard: never
+  /// demote or remove the LAST captain - a team must keep at least one.
   Future<void> _memberAction(BuildContext context, WidgetRef ref, String action,
       Map<String, dynamic> member) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final repo = ref.read(identityRepositoryProvider);
+    // TEAM-5: last-captain guard (audit: the old comment claimed a guard that
+    // did not exist).
+    if (member['role'] == 'captain' && action != 'captain') {
+      final roster = ref.read(teamRosterProvider(teamId)).value ?? const [];
+      final captains = roster.where((r) => r['role'] == 'captain').length;
+      if (captains <= 1) {
+        messenger?.showSnackBar(const SnackBar(
+            content: Text('A team needs at least one captain - '
+                'make someone else captain first.')));
+        return;
+      }
+    }
     try {
       switch (action) {
         case 'remove':
@@ -416,10 +434,19 @@ class TeamPageScreen extends ConsumerWidget {
       ),
     );
     if (name == null || name.isEmpty) return;
-    await ref
-        .read(identityRepositoryProvider)
-        .addGuest(teamId: teamId, guestName: name);
-    ref.invalidate(teamRosterProvider(teamId));
+    try {
+      await ref
+          .read(identityRepositoryProvider)
+          .addGuest(teamId: teamId, guestName: name);
+      ref.invalidate(teamRosterProvider(teamId));
+    } catch (e) {
+      // TEAM-6: the server now raises friendly errors (empty name, duplicate
+      // guest) - surface them instead of throwing an unhandled exception.
+      if (context.mounted) {
+        ScaffoldMessenger.maybeOf(context)
+            ?.showSnackBar(SnackBar(content: Text('Could not add guest: $e')));
+      }
+    }
   }
 
   Future<void> _changeLogo(BuildContext context, WidgetRef ref) async {
