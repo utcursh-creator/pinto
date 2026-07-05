@@ -1,7 +1,7 @@
 ---
 type: memory
 category: preferences
-last_updated: 2026-03-11
+last_updated: 2026-06-27
 ---
 
 # User Preferences
@@ -10,6 +10,30 @@ last_updated: 2026-03-11
 - **NO custom middleware.** If an OSS library exists, use it. Don't rebuild auth/capture/encode/render glue from scratch.
 - **Top-notch stack only.** No workarounds, no hacks. If quality/functionality WILL be compromised by a choice, surface it explicitly - don't hide trade-offs.
 - Implication: prefer battle-tested crates with high stars/active maintenance over hand-rolled code, even if the crate is slightly heavier.
+
+### App-build addendum (2026-06-12, cricket app)
+- **NO vibe coding.** Disciplined spec → plan → TDD → verify, every step. Reaffirmed explicitly.
+- **OSS / pre-built first, aggressively.** Lean on managed + open-source (Supabase, pgTAP, established Flutter packages) over anything hand-rolled.
+- **Backend before frontend.** For app builds, design + build + test the backend as a verifiable unit FIRST; UI/frontend comes after. (He'll say when to move to UI.)
+- **Verify external/pricing/library claims before asserting** — caught a real mistake assuming Firebase Phone Auth was cheap (it's ~6x pricier in India). Use research/verification workflows for load-bearing technical claims rather than memory.
+
+## Proactively know the TRUE build state - don't under-scope "what's remaining" (2026-06-25, user feedback - IMPORTANT)
+- After finishing the Stats sub-project I casually said "Tournaments is what's remaining" and offered to start push/store next. The user pushed back hard: before push-notifications (#61) / store-packaging (#62) / push-to-PR (#33), I must FIRST ensure everything already built is "fully built + tested + wired + not vibe-coded", and that there is MORE remaining than just Tournaments. Verbatim: "youre saying tournaments is what is remaining, idts - theres more, do a deep analysis and im not supposed to be saying all this to you you shouldve done this before hand".
+- **The expectation: I should already KNOW the true completeness state of the whole app (gaps, stubs, orphaned backend capability with no UI, untested surfaces) and surface it proactively - not hand-wave a one-line "what's next" and not wait to be told to audit.** Calibration must be code-grounded, not optimistic.
+- **How to apply**: before proposing next-phase work, run a real audit (backend health, frontend dead-ends, backend<->frontend wiring, test coverage, deferred inventory, spec-vs-built) and present the honest consolidated state FIRST. Sequencing rule the user wants: consolidate + finish + test + wire EVERYTHING already started BEFORE moving to new credential-boundary work (push/store/PR). Ties to the existing "feature-complete != shippable - calibrate explicitly" learning.
+
+## UI / Visual Output Preferences (2026-06-17)
+- **User runs on a DARK theme.** show_widget output that relies on `var(--color-background-*)` / `var(--color-text-*)` CSS variables INVERTS on dark mode -> panels go dark, text disappears.
+- **Rule for show_widget mockups**: lock to EXPLICIT light-theme colors (#FFFFFF panel bg, #1A1A18 text, #6E6B62 mut, #F4F2EB cards, #FAF8F2 headers, #D4D1C7 borders, #FAFAF7 fields). The OUTER `.cat` surface can be `#EFEDE6` warm gray for the "mockups-on-a-sheet" feel. Brand colors (teal #0F6E56, amber flairs, dark score #0F2E26) stay explicit.
+- Why: caught the first time when 3-panel widget was unreadable on his screen.
+- How to apply: any visualize MCP mockup widget, always. Theme vars OK for inert text-only viz; never for mockup contrast.
+
+## Verification discipline for app dev (2026-06-17, user feedback - IMPORTANT)
+- When developing / integrating / wiring frontend<->backend, **actually RUN it and exercise the real flow on the TARGET platform**, not just analyze + one-platform widget tests. The user hit a "No Material widget" crash on the iOS sign-in screen that my Android-default widget tests never caught.
+- **Test BOTH platforms**: Flutter widget tests default to TargetPlatform.android. Any screen using platform-adaptive chrome MUST also be tested under `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` (and ideally rendered on the iOS simulator) before claiming it's verified. iOS uses Cupertino scaffolds which behave differently (e.g. no Material ancestor).
+- Verb the user used: "this is not the way you're supposed to do it" - i.e. don't claim a screen works from analyze + happy-path Android tests alone; drive the actual running app on the platform they use (iOS). The user is on the iOS simulator.
+- Practical loop now: build -> analyze -> widget tests on BOTH platforms -> rebuild iOS + render the actual screen(s) on the sim (screenshot, incl. forms/inputs) -> only then call it verified.
+- **DO NOT control the user's computer (no computer-use / desktop puppeting) to verify (2026-06-19).** User stopped me mid-Simulator-driving: "I don't want you to use my computer." The right way to exercise the running app is a Flutter `integration_test` driven via `flutter drive` on the sim (boots the real app, taps through programmatically against live local Supabase, writes screenshots to /tmp/pitch_shots that I then Read). Capturing the sim framebuffer with `xcrun simctl io screenshot` is fine; taking over the mouse/keyboard/Simulator window is NOT.
 
 ## Writing Preferences (2026-04-17)
 - **NEVER use em dashes (—).** Use regular hyphens (-) instead, in all output, code comments, and documentation.
@@ -20,6 +44,11 @@ last_updated: 2026-03-11
 - **No LinkedIn engagement-farming loop.** User explicitly rejects LinkedIn as a GTM channel because it pulls toward content-creation-and-engagement-farming, which eats bandwidth they don't have. When designing distribution or outreach, do not propose LinkedIn-centric strategies. Email + tech-leveraged prospecting is the validated path.
 - **Bandwidth is the binding constraint.** Default to low-cognitive-load paths. Don't propose multi-month commitments unless explicitly scoped as long-term.
 
+## Map-everything-before-rebuilding for big fixes (2026-07-01, cricket - IMPORTANT)
+- When a build is found to be deeply broken (the cricket app's core loop failed a friend cold-test), the user does NOT want incremental patch-by-patch fixing. Verbatim: "analyze more deeply you will find more errors of such magnitude, i want everything mapped out before we begin - this will be the last time we will be doing - we have learnt a lot lets use all of it to develop this."
+- **How to apply:** for a major remediation, FIRST produce an exhaustive, code-grounded defect map (every area + adversarial sweep: cricket-rules correctness, security/RLS, realtime, missing whole features, dead-ends) and a complete slice-by-slice rebuild plan; review it WITH the user; THEN execute once, properly. Do not start coding fixes until the full map + plan is agreed. Treat it as the definitive do-it-right pass.
+- Reinforces the existing proactive-deep-audit expectation and the "feature-complete != shippable" calibration rule. The trigger for this was my seeded-data/provider-override testing giving false confidence (see learnings).
+
 ## Build / Working Style (2026-05-28)
 - **Rigorous incremental loop**: for each step, write code → test → audit → fix → redo, THEN move to next step. Never assume "done". Stay skeptical and curious, actively hunt for gaps and oversights. (Maps to TDD + verification-before-completion + code-review + systematic-debugging.)
 - Wants superpowers skills used interchangeably/fluidly during a build, not rigidly.
@@ -28,6 +57,11 @@ last_updated: 2026-03-11
 ## Tooling / Spend Preferences (2026-05-28)
 - **LLM access = OpenRouter key (NOT Anthropic SDK direct).** Use OpenRouter for all LLM calls in his projects (claude-haiku-4-5 is his go-to cheap model, matches the Aramas scraper setup).
 - **Reluctant to spend on tooling, especially during dev/testing.** Default to free tiers and open-source. Surface paid options as deferred "spend only if it proves necessary" decisions, not upfront requirements. He'll pay later for proven value, not for unvalidated setup.
+
+## Secrets / credentials handling (2026-06-27, cricket app)
+- **When the user hands over keys (Supabase service_role/anon, OAuth client secrets, access tokens), keep them in GITIGNORED files, never commit them, and never echo them in plain output.** For the cricket app: `backend/.env.hosted` (access token) + `app/hosted_defines.json` (anon key + web client id).
+- **The user said his keys are "all under protected environments... we don't need to rotate any key."** So do NOT keep nagging about rotation or "you exposed a secret" once he's chosen to share one in our protected workflow. Respect his stated risk posture; still keep the mechanical hygiene (gitignore, don't echo) by default.
+- **Spend posture for shipping**: free tiers first. He wants to share the app with friends for real testing WITHOUT paying - so the Android sideload APK (free) is the priority path; the Apple Developer Program ($99/yr, needed for TestFlight/iOS sharing) and the Play Console ($25) are deferred "only when it proves necessary" spends.
 
 ## Content Tone + Substance (2026-05-29)
 - **Substance spine = process optimization / process automation** with concrete measurable outcomes (time saved, cost saved) from his REAL builds. Lead with proof/value, not theory.
