@@ -6,6 +6,9 @@ last_updated: 2026-06-27
 
 # Learnings
 
+## Persist workflow/audit outputs as project docs IMMEDIATELY (2026-07-06, cricket)
+The final done-audit's full result (10 agents, per-issue evidence for 94 ids) lived only in a temp workflow output file; when the user asked "where is the audit? i don't see it" there was nothing in the repo to point at. Deliverables the user will want to read (audits, research syntheses, verdicts) must be written into the project's dated-doc convention (Projects/<proj>/YYYY-MM-DD-<name>.md, frontmatter + committed) in the SAME turn they are produced - the temp task output is an implementation detail, not a deliverable. Corollary: git status at milestones - the 94-issue master map itself sat untracked for days.
+
 ## pgTAP + basejump: capture uids BEFORE mutations that scrub metadata (2026-07-03, cricket)
 basejump's tests.authenticate_as/get_supabase_uid look users up by `raw_user_meta_data ->> 'test_identifier'`. Any code under test that rewrites raw_user_meta_data (e.g. account anonymization setting it to '{}') silently breaks every LATER helper lookup for that user - the error is a confusing "User with identifier X not found" far from the cause. Pattern: `select tests.get_supabase_uid('x') as _uid \gset` FIRST, then assert against :'_uid' after the mutation. Related (same session): bulk-seeding OTHER users' profiles in a test needs `reset role;` first (RLS blocks inserts after authenticate_as). Also: supabase account deletion without an Edge Function = SECURITY DEFINER RPC deleting auth.users works, BUT profiles->auth.users cascades while domain tables may reference profiles WITHOUT cascade - so accounts with shared history must be ANONYMIZED (blank profile + scrub auth identity + ban) instead of deleted.
 
