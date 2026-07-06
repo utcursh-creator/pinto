@@ -245,3 +245,52 @@ Verification state after the fixes: backend 520 pgTAP green (93 files); app 159
 widget tests green on both platforms; analyze clean; both device gates
 (from-scratch playthrough + live-push realtime E2E) previously passed with
 screenshots.
+
+---
+
+## Addendum: the 2026-07-06 full sweep (user order: "fix everything from the roots")
+
+The user rejected the deferral ledger and ordered every partially-fixed item,
+UI dead end and UX issue closed at the root. Executed as three verified units
+(commits: sweep unit A backend, unit B console, unit C social/discover, unit D
+scorecard share):
+
+**Backend roots (unit A, 12 migrations + pgTAP 101-104, 565 tests green)**
+- SCOR-16 root: retirements/timed-out + manual strike swaps are non-ball EVENT
+  rows in the deliveries stream (fold v14 in all three lockstep folds; v13
+  never applied a retired batter's replacement at all). retire_batter +
+  swap_strike RPCs.
+- SCOR-15: rules.max_overs_per_bowler enforced in record_ball at over start;
+  the app stamps ceil(overs/5) into every match it creates.
+- SCOR-24: fold returns last_seq; record_ball(_expected_last_seq) rejects
+  stale-device appends. SCOR-1/10/14 residues: mark_innings_break RPC +
+  start_innings validation + innings_break->live transition.
+- MISS-5 (search by handle), DISC-1 (ball_type end to end), DISC-8 (dead-token
+  reasons), TOUR-8 (POTM frozen at result time), TOUR-4
+  (update_match_schedule), TEAM-4 (invited_phone dead path removed), STAT-2
+  (guest_player_profile).
+
+**Console UX (unit B)** - swap/retire controls, bowler figures + cap + last-
+over disable in the picker, full extras composer (wide+N, nb sources, 5s/7s,
+overthrow, +5 penalty), full-composition ball editor with out-batter
+filtering, captain/keeper/batting-order capture + (c)/(wk) render, CRR in the
+header, orphaned-ball warning, busy feedback, opener mutual exclusion, wagon
+sheet hardening. PLUS a root platform bug found by the new tests:
+CupertinoPageScaffold hosted no Scaffold, so EVERY SnackBar in the app was
+invisible on iOS - AdaptiveScaffold now embeds a transparent Scaffold.
+
+**Social/discover/profile UX (unit C)** - DM send no longer depends on the
+broadcast echo; live DM inbox; handle payoff (search/show/claim-in-edit);
+propose-a-match carries ground + date; ball-type chips; invite wording by
+reason; POTM team + tap-through; fixture schedule editor + TBD names;
+create-team logo; claim-inbox identity guard; ErrorRetry + pull-to-refresh;
+anon Profile doorway; onboarding photo; guest career pages; revoke/share
+failures surfaced.
+
+**MISS-9 (unit D)** - "Share the full scorecard": every innings' batting +
+bowling card rendered to one tall branded image from the viewer share sheet.
+
+Still credential/infra-gated (cannot be fixed in code): iOS Google client,
+deep-link domain registration, push notifications, DISC-4 map picker key,
+pitch.app/privacy + /terms hosting, and the hosted `supabase db push` (which
+now also carries the 12 sweep migrations and REQUIRES the user's go).
