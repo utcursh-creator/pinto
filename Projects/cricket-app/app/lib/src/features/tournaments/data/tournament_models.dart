@@ -126,6 +126,8 @@ class Fixture {
     this.groupLabel,
     this.bracketSlot,
     this.result,
+    this.scheduledAt,
+    this.venue,
     this.innings = const [],
   });
 
@@ -139,8 +141,26 @@ class Fixture {
   final String? groupLabel;
   final String? bracketSlot;
   final Map<String, dynamic>? result;
+  final DateTime? scheduledAt; // TOUR-4
+  final String? venue; // TOUR-4
   // Each: {innings_number, batting_team_id, runs, wickets} (TOUR-6).
   final List<Map<String, dynamic>> innings;
+
+  /// TOUR-4: "Sun 20 Jul, 10:00 - Shivaji Park" (either part optional).
+  String get scheduleLine {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dt = scheduledAt?.toLocal();
+    final when = dt == null
+        ? ''
+        : '${days[dt.weekday - 1]} ${dt.day} ${months[dt.month - 1]}, '
+            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return [
+      if (when.isNotEmpty) when,
+      if (venue?.isNotEmpty ?? false) venue!,
+    ].join(' - ');
+  }
 
   bool get isLive => status == 'live' || status == 'innings_break';
   bool get isComplete => status == 'complete' || status == 'abandoned';
@@ -203,14 +223,17 @@ class Fixture {
   factory Fixture.fromJson(Map<String, dynamic> j) => Fixture(
         matchId: j['match_id'] as String,
         stage: (j['stage'] as String?) ?? 'group',
-        teamA: (j['team_a'] as String?) ?? 'Team A',
-        teamB: (j['team_b'] as String?) ?? 'Team B',
+        // an unresolved side is TBD, never a fake-looking "Team A"
+        teamA: (j['team_a'] as String?) ?? 'TBD',
+        teamB: (j['team_b'] as String?) ?? 'TBD',
         teamAId: j['team_a_id'] as String?,
         teamBId: j['team_b_id'] as String?,
         status: (j['status'] as String?) ?? 'setup',
         groupLabel: j['group_label'] as String?,
         bracketSlot: j['bracket_slot'] as String?,
         result: (j['result'] as Map?)?.cast<String, dynamic>(),
+        scheduledAt: DateTime.tryParse(j['scheduled_at']?.toString() ?? ''),
+        venue: j['venue'] as String?,
         innings: [
           for (final i in (j['innings'] as List? ?? const []))
             (i as Map).cast<String, dynamic>(),

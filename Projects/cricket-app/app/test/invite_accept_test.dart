@@ -11,9 +11,10 @@ import 'package:pitch_app/src/features/teams/presentation/invite_accept_screen.d
 Future<void> _pump(
   WidgetTester tester, {
   required bool anon,
-  ({String teamName, bool redeemable})? preview = (
+  ({String teamName, bool redeemable, String? reason})? preview = (
     teamName: 'Strikers',
     redeemable: true,
+    reason: null,
   ),
 }) async {
   await tester.pumpWidget(
@@ -78,10 +79,31 @@ void main() {
       debugDefaultTargetPlatformOverride = platform;
       try {
         await _pump(tester,
-            anon: false, preview: (teamName: 'Strikers', redeemable: false));
+            anon: false,
+            preview: (teamName: 'Strikers', redeemable: false, reason: 'used'));
         expect(tester.takeException(), isNull);
         expect(find.textContaining('already been used'), findsOneWidget);
         expect(find.byType(FilledButton), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('an expired token says expired, not used on $platform',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        // DISC-8: the dead-token reason drives distinct wording
+        await _pump(tester,
+            anon: false,
+            preview: (
+              teamName: 'Strikers',
+              redeemable: false,
+              reason: 'expired'
+            ));
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('has expired'), findsOneWidget);
+        expect(find.textContaining('already been used'), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }

@@ -111,6 +111,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Public, login-free, shareable player career stats - top-level so deep/
       // share links cold-start correctly (outside the StatefulShellRoute).
+      // STAT-2: guests (unclaimed roster spots) get the same page keyed by
+      // member id. Declared FIRST so '/player/guest/...' never matches ':profileId'.
+      GoRoute(
+        path: '/player/guest/:memberId',
+        builder: (context, state) => PlayerStatsScreen(
+          profileId: state.pathParameters['memberId']!,
+          isGuest: true,
+        ),
+      ),
       GoRoute(
         path: '/player/:profileId',
         builder: (context, state) => PlayerStatsScreen(
@@ -214,6 +223,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                       initialOpponentId:
                           state.uri.queryParameters['opponent'],
                       initialOvers: state.uri.queryParameters['overs'],
+                      initialVenue: state.uri.queryParameters['venue'],
+                      initialMatchAt: state.uri.queryParameters['at'],
                       proposeToAuthorId: state.uri.queryParameters['author'],
                     ),
                   ),

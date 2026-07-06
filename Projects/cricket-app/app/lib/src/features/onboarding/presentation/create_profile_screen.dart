@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/auth/profile_provider.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import '../../identity/data/identity_repository.dart';
+import '../../identity/presentation/initials_avatar.dart';
 
 /// First-run gate: a real (non-anonymous) user with no profile row lands here.
 /// Collects the essentials (name + a unique handle, plus optional city/style/
@@ -28,6 +31,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final _city = TextEditingController();
   String? _batting; // 'right' | 'left'
   String? _role; // batter | bowler | all_rounder | keeper
+  String? _photoUrl; // AUTH-5: OAuth avatar prefill or picked photo
+  bool _uploadingPhoto = false;
 
   bool _busy = false;
   String? _error;
@@ -53,10 +58,32 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
           const <String, dynamic>{};
       final full = (md['full_name'] ?? md['name']) as String?;
       if (full != null && full.trim().isNotEmpty) _name.text = full.trim();
+      // AUTH-5: carry the OAuth avatar so the profile is complete on day one
+      final pic = (md['avatar_url'] ?? md['picture']) as String?;
+      if (pic != null && pic.trim().isNotEmpty) _photoUrl = pic.trim();
     } catch (_) {
       // no client/session available (e.g. widget tests) - skip prefill.
     }
     _handle.addListener(_onHandleChanged);
+  }
+
+  /// AUTH-5: optional photo during onboarding (same avatars bucket as edit).
+  Future<void> _pickPhoto() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1024);
+    if (picked == null) return;
+    setState(() => _uploadingPhoto = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.contains('.') ? picked.name.split('.').last : 'jpg';
+      final url =
+          await ref.read(identityRepositoryProvider).uploadAvatar(bytes, ext);
+      if (mounted) setState(() => _photoUrl = url);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not upload the photo: $e');
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 
   @override
@@ -123,6 +150,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
         if (_city.text.trim().isNotEmpty) 'city': _city.text.trim(),
         if (_batting != null) 'batting_style': _batting,
         if (_role != null) 'playing_role': _role,
+        if (_photoUrl != null) 'photo_url': _photoUrl,
       });
       ref.invalidate(myProfileProvider);
     } on PostgrestException catch (e) {
@@ -174,6 +202,28 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // AUTH-5: photo up front, so a new profile is not faceless
+          Center(
+            child: Column(
+              children: [
+                InitialsAvatar(
+                    name: _name.text, photoUrl: _photoUrl, radius: 40),
+                TextButton.icon(
+                  onPressed: _uploadingPhoto ? null : _pickPhoto,
+                  icon: _uploadingPhoto
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child:
+                              CircularProgressIndicator.adaptive(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.photo_camera_outlined, size: 18),
+                  label: Text(
+                      _photoUrl == null ? 'Add photo (optional)' : 'Change photo'),
+                ),
+              ],
+            ),
+          ),
           TextField(
             controller: _name,
             textCapitalization: TextCapitalization.words,

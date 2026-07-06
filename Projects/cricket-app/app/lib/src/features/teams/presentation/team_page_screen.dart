@@ -139,10 +139,12 @@ class TeamPageScreen extends ConsumerWidget {
                       onClaim: (uid != null && member['profile_id'] == null)
                           ? () => _claim(context, ref, member['id'] as String)
                           : null,
-                      // Registered members have a public stats page; guests do
-                      // not until they are claimed.
+                      // STAT-2: everyone has a career page now - registered
+                      // members by profile id, guests by their member id.
                       onOpenStats: member['profile_id'] == null
-                          ? null
+                          ? () => context.push(
+                                Routes.guestPlayerStats(member['id'] as String),
+                              )
                           : () => context.push(
                                 Routes.playerStats(member['profile_id'] as String),
                               ),
@@ -238,13 +240,20 @@ class TeamPageScreen extends ConsumerWidget {
                               'Expires ${(i['expires_at'] as String?)?.split('T').first ?? '-'}'),
                           trailing: TextButton(
                             onPressed: () async {
+                              final messenger =
+                                  ScaffoldMessenger.maybeOf(context);
                               try {
                                 await sheetRef
                                     .read(identityRepositoryProvider)
                                     .revokeInvite(i['id'] as String);
                                 sheetRef.invalidate(
                                     activeTeamInvitesProvider(teamId));
-                              } catch (_) {/* surfaced by the list refresh */}
+                              } catch (e) {
+                                // fresh-eyes audit: a failed revoke left the
+                                // invite alive with zero feedback
+                                messenger?.showSnackBar(SnackBar(
+                                    content: Text('Could not revoke: $e')));
+                              }
                             },
                             child: const Text('Revoke',
                                 style: TextStyle(color: Colors.red)),

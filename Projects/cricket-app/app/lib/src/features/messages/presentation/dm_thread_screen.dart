@@ -121,12 +121,22 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     });
     _jump();
     try {
-      await ref.read(discoverRepositoryProvider).sendDm(widget.threadId, body);
-      // the broadcast INSERT echoes the real row; drop the local placeholder.
+      final row = await ref
+          .read(discoverRepositoryProvider)
+          .sendDm(widget.threadId, body);
+      // DM-3: the insert returns the real row - swap the placeholder for it
+      // directly. The `_ids` guard dedupes the broadcast echo when it arrives;
+      // if the echo is dropped the message still stands.
       if (mounted) {
         setState(() {
           _messages.removeWhere((m) => m['id'] == tempId);
+          final id = row['id'] as String?;
+          if (id != null && !_ids.contains(id)) {
+            _ids.add(id);
+            _messages.add(row);
+          }
         });
+        _jump();
       }
     } catch (e) {
       if (mounted) {

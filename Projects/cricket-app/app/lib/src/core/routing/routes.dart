@@ -29,12 +29,19 @@ class Routes {
 
   // Scoring (slice 4) - nested under the Matches branch.
   static const String startMatch = '/matches/new';
-  // Pre-seed the wizard with an opponent (+ overs, and the poster to notify)
-  // from a discover post (MTCH-7).
-  static String proposeMatch(String opponentTeamId, {int? overs, String? authorId}) {
+  // Pre-seed the wizard with an opponent (+ overs, venue, date, and the
+  // poster to notify) from a discover post (MTCH-7).
+  static String proposeMatch(String opponentTeamId,
+      {int? overs, String? authorId, String? venue, String? matchAt}) {
     final params = <String>['opponent=$opponentTeamId'];
     if (overs != null) params.add('overs=$overs');
     if (authorId != null) params.add('author=$authorId');
+    if (venue != null && venue.isNotEmpty) {
+      params.add('venue=${Uri.encodeQueryComponent(venue)}');
+    }
+    if (matchAt != null && matchAt.isNotEmpty) {
+      params.add('at=${Uri.encodeQueryComponent(matchAt)}');
+    }
     return '/matches/new?${params.join('&')}';
   }
   static String matchSquads(String matchId) => '/matches/$matchId/squads';
@@ -57,6 +64,8 @@ class Routes {
 
   // Public, login-free, shareable player career stats (top-level, like /watch).
   static String playerStats(String profileId) => '/player/$profileId';
+  // STAT-2: the same career page for an unclaimed guest, keyed by member id.
+  static String guestPlayerStats(String memberId) => '/player/guest/$memberId';
 
   // Team invite acceptance (opened from a shared invite link).
   static String acceptInvite(String token) => '/invite/$token';

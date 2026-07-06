@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -18,6 +21,9 @@ class CreateTeamScreen extends ConsumerStatefulWidget {
 class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   final _name = TextEditingController();
   final _city = TextEditingController();
+  // TEAM-7: an optional logo picked before creation, applied right after
+  Uint8List? _logoBytes;
+  String _logoExt = 'jpg';
   bool _busy = false;
   String? _error;
 
@@ -26,6 +32,18 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     _name.dispose();
     _city.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickLogo() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 512);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    setState(() {
+      _logoBytes = bytes;
+      _logoExt =
+          picked.name.contains('.') ? picked.name.split('.').last : 'jpg';
+    });
   }
 
   Future<void> _create() async {
@@ -38,9 +56,15 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       _error = null;
     });
     try {
-      final teamId = await ref
-          .read(identityRepositoryProvider)
-          .createTeam(name: _name.text.trim(), city: _city.text.trim());
+      final repo = ref.read(identityRepositoryProvider);
+      final teamId = await repo.createTeam(
+          name: _name.text.trim(), city: _city.text.trim());
+      if (_logoBytes != null) {
+        try {
+          final url = await repo.uploadAvatar(_logoBytes!, _logoExt);
+          await repo.setTeamLogo(teamId, url);
+        } catch (_) {/* non-fatal: the logo can be set from the team page */}
+      }
       ref.invalidate(myTeamsProvider);
       if (mounted) context.pushReplacement(Routes.teamPage(teamId));
     } on PostgrestException catch (e) {
@@ -57,6 +81,27 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // TEAM-7: the logo can be set at birth, not only from the team page
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundImage:
+                      _logoBytes == null ? null : MemoryImage(_logoBytes!),
+                  child: _logoBytes == null
+                      ? const Icon(Icons.shield_outlined, size: 32)
+                      : null,
+                ),
+                TextButton.icon(
+                  onPressed: _pickLogo,
+                  icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                  label:
+                      Text(_logoBytes == null ? 'Add logo (optional)' : 'Change logo'),
+                ),
+              ],
+            ),
+          ),
           TextField(
             controller: _name,
             decoration: const InputDecoration(labelText: 'Team name'),

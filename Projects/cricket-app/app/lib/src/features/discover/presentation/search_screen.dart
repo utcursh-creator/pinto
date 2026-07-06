@@ -82,6 +82,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final id = r['id'] as String;
     final name = (r['name'] as String?) ?? '';
     final subtitle = r['subtitle'] as String?;
+    final handle = r['handle'] as String?; // MISS-5: the handle pays off here
     final isTeam = kind == 'team';
     return ListTile(
       leading: InitialsAvatar(
@@ -89,7 +90,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       title: Text(name),
       subtitle: Text(isTeam
           ? 'Team${subtitle != null && subtitle.isNotEmpty ? '  -  $subtitle' : ''}'
-          : 'Player'),
+          : handle != null
+              ? '@$handle'
+              : 'Player'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => context.push(
           isTeam ? Routes.teamPage(id) : Routes.playerStats(id)),

@@ -84,9 +84,19 @@ class LfLabels {
     'advanced': 'Advanced',
   };
 
+  // DISC-1: tennis vs leather is the biggest compatibility filter in street
+  // cricket - posts can finally say which.
+  static const Map<String, String> ballTypes = {
+    'tennis': 'Tennis ball',
+    'leather': 'Leather ball',
+    'tape': 'Tape ball',
+    'other': 'Other ball',
+  };
+
   static String mode(String? v) => modes[v] ?? '';
   static String flair(String? v) => flairs[v] ?? '';
   static String skill(String? v) => skills[v] ?? '';
+  static String ball(String? v) => ballTypes[v] ?? '';
 
   // DISC-7: the server coarsens to 100m, so anything close reads as 0 - show a
   // friendly "Nearby" instead of "0 m", and km for longer ranges.
@@ -116,16 +126,18 @@ class LfLabels {
     return '${days[dt.weekday - 1]} ${dt.day} ${months[dt.month - 1]}, $h12:$mins $ampm';
   }
 
-  /// The metadata chips a post can show: "20 ov", skill, "N players", when.
+  /// The metadata chips a post can show: "20 ov", skill, ball, "N players", when.
   static List<String> metaChips({
     int? overs,
     String? skillLevel,
     int? slotsNeeded,
     dynamic matchAt,
+    String? ballType,
   }) =>
       [
         if (overs != null) '$overs ov',
         if (skillLevel != null && skillLevel.isNotEmpty) skill(skillLevel),
+        if (ballType != null && ballType.isNotEmpty) ball(ballType),
         if (slotsNeeded != null && slotsNeeded > 0)
           '$slotsNeeded player${slotsNeeded == 1 ? '' : 's'} needed',
         if (matchWhen(matchAt).isNotEmpty) matchWhen(matchAt),

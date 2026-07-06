@@ -216,6 +216,10 @@ class _FixtureTile extends StatelessWidget {
     return ListTile(
       dense: true,
       title: Text('${f.teamA}  v  ${f.teamB}'),
+      // TOUR-4: upcoming fixtures show their date + ground when set
+      subtitle: f.isUpcoming && f.scheduleLine.isNotEmpty
+          ? Text(f.scheduleLine, style: theme.textTheme.bodySmall)
+          : null,
       trailing: f.isLive
           ? Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 7, height: 7, decoration: const BoxDecoration(
@@ -338,8 +342,8 @@ class _LeadersTabState extends State<_LeadersTab> {
     );
   }
 
-  // TOUR-7/STAT-1: a claimed player's row links to their career page; an
-  // unclaimed guest (no profile_id) stays non-tappable.
+  // TOUR-7/STAT-1/STAT-2: a claimed player's row links to their career page;
+  // an unclaimed guest now has a member-keyed career page of their own.
   Widget _leaderRow(BuildContext context, int rank, LeaderEntry e) {
     final claimed = e.profileId != null;
     return ListTile(
@@ -349,9 +353,9 @@ class _LeadersTabState extends State<_LeadersTab> {
       title: Text(e.name),
       trailing: Text('${e.value}',
           style: const TextStyle(fontWeight: FontWeight.w600)),
-      onTap: claimed
-          ? () => context.push(Routes.playerStats(e.profileId!))
-          : null,
+      onTap: () => context.push(claimed
+          ? Routes.playerStats(e.profileId!)
+          : Routes.guestPlayerStats(e.memberId)),
     );
   }
 }

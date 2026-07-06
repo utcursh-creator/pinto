@@ -124,6 +124,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         skillLevel: p['skill'] as String?,
                         slotsNeeded: (p['slots_needed'] as num?)?.toInt(),
                         matchAt: p['match_at'],
+                        ballType: p['ball_type'] as String?, // DISC-1
                       );
                       if (chips.isEmpty) return const SizedBox.shrink();
                       return Padding(
@@ -197,6 +198,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               p['team_id'] as String,
                               overs: (p['overs'] as num?)?.toInt(),
                               authorId: authorId,
+                              // MTCH-7: the post's ground + date carry over
+                              venue: p['place_label'] as String?,
+                              matchAt: p['match_at']?.toString(),
                             ),
                           ),
                           icon: const Icon(Icons.sports_cricket),

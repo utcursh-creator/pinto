@@ -38,11 +38,15 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
           ?.showSnackBar(const SnackBar(content: Text('You joined the team')));
       context.go(Routes.myTeams);
     } catch (e) {
-      // DISC-8: map the known failure to a friendly line, not a raw error.
+      // DISC-8: map the known failures to friendly lines, not raw errors.
       final raw = '$e';
-      setState(() => _message = raw.contains('not found or already used')
-          ? 'This invite has already been used or is no longer valid.'
-          : 'Could not join: $raw');
+      setState(() => _message = raw.contains('invite expired')
+          ? 'This invite has expired - ask the captain for a fresh link.'
+          : raw.contains('invite fully used')
+              ? 'This invite has reached its member limit.'
+              : raw.contains('not found or already used')
+                  ? 'This invite has already been used or is no longer valid.'
+                  : 'Could not join: $raw');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -66,8 +70,18 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
                 ? _invalid(context,
                     'This invite link is not valid. Ask the captain to send a new one.')
                 : !p.redeemable
-                    ? _invalid(context,
-                        'This invite to ${p.teamName} has already been used.')
+                    // DISC-8: say WHY it is dead, not one generic line
+                    ? _invalid(context, switch (p.reason) {
+                        'expired' =>
+                          'This invite to ${p.teamName} has expired - ask the '
+                              'captain for a fresh link.',
+                        'revoked' =>
+                          'This invite to ${p.teamName} was revoked by the team.',
+                        'used_up' =>
+                          'This invite to ${p.teamName} has reached its member limit.',
+                        _ =>
+                          'This invite to ${p.teamName} has already been used.',
+                      })
                     : _body(context, isAnon, teamName: p.teamName, valid: true),
           ),
         ),

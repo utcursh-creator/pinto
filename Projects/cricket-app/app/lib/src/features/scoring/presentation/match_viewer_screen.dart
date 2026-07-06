@@ -7,11 +7,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
+import '../../../core/routing/routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../tournaments/data/tournament_providers.dart';
 import '../data/match_providers.dart';
@@ -154,8 +156,13 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
           ),
         ),
       );
-    } catch (_) {
-      /* non-fatal: surface nothing if the card can't be built */
+    } catch (e) {
+      // fresh-eyes audit: a share tap that does NOTHING reads as a dead
+      // button - say why instead.
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text('Could not build the share card: $e')));
+      }
     }
   }
 
@@ -978,9 +985,24 @@ class _InfoTab extends ConsumerWidget {
         tile('Status', (match['status'] as String?) ?? '-'),
         if ((match['status'] as String?) == 'complete')
           ref.watch(matchPotmProvider(match['id'] as String)).maybeWhen(
-                data: (potm) => potm == null
-                    ? const SizedBox.shrink()
-                    : tile('Player of the match', potm['name'] as String? ?? '-'),
+                // TOUR-7/8: named with their team, and tappable to the career
+                // page when the player is claimed.
+                data: (potm) {
+                  if (potm == null) return const SizedBox.shrink();
+                  final teamName = teams[potm['team_id']];
+                  final profileId = potm['profile_id'] as String?;
+                  return InkWell(
+                    onTap: profileId == null
+                        ? null
+                        : () => context.push(Routes.playerStats(profileId)),
+                    child: tile(
+                      'Player of the match',
+                      '${potm['name'] as String? ?? '-'}'
+                          '${teamName != null ? ' ($teamName)' : ''}'
+                          '${profileId != null ? '  >' : ''}',
+                    ),
+                  );
+                },
                 orElse: () => const SizedBox.shrink(),
               ),
       ],

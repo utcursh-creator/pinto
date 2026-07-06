@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/profile_provider.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/routing/routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../identity/data/identity_labels.dart';
@@ -19,25 +20,56 @@ class ProfileScreen extends ConsumerWidget {
       title: 'Profile',
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load profile.\n$e')),
+        // PROF-3: never dump a raw error - friendly line + Retry
+        error: (e, _) => ErrorRetry(
+          message: 'Could not load your profile.',
+          detail: e,
+          onRetry: () => ref.invalidate(myProfileProvider),
+        ),
         data: (profile) {
           if (profile == null) {
-            // Anonymous session (no profile row) -> offer sign-in.
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Sign in to set up your profile and teams.'),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () => context.push(Routes.signIn),
-                    child: const Text('Sign in'),
-                  ),
-                ],
-              ),
+            // PROF-5: the anonymous tab is a doorway, not a wall - browse the
+            // public side of the app and sign in when ready.
+            return ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                const SizedBox(height: 24),
+                const Icon(Icons.sports_cricket, size: 48),
+                const SizedBox(height: 12),
+                Text('Pitch works without an account',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                const Text(
+                  'Watch live matches and follow tournaments as a guest. '
+                  'Sign in to build a team, post in Discover and score matches.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () => context.push(Routes.signIn),
+                  child: const Text('Sign in'),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.sensors),
+                  title: const Text('Watch live matches'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push(Routes.liveMatches),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.search),
+                  title: const Text('Find players and teams'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push(Routes.search),
+                ),
+              ],
             );
           }
-          return ListView(
+          return RefreshIndicator.adaptive(
+            onRefresh: () async => ref.invalidate(myProfileProvider),
+            child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 12),
             children: [
               Padding(
@@ -58,6 +90,16 @@ class ProfileScreen extends ConsumerWidget {
                             (profile['display_name'] as String?) ?? 'Player',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
+                          // MISS-5: the handle is your address - show it
+                          if ((profile['handle'] as String?)?.isNotEmpty ??
+                              false)
+                            Text(
+                              '@${profile['handle']}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: const Color(0xFF0F6E56)),
+                            ),
                           const SizedBox(height: 2),
                           Text(
                             IdentityLabels.profileSubtitle(profile),
@@ -106,6 +148,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ],
+            ),
           );
         },
       ),

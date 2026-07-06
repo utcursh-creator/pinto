@@ -21,6 +21,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _phone;
   late final TextEditingController _city;
   late final TextEditingController _bowling;
+  late final TextEditingController _handle;
+  late final bool _hasHandle; // MISS-5: pre-handle accounts can finally set one
   String? _batting; // 'right' | 'left'
   String? _role; // batter | bowler | all_rounder | keeper
   String? _photoUrl;
@@ -36,6 +38,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _phone = TextEditingController(text: (p['phone'] as String?) ?? '');
     _city = TextEditingController(text: (p['city'] as String?) ?? '');
     _bowling = TextEditingController(text: (p['bowling_style'] as String?) ?? '');
+    _handle = TextEditingController(text: (p['handle'] as String?) ?? '');
+    _hasHandle = (p['handle'] as String?)?.isNotEmpty ?? false;
     _batting = p['batting_style'] as String?;
     _role = p['playing_role'] as String?;
     _photoUrl = p['photo_url'] as String?;
@@ -70,12 +74,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _phone.dispose();
     _city.dispose();
     _bowling.dispose();
+    _handle.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (_name.text.trim().isEmpty) {
       setState(() => _error = 'A display name is required.');
+      return;
+    }
+    final newHandle = _handle.text.trim().toLowerCase();
+    if (!_hasHandle && newHandle.isNotEmpty &&
+        !RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(newHandle)) {
+      setState(() =>
+          _error = 'Handles are 3-30 letters, numbers or underscores.');
       return;
     }
     setState(() {
@@ -90,6 +102,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'bowling_style': _bowling.text.trim().isEmpty ? null : _bowling.text.trim(),
         'batting_style': _batting,
         'playing_role': _role,
+        // MISS-5: a pre-handle account claims a handle here (write-once)
+        if (!_hasHandle && newHandle.isNotEmpty) 'handle': newHandle,
       });
       ref.invalidate(myProfileProvider);
       if (mounted) {
@@ -98,7 +112,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         context.pop();
       }
     } on PostgrestException catch (e) {
-      setState(() => _error = e.message);
+      setState(() => _error = e.code == '23505'
+          ? 'That handle is taken - try another.'
+          : e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -141,6 +157,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(labelText: 'Phone (optional)'),
           ),
+          const SizedBox(height: 12),
+          // MISS-5: pre-handle accounts set their handle here; once set it is
+          // your permanent address and shows read-only.
+          if (_hasHandle)
+            TextField(
+              controller: _handle,
+              enabled: false,
+              decoration: const InputDecoration(
+                labelText: 'Handle',
+                prefixText: '@',
+                helperText: 'Handles are permanent',
+              ),
+            )
+          else
+            TextField(
+              controller: _handle,
+              decoration: const InputDecoration(
+                labelText: 'Handle (optional, permanent once set)',
+                prefixText: '@',
+                helperText: '3-30 letters, numbers or underscores',
+              ),
+            ),
           const SizedBox(height: 12),
           TextField(
             controller: _city,

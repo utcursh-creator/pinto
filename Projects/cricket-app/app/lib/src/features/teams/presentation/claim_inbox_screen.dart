@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
+import '../../identity/presentation/initials_avatar.dart';
 
 /// Captain inbox: pending requests from registered players to take over a guest
 /// roster spot. Approving transfers that guest membership (and its history) to
@@ -71,16 +72,25 @@ class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
                   (tm?['teams'] as Map<String, dynamic>?)?['name'] as String? ??
                       'a team';
               final guestName = tm?['guest_name'] as String? ?? 'a guest';
+              final requester = r['requester'] as Map<String, dynamic>?;
+              // TEAM-9: never blind-approve - a claimer whose profile cannot
+              // be resolved shows as unknown and cannot be approved.
+              final known = requester?['display_name'] != null;
               final claimer =
-                  (r['requester'] as Map<String, dynamic>?)?['display_name']
-                          as String? ??
-                      'A player';
+                  (requester?['display_name'] as String?) ?? 'Unknown player';
               final membershipId = r['membership_id'] as String;
               final claimerId = r['requested_by'] as String;
               final busy = _busyId == membershipId;
               return ListTile(
+                leading: InitialsAvatar(
+                  name: claimer,
+                  photoUrl: requester?['photo_url'] as String?,
+                  radius: 20,
+                ),
                 title: Text('$claimer wants to claim "$guestName"'),
-                subtitle: Text('on $teamName'),
+                subtitle: Text(known
+                    ? 'on $teamName'
+                    : 'on $teamName - profile unavailable, cannot approve'),
                 trailing: busy
                     ? const SizedBox(
                         width: 20,
@@ -88,8 +98,9 @@ class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
                         child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                       )
                     : FilledButton(
-                        onPressed: () =>
-                            _approve(membershipId, claimerId, claimer),
+                        onPressed: known
+                            ? () => _approve(membershipId, claimerId, claimer)
+                            : null,
                         child: const Text('Approve'),
                       ),
               );

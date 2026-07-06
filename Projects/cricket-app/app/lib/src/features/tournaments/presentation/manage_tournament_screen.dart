@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../../identity/data/identity_providers.dart';
+import '../../scoring/data/match_repository.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../data/tournament_repository.dart';
@@ -118,7 +119,7 @@ class ManageTournamentScreen extends ConsumerWidget {
     final group = o.fixturesForStage('group');
     final allDone = group.isNotEmpty && group.every((f) => f.isComplete);
     return [
-      _fixtureSection(context, 'Group fixtures', group),
+      _fixtureSection(context, ref, 'Group fixtures', group),
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
         child: FilledButton(
@@ -144,8 +145,8 @@ class ManageTournamentScreen extends ConsumerWidget {
     final label = fin.isEmpty ? 'Advance to final' : 'Crown the champion';
     final canAdvance = fin.isEmpty ? semisDone : finalDone;
     return [
-      _fixtureSection(context, 'Semifinals', semis),
-      if (fin.isNotEmpty) _fixtureSection(context, 'Final', fin),
+      _fixtureSection(context, ref, 'Semifinals', semis),
+      if (fin.isNotEmpty) _fixtureSection(context, ref, 'Final', fin),
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
         child: FilledButton(
@@ -174,7 +175,8 @@ class ManageTournamentScreen extends ConsumerWidget {
         ),
       ];
 
-  Widget _fixtureSection(BuildContext context, String title, List<Fixture> fixtures) {
+  Widget _fixtureSection(BuildContext context, WidgetRef ref, String title,
+      List<Fixture> fixtures) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
@@ -187,21 +189,111 @@ class ManageTournamentScreen extends ConsumerWidget {
           // statusLine now carries the scoreline + winner for completed matches.
           subtitle: Text([
             if (f.groupLabel != null) 'Group ${f.groupLabel}',
+            // TOUR-4: show the schedule the organizer set
+            if (f.scheduleLine.isNotEmpty) f.scheduleLine,
             f.statusLine,
           ].join('  -  ')),
           trailing: f.isComplete
               ? const Text('Done')
-              : FilledButton(
-                  style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact),
-                  onPressed: () => context.push(_fixtureDest(f)),
-                  // TOUR-1: a fresh fixture has no squads yet - start the setup
-                  // wizard, don't dead-end at the empty console.
-                  child: Text(f.isUpcoming ? 'Set up' : 'Score'),
-                ),
+              : Row(mainAxisSize: MainAxisSize.min, children: [
+                  // TOUR-4: organizer sets/edits the fixture's date + ground
+                  if (!f.isLive)
+                    IconButton(
+                      icon: const Icon(Icons.event_outlined, size: 20),
+                      tooltip: 'Schedule',
+                      onPressed: () => _editSchedule(context, ref, f),
+                    ),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    onPressed: () => context.push(_fixtureDest(f)),
+                    // TOUR-1: a fresh fixture has no squads yet - start the
+                    // setup wizard, don't dead-end at the empty console.
+                    child: Text(f.isUpcoming ? 'Set up' : 'Score'),
+                  ),
+                ]),
           onTap: () => context.push(_fixtureDest(f)),
         ),
     ]);
+  }
+
+  /// TOUR-4: date + venue editor for a fixture (update_match_schedule RPC).
+  Future<void> _editSchedule(
+      BuildContext context, WidgetRef ref, Fixture f) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final venueCtrl = TextEditingController(text: f.venue ?? '');
+    DateTime? when = f.scheduledAt?.toLocal();
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${f.teamA}  v  ${f.teamB}',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event_outlined),
+                  title: Text(when == null
+                      ? 'Pick date & time'
+                      : '${when!.day}/${when!.month}/${when!.year} '
+                          '${when!.hour.toString().padLeft(2, '0')}:'
+                          '${when!.minute.toString().padLeft(2, '0')}'),
+                  onTap: () async {
+                    final now = DateTime.now();
+                    final d = await showDatePicker(
+                      context: ctx,
+                      initialDate: when ?? now,
+                      firstDate: now.subtract(const Duration(days: 30)),
+                      lastDate: now.add(const Duration(days: 365)),
+                    );
+                    if (d == null || !ctx.mounted) return;
+                    final t = await showTimePicker(
+                      context: ctx,
+                      initialTime: TimeOfDay.fromDateTime(when ?? now),
+                    );
+                    setSheet(() => when = DateTime(
+                        d.year, d.month, d.day, t?.hour ?? 9, t?.minute ?? 0));
+                  },
+                ),
+                TextField(
+                  controller: venueCtrl,
+                  decoration: const InputDecoration(labelText: 'Ground / venue'),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Save schedule'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (saved != true) return;
+    try {
+      await ref.read(matchRepositoryProvider).updateMatchSchedule(
+            matchId: f.matchId,
+            scheduledAt: when,
+            venue: venueCtrl.text.trim(),
+          );
+      ref.invalidate(tournamentOverviewProvider(tournamentId));
+    } catch (e) {
+      messenger?.showSnackBar(
+          SnackBar(content: Text('Could not save the schedule: $e')));
+    }
   }
 
   /// Where tapping a fixture goes: a fresh (setup) fixture -> the squad wizard

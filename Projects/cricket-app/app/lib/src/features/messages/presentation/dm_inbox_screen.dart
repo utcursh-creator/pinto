@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
+import '../../../core/supabase/supabase_providers.dart';
 import '../../discover/data/discover_providers.dart';
 import '../../discover/data/discover_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
 
 /// The DM inbox: conversations newest-first with unread badges (DM-4), last
-/// message time (DM-6), pull-to-refresh (DM-5), and a compose action that can
-/// start a NEW conversation via a people search (DM-7).
-class DmInboxScreen extends ConsumerWidget {
+/// message time (DM-6), pull-to-refresh AND live updates (DM-5 - the inbox
+/// subscribes to each listed thread's private channel so a new message moves
+/// the row without leaving the screen), and a compose action that can start a
+/// NEW conversation via a people search (DM-7).
+class DmInboxScreen extends ConsumerStatefulWidget {
   const DmInboxScreen({super.key});
 
   /// DM-6: inbox row trailing time ("14:05" today, "3 Jul" otherwise).
@@ -29,8 +33,60 @@ class DmInboxScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DmInboxScreen> createState() => _DmInboxScreenState();
+}
+
+class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
+  final Map<String, RealtimeChannel> _subs = {};
+
+  /// DM-5: keep one private-channel subscription per visible thread; any
+  /// incoming INSERT re-reads the inbox (unread badge, preview, ordering).
+  void _syncSubscriptions(List<Map<String, dynamic>> threads) {
+    final SupabaseClient c;
+    try {
+      c = ref.read(supabaseClientProvider);
+    } catch (_) {
+      return; // no client bootstrapped (tests) - pull-to-refresh still works
+    }
+    final wanted = {for (final t in threads) t['thread_id'] as String};
+    for (final id in _subs.keys.toList()) {
+      if (!wanted.contains(id)) {
+        c.removeChannel(_subs.remove(id)!);
+      }
+    }
+    for (final id in wanted) {
+      if (_subs.containsKey(id)) continue;
+      c.realtime.setAuth(c.auth.currentSession?.accessToken);
+      final ch = c.channel('dm:$id',
+          opts: const RealtimeChannelConfig(private: true));
+      ch
+          .onBroadcast(
+            event: 'INSERT',
+            callback: (_) => ref.invalidate(dmInboxProvider),
+          )
+          .subscribe();
+      _subs[id] = ch;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_subs.isNotEmpty) {
+      final c = ref.read(supabaseClientProvider);
+      for (final ch in _subs.values) {
+        c.removeChannel(ch);
+      }
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final inbox = ref.watch(dmInboxProvider);
+    ref.listen(dmInboxProvider, (_, next) {
+      final threads = next.value;
+      if (threads != null) _syncSubscriptions(threads);
+    });
     return AdaptiveScaffold(
       title: 'Messages',
       actions: [
@@ -78,7 +134,7 @@ class DmInboxScreen extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(lastAtLabel(t['last_at']),
+                          Text(DmInboxScreen.lastAtLabel(t['last_at']),
                               style: Theme.of(context).textTheme.bodySmall),
                           if (unread > 0) ...[
                             const SizedBox(height: 4),
@@ -166,7 +222,8 @@ class _PeoplePickerSheetState extends ConsumerState<_PeoplePickerSheet> {
               autofocus: true,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
-                hintText: 'Search a player by name',
+                // MISS-5: handles are searchable
+                hintText: 'Search by name or @handle',
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _query = v),
@@ -196,6 +253,9 @@ class _PeoplePickerSheetState extends ConsumerState<_PeoplePickerSheet> {
                             photoUrl: p['photo_url'] as String?,
                             radius: 18),
                         title: Text((p['name'] as String?) ?? 'Player'),
+                        subtitle: p['handle'] == null
+                            ? null
+                            : Text('@${p['handle']}'),
                         onTap: () => Navigator.pop(context, p),
                       ),
                   ],

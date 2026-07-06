@@ -37,7 +37,8 @@ final claimInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
       .select(
         'id, membership_id, requested_by, status, '
         'team_members(guest_name, team_id, teams(name)), '
-        'requester:requested_by(display_name)',
+        // TEAM-9: name + photo, so the captain sees WHO is claiming
+        'requester:requested_by(display_name, photo_url)',
       )
       .eq('status', 'pending')
       .neq('requested_by', session.user.id)
@@ -62,12 +63,11 @@ final teamRosterProvider =
       return List<Map<String, dynamic>>.from(rows as List);
     });
 
-/// DISC-8: pre-flight an invite token -> team name + redeemability (null =
-/// unknown token). Keyed by token.
-final invitePreviewProvider =
-    FutureProvider.family<({String teamName, bool redeemable})?, String>(
-        (ref, token) =>
-            ref.watch(identityRepositoryProvider).invitePreview(token));
+/// DISC-8: pre-flight an invite token -> team name + redeemability + the
+/// reason a dead token died (null = unknown token). Keyed by token.
+final invitePreviewProvider = FutureProvider.family<
+        ({String teamName, bool redeemable, String? reason})?, String>(
+    (ref, token) => ref.watch(identityRepositoryProvider).invitePreview(token));
 
 /// TEAM-3/MISS-6: a team's outstanding (pending) invites, for the admin manage
 /// sheet. RLS scopes reads to team admins.

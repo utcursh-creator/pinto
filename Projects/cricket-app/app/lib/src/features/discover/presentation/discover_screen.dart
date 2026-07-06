@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/platform/platform.dart';
 import '../../../core/routing/routes.dart';
 import '../data/discover_models.dart';
@@ -119,7 +120,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             child: feed.when(
               loading: () =>
                   const Center(child: CircularProgressIndicator.adaptive()),
-              error: (e, _) => Center(child: Text('Could not load the feed.\n$e')),
+              // PROF-3: friendly error + Retry, never a raw dump
+              error: (e, _) => ErrorRetry(
+                message: 'Could not load the feed.',
+                detail: e,
+                onRetry: () => ref.invalidate(discoverFeedProvider(query)),
+              ),
               data: (posts) => posts.isEmpty
                   ? const Center(child: Text('No open posts nearby yet.'))
                   : RefreshIndicator.adaptive(
@@ -309,6 +315,7 @@ class _PostCard extends ConsumerWidget {
       skillLevel: post['skill'] as String?,
       slotsNeeded: (post['slots_needed'] as num?)?.toInt(),
       matchAt: post['match_at'],
+      ballType: post['ball_type'] as String?, // DISC-1
     );
     return Card(
       margin: EdgeInsets.zero,

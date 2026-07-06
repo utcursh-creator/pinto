@@ -44,6 +44,7 @@ class DiscoverRepository {
     DateTime? matchAt,
     List<String>? imageUrls,
     String? linkUrl,
+    String? ballType,
   }) async {
     final params = <String, dynamic>{
       '_mode': mode,
@@ -64,6 +65,7 @@ class DiscoverRepository {
     if (matchAt != null) params['_match_at'] = matchAt.toIso8601String();
     if (imageUrls != null && imageUrls.isNotEmpty) params['_image_urls'] = imageUrls;
     if (linkUrl != null && linkUrl.isNotEmpty) params['_link_url'] = linkUrl;
+    if (ballType != null) params['_ball_type'] = ballType; // DISC-1
     final id = await _c.rpc('create_looking_for_post', params: params);
     return id as String;
   }
@@ -87,12 +89,19 @@ class DiscoverRepository {
     return id as String;
   }
 
-  Future<void> sendDm(String threadId, String body) async {
-    await _c.from('dm_messages').insert({
-      'thread_id': threadId,
-      'sender_id': _uid,
-      'body': body,
-    });
+  /// DM-3: returns the inserted row so the sender's bubble is confirmed by
+  /// the write itself - a dropped broadcast echo can no longer eat a message.
+  Future<Map<String, dynamic>> sendDm(String threadId, String body) async {
+    final row = await _c
+        .from('dm_messages')
+        .insert({
+          'thread_id': threadId,
+          'sender_id': _uid,
+          'body': body,
+        })
+        .select('id, sender_id, body, created_at')
+        .single();
+    return Map<String, dynamic>.from(row);
   }
 
   /// DM-4/SEC-4: stamps read_at on the OTHER side's unread messages via the

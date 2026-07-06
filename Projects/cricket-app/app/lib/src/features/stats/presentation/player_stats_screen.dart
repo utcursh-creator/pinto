@@ -6,18 +6,23 @@ import '../../identity/presentation/initials_avatar.dart';
 import '../data/stats_models.dart';
 import '../data/stats_providers.dart';
 
-/// Public, login-free career stats for one player (keyed by profile id):
+/// Public, login-free career stats for one player (keyed by profile id, or -
+/// STAT-2 - by team_members.id for an unclaimed guest via [isGuest]):
 /// identity header, batting + bowling cards, a fielding line and a last-5 form
 /// strip. Undefined ratios render as '-'. Reached from the Profile tab, team
-/// roster rows, and a shareable `/player/:id` deep link.
+/// roster rows, leaderboards, and a shareable `/player/:id` deep link.
 class PlayerStatsScreen extends ConsumerWidget {
-  const PlayerStatsScreen({required this.profileId, super.key});
+  const PlayerStatsScreen(
+      {required this.profileId, this.isGuest = false, super.key});
 
   final String profileId;
+  final bool isGuest;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(playerStatsProvider(profileId));
+    final async = ref.watch(isGuest
+        ? guestPlayerStatsProvider(profileId)
+        : playerStatsProvider(profileId));
     return AdaptiveScaffold(
       title: async.value?.identity.displayName ?? 'Player',
       body: async.when(
@@ -29,7 +34,9 @@ class PlayerStatsScreen extends ConsumerWidget {
           ),
         ),
         data: (stats) => RefreshIndicator.adaptive(
-          onRefresh: () async => ref.invalidate(playerStatsProvider(profileId)),
+          onRefresh: () async => ref.invalidate(isGuest
+              ? guestPlayerStatsProvider(profileId)
+              : playerStatsProvider(profileId)),
           child: ListView(
             padding: const EdgeInsets.only(bottom: 28),
             children: [

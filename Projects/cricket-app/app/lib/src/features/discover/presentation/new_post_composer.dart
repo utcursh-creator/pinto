@@ -24,6 +24,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
   String? _flair; // required
   String? _teamId; // required for team_seeking_*
   String? _skill; // optional
+  String? _ballType; // optional (DISC-1: tennis/leather/tape)
   int _slots = 0; // players needed (team_seeking_players)
   DateTime? _matchAt; // optional match date/time
   final _details = TextEditingController();
@@ -109,6 +110,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             placeLabel: _place.text.trim(),
             overs: int.tryParse(_overs.text.trim()),
             skill: _skill,
+            ballType: _ballType,
             slotsNeeded: _needsSlots && _slots > 0 ? _slots : null,
             matchAt: _matchAt,
             imageUrls: _imageUrls,
@@ -228,6 +230,22 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
                   onSelected: (v) =>
                       setState(() => _skill = v ? e.key : null),
                 ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text('Ball (optional)', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final e in LfLabels.ballTypes.entries)
+                if (e.key != 'other')
+                  ChoiceChip(
+                    label: Text(e.value),
+                    selected: _ballType == e.key,
+                    onSelected: (v) =>
+                        setState(() => _ballType = v ? e.key : null),
+                  ),
             ],
           ),
           const SizedBox(height: 12),

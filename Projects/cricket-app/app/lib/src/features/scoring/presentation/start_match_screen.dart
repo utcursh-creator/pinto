@@ -14,15 +14,19 @@ class StartMatchScreen extends ConsumerStatefulWidget {
   const StartMatchScreen({
     this.initialOpponentId,
     this.initialOvers,
+    this.initialVenue,
+    this.initialMatchAt,
     this.proposeToAuthorId,
     super.key,
   });
 
   /// When arriving from a "Propose a match" bridge on a team_seeking_opponent
-  /// post, the opponent team + overs are pre-selected and, on creation, the
-  /// poster is DM'd the match (MTCH-7).
+  /// post, the opponent team + overs + venue + date carry over and, on
+  /// creation, the poster is DM'd the match (MTCH-7).
   final String? initialOpponentId;
   final String? initialOvers;
+  final String? initialVenue;
+  final String? initialMatchAt; // ISO-8601
   final String? proposeToAuthorId;
 
   @override
@@ -36,7 +40,9 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
       TextEditingController(text: widget.initialOvers?.trim().isNotEmpty ?? false
           ? widget.initialOvers!.trim()
           : '20');
-  final _venue = TextEditingController();
+  late final _venue = TextEditingController(text: widget.initialVenue ?? '');
+  late DateTime? _matchAt =
+      DateTime.tryParse(widget.initialMatchAt ?? '')?.toLocal();
   bool _busy = false;
   String? _error;
 
@@ -68,12 +74,22 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
       _error = null;
     });
     try {
-      final id = await ref.read(matchRepositoryProvider).createMatch(
+      final repo0 = ref.read(matchRepositoryProvider);
+      final id = await repo0.createMatch(
             teamA: _teamA!,
             teamB: _teamB!,
             overs: overs,
             venue: _venue.text.trim(),
           );
+      // MTCH-7: the post's date/time survives onto the match
+      if (_matchAt != null) {
+        try {
+          await repo0.updateMatchSchedule(
+              matchId: id,
+              scheduledAt: _matchAt,
+              venue: _venue.text.trim());
+        } catch (_) {/* non-fatal: the match exists either way */}
+      }
       // MTCH-7: notify the poster who was seeking an opponent.
       if (widget.proposeToAuthorId != null) {
         try {
@@ -154,7 +170,39 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
             controller: _venue,
             decoration: const InputDecoration(labelText: 'Venue (optional)'),
           ),
-          const SizedBox(height: 24),
+          // MTCH-7: the date carried from a discover post (editable)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event_outlined),
+            title: Text(_matchAt == null
+                ? 'Date & time (optional)'
+                : '${_matchAt!.day}/${_matchAt!.month}/${_matchAt!.year} '
+                    '${_matchAt!.hour.toString().padLeft(2, '0')}:'
+                    '${_matchAt!.minute.toString().padLeft(2, '0')}'),
+            trailing: _matchAt == null
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => setState(() => _matchAt = null),
+                  ),
+            onTap: () async {
+              final now = DateTime.now();
+              final d = await showDatePicker(
+                context: context,
+                initialDate: _matchAt ?? now,
+                firstDate: now.subtract(const Duration(days: 1)),
+                lastDate: now.add(const Duration(days: 365)),
+              );
+              if (d == null || !context.mounted) return;
+              final t = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.fromDateTime(_matchAt ?? now),
+              );
+              setState(() => _matchAt = DateTime(
+                  d.year, d.month, d.day, t?.hour ?? 0, t?.minute ?? 0));
+            },
+          ),
+          const SizedBox(height: 12),
           FilledButton(
             onPressed: _busy ? null : _create,
             child: const Text('Next: squads'),
