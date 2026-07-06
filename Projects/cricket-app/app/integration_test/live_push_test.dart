@@ -69,8 +69,8 @@ void main() {
         params: {'_team_id': teamA, '_guest_name': 'Bat Two'}) as String;
     final bowl = await c.rpc('add_guest_member',
         params: {'_team_id': teamB, '_guest_name': 'Bowl One'}) as String;
-    await c.rpc('add_guest_member',
-        params: {'_team_id': teamB, '_guest_name': 'Bowl Two'});
+    final bowl2 = await c.rpc('add_guest_member',
+        params: {'_team_id': teamB, '_guest_name': 'Bowl Two'}) as String;
     final matchId = await c.rpc('create_match', params: {
       '_team_a': teamA,
       '_team_b': teamB,
@@ -83,11 +83,14 @@ void main() {
         '_team_member_id': m
       });
     }
-    await c.rpc('add_squad_member', params: {
-      '_match_id': matchId,
-      '_team_id': teamB,
-      '_team_member_id': bowl
-    });
+    // start_innings now validates BOTH squads carry >= 2 players (SCOR-10)
+    for (final m in [bowl, bowl2]) {
+      await c.rpc('add_squad_member', params: {
+        '_match_id': matchId,
+        '_team_id': teamB,
+        '_team_member_id': m
+      });
+    }
     final inningsId = await c.rpc('start_innings', params: {
       '_match_id': matchId,
       '_innings_number': 1,

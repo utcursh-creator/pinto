@@ -1,7 +1,7 @@
 ---
 type: memory
 category: status
-last_updated: 2026-06-27
+last_updated: 2026-07-06
 ---
 
 # Work Status
@@ -1221,6 +1221,8 @@ Utkarsh confirmed: targeting Type 1 — content expert with audience. Reference 
   - Update secondary pages to match new positioning
   - YouTube GTM strategy docs (parked for later)
 - **Next Steps**: Implement the approved landing page structure
+
+- **✅ FULL SWEEP DONE (2026-07-06): the user ordered EVERY deferral/dead-end/UX issue fixed "from the roots" - executed as 4 verified units, all committed.** UNIT A backend (12 migrations, pgTAP 101-104, suite 565 green/97 files): fold v14 non-ball EVENT rows (retire_batter + swap_strike RPCs; v13 never applied a retired batter's replacement), rules.max_overs_per_bowler cap in record_ball (app stamps ceil(overs/5) at create), SCOR-24 last_seq optimistic-concurrency fence, mark_innings_break + start_innings validation (both-squads-declared conditional), handle search, posts.ball_type, invite-preview reasons, POTM persisted at result (matches.potm + compute_match_potm split), update_match_schedule (scorer|tournament organizer), invited_phone dead path dropped, guest_player_profile. UNIT B console (173 widget tests): swap/retire pad controls, bowler picker figures+cap+last-over disable, full extras composer (wide+N/nb-source/5s/overthrow/+5 penalty), full-composition ball editor + out-batter filtering, captain/keeper/batting-order capture + (c)/(wk), CRR header, orphan warning, busy feedback, opener exclusion, wagon hardening; **ROOT PLATFORM BUG: CupertinoPageScaffold had no Scaffold so EVERY SnackBar was invisible on iOS - AdaptiveScaffold now embeds a transparent Scaffold**. UNIT C social (183 tests): DM send returns the row (no echo dependence), live DM inbox (per-thread private channels), handle payoff (search/show/claim-in-edit), propose-match carries ground+date, ball-type chips, invite dead-token wording, POTM team+tap-through, fixture schedule editor + TBD names, create-team logo, claim-inbox identity guard (no blind approve), ErrorRetry widget, anon Profile doorway, onboarding photo, guest career pages (/player/guest/:memberId), revoke/share failures surfaced. UNIT D: MISS-9 full-scorecard share image (FullScorecardCard). **DEVICE GATE caught a REAL bug the mocked widget tests could not: match_squad column is `is_wicket_keeper` NOT `is_keeper` (42703 on the squads screen) - fixed, gate re-run.** Audit doc updated with the sweep addendum (committed). STILL USER-GATED: hosted `supabase db push` (now ~57 pending migrations incl. the 12 sweep ones), release APK rebuild after, pitch.app/privacy+terms hosting, iOS Google client, deep-link domain, push notifications, DISC-4 Maps key.
 
 ## Current Focus (as of 2026-04-02)
 - **Vibelife Website**: Major repositioning underway — shifting from "AI doesn't replace expertise" to fulfillment partner for AI automation businesses. Full landing page rewrite pending implementation.

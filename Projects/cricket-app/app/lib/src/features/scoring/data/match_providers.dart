@@ -45,7 +45,7 @@ final matchSquadProvider =
       final rows = await c
           .from('match_squad')
           .select(
-            'team_id, team_member_id, batting_order, is_captain, is_keeper, '
+            'team_id, team_member_id, batting_order, is_captain, is_wicket_keeper, '
             'team_members(id, guest_name, profiles(display_name))',
           )
           .eq('match_id', matchId)

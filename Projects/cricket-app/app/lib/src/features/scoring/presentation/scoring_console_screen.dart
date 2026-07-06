@@ -90,6 +90,9 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         expectedLastSeq: lastSeq,
       );
       await _afterBall(inningsId, bpo);
+      // the recording is DONE here - drop the busy state BEFORE the wagon
+      // prompt, or the progress bar animates under the open sheet forever
+      if (mounted) setState(() => _busy = false);
       if (res.wagonApplicable && res.deliveryId != null && mounted) {
         await _promptWagon(res.deliveryId!,
             runs: runs, wicket: wicketType != null);
@@ -103,7 +106,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         _toast(raw);
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted && _busy) setState(() => _busy = false);
     }
   }
 

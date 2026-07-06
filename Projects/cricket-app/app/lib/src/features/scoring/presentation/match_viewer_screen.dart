@@ -151,6 +151,14 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
                   icon: const Icon(Icons.ios_share),
                   label: const Text('Share image'),
                 ),
+                // MISS-9: the full batting+bowling card as a tall image
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(sheetCtx);
+                    _shareFullScorecard();
+                  },
+                  child: const Text('Share the full scorecard instead'),
+                ),
               ],
             ),
           ),
@@ -162,6 +170,95 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(content: Text('Could not build the share card: $e')));
+      }
+    }
+  }
+
+  /// MISS-9: build every innings' batting + bowling card into one tall,
+  /// shareable image (was: only the one-line summary card).
+  Future<void> _shareFullScorecard() async {
+    try {
+      final innings =
+          await ref.read(matchInningsListProvider(widget.matchId).future);
+      if (innings.isEmpty || !mounted) return;
+      final teams =
+          await ref.read(matchTeamNamesProvider(widget.matchId).future);
+      final match = await ref.read(matchProvider(widget.matchId).future);
+      final squad =
+          await ref.read(matchSquadProvider(widget.matchId).future);
+      final names = {
+        for (final m in squad)
+          m['team_member_id'] as String:
+              memberName(m['team_members'] as Map<String, dynamic>),
+      };
+      final a = teams[match?['team_a_id']] ?? 'Team A';
+      final b = teams[match?['team_b_id']] ?? 'Team B';
+
+      final data = <ScorecardInningsData>[];
+      for (final inn in innings) {
+        final s =
+            await ref.read(inningsStateProvider(inn['id'] as String).future);
+        data.add(ScorecardInningsData(
+          teamName: teams[inn['batting_team_id']] ?? 'Batting',
+          total: '${_i(s['runs'])}/${_i(s['wickets'])}',
+          over: '${s['over'] ?? '0.0'}',
+          batting: [
+            for (final bt in _list(s['batting']))
+              [
+                names[bt['batter_id']] ?? '-',
+                '${_i(bt['runs'])}',
+                '${_i(bt['balls'])}',
+                '${_i(bt['fours'])}',
+                '${_i(bt['sixes'])}',
+              ],
+          ],
+          bowling: [
+            for (final bw in _list(s['bowling']))
+              [
+                names[bw['bowler_id']] ?? '-',
+                '${bw['overs'] ?? '0.0'}',
+                '${_i(bw['maidens'])}',
+                '${_i(bw['runs_conceded'])}',
+                '${_i(bw['wickets'])}',
+              ],
+          ],
+        ));
+      }
+      if (!mounted) return;
+      final result = (match?['result'] as Map?)?['note'] as String? ??
+          ((match?['status'] as String?) ?? '').toUpperCase();
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (sheetCtx) => SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RepaintBoundary(
+                  key: _shareKey,
+                  child: FullScorecardCard(
+                    title: '$a v $b',
+                    resultLine: result,
+                    innings: data,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => _captureAndShare('$a v $b - scorecard'),
+                  icon: const Icon(Icons.ios_share),
+                  label: const Text('Share image'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text('Could not build the scorecard: $e')));
       }
     }
   }
@@ -265,10 +362,10 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     // SCOR-13: the batting card marks the captain and keeper
     final roles = {
       for (final s in squad)
-        if (s['is_captain'] == true || s['is_keeper'] == true)
+        if (s['is_captain'] == true || s['is_wicket_keeper'] == true)
           s['team_member_id'] as String: [
             if (s['is_captain'] == true) 'c',
-            if (s['is_keeper'] == true) 'wk',
+            if (s['is_wicket_keeper'] == true) 'wk',
           ].join('/'),
     };
     final latest = innings.last;
