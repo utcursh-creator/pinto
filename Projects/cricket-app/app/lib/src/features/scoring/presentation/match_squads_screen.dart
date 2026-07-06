@@ -17,8 +17,12 @@ class MatchSquadsScreen extends ConsumerStatefulWidget {
 }
 
 class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
-  final Set<String> _selected = {}; // team_member ids
+  // SCOR-13: a Dart Set is insertion-ordered - the order players are picked
+  // IS the batting order, shown as a number on each selected row.
+  final Set<String> _selected = {}; // team_member ids, in batting order
   final Map<String, String> _teamOf = {}; // member id -> team id
+  final Map<String, String?> _captainOf = {}; // team id -> member id
+  final Map<String, String?> _keeperOf = {}; // team id -> member id
   bool _busy = false;
   String? _error;
 
@@ -37,11 +41,18 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
     });
     try {
       final repo = ref.read(matchRepositoryProvider);
+      final orderWithin = <String, int>{}; // team id -> next batting slot
       for (final memberId in _selected) {
+        final teamId = _teamOf[memberId]!;
+        final order = (orderWithin[teamId] ?? 0) + 1;
+        orderWithin[teamId] = order;
         await repo.addSquadMember(
           matchId: widget.matchId,
-          teamId: _teamOf[memberId]!,
+          teamId: teamId,
           teamMemberId: memberId,
+          battingOrder: order,
+          isCaptain: _captainOf[teamId] == memberId,
+          isKeeper: _keeperOf[teamId] == memberId,
         );
       }
       if (mounted) context.pushReplacement(Routes.matchToss(widget.matchId));
@@ -79,6 +90,8 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                       label: names[teamA] ?? 'Team A',
                       selected: _selected,
                       teamOf: _teamOf,
+                      captainOf: _captainOf,
+                      keeperOf: _keeperOf,
                       onChanged: () => setState(() {}),
                     ),
                     _TeamPicker(
@@ -87,6 +100,8 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                       label: names[teamB] ?? 'Team B',
                       selected: _selected,
                       teamOf: _teamOf,
+                      captainOf: _captainOf,
+                      keeperOf: _keeperOf,
                       onChanged: () => setState(() {}),
                     ),
                   ],
@@ -127,6 +142,8 @@ class _TeamPicker extends ConsumerWidget {
     required this.label,
     required this.selected,
     required this.teamOf,
+    required this.captainOf,
+    required this.keeperOf,
     required this.onChanged,
   });
 
@@ -135,6 +152,8 @@ class _TeamPicker extends ConsumerWidget {
   final String label;
   final Set<String> selected;
   final Map<String, String> teamOf;
+  final Map<String, String?> captainOf;
+  final Map<String, String?> keeperOf;
   final VoidCallback onChanged;
 
   // SCOR-11: add a guest to THIS side during setup (works for the opponent too).
@@ -182,31 +201,85 @@ class _TeamPicker extends ConsumerWidget {
       children: members.when(
         loading: () => const [LinearProgressIndicator()],
         error: (e, _) => [ListTile(title: Text('$e'))],
-        data: (rows) => [
-          for (final m in rows)
-            CheckboxListTile(
+        data: (rows) {
+          // SCOR-13: batting slot = pick order within this team
+          final teamOrder = [
+            for (final id in selected)
+              if (teamOf[id] == teamId) id,
+          ];
+          String? nameOf(String? id) {
+            for (final m in rows) {
+              if (m['id'] == id) return memberName(m);
+            }
+            return null;
+          }
+
+          Widget roleRow(String role, Map<String, String?> holder) =>
+              ListTile(
+                dense: true,
+                title: Text(role),
+                trailing: DropdownButton<String>(
+                  value: holder[teamId],
+                  hint: const Text('Pick'),
+                  items: [
+                    for (final id in teamOrder)
+                      DropdownMenuItem(
+                          value: id, child: Text(nameOf(id) ?? '-')),
+                  ],
+                  onChanged: (v) {
+                    holder[teamId] = v;
+                    onChanged();
+                  },
+                ),
+              );
+
+          return [
+            for (final m in rows)
+              CheckboxListTile(
+                dense: true,
+                title: Text(
+                  selected.contains(m['id'])
+                      ? '${teamOrder.indexOf(m['id'] as String) + 1}.  '
+                          '${memberName(m)}'
+                      : memberName(m),
+                ),
+                subtitle: selected.contains(m['id']) &&
+                        (captainOf[teamId] == m['id'] ||
+                            keeperOf[teamId] == m['id'])
+                    ? Text([
+                        if (captainOf[teamId] == m['id']) 'captain',
+                        if (keeperOf[teamId] == m['id']) 'keeper',
+                      ].join(' - '))
+                    : null,
+                value: selected.contains(m['id']),
+                onChanged: (v) {
+                  final id = m['id'] as String;
+                  if (v ?? false) {
+                    selected.add(id);
+                    teamOf[id] = teamId;
+                  } else {
+                    selected.remove(id);
+                    teamOf.remove(id);
+                    if (captainOf[teamId] == id) captainOf[teamId] = null;
+                    if (keeperOf[teamId] == id) keeperOf[teamId] = null;
+                  }
+                  onChanged();
+                },
+              ),
+            // SCOR-13: tag the captain + wicket-keeper (order of the checks
+            // above is the batting order)
+            if (teamOrder.length >= 2) ...[
+              roleRow('Captain', captainOf),
+              roleRow('Wicket-keeper', keeperOf),
+            ],
+            ListTile(
               dense: true,
-              title: Text(memberName(m)),
-              value: selected.contains(m['id']),
-              onChanged: (v) {
-                final id = m['id'] as String;
-                if (v ?? false) {
-                  selected.add(id);
-                  teamOf[id] = teamId;
-                } else {
-                  selected.remove(id);
-                  teamOf.remove(id);
-                }
-                onChanged();
-              },
+              leading: const Icon(Icons.person_add_alt_1_outlined, size: 20),
+              title: const Text('Add guest player'),
+              onTap: () => _addGuest(context, ref),
             ),
-          ListTile(
-            dense: true,
-            leading: const Icon(Icons.person_add_alt_1_outlined, size: 20),
-            title: const Text('Add guest player'),
-            onTap: () => _addGuest(context, ref),
-          ),
-        ],
+          ];
+        },
       ),
     );
   }

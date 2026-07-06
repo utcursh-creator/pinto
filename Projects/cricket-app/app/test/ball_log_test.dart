@@ -93,8 +93,12 @@ void main() {
         await tester.tap(find.text('Edit this ball'));
         await tester.pumpAndSettle();
         expect(find.text('Edit ball'), findsOneWidget);
-        expect(find.text('Ball type'), findsOneWidget);
+        // SCOR-18: the editor composes independent fields, not one "type"
+        expect(find.text('Delivery'), findsOneWidget);
         expect(find.widgetWithText(ChoiceChip, 'Wide'), findsOneWidget);
+        expect(find.text('Byes'), findsOneWidget);
+        expect(find.text('Leg-byes'), findsOneWidget);
+        expect(find.text('+5 penalty runs'), findsOneWidget);
         expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;

@@ -255,6 +255,15 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
         s['team_member_id'] as String:
             memberName(s['team_members'] as Map<String, dynamic>),
     };
+    // SCOR-13: the batting card marks the captain and keeper
+    final roles = {
+      for (final s in squad)
+        if (s['is_captain'] == true || s['is_keeper'] == true)
+          s['team_member_id'] as String: [
+            if (s['is_captain'] == true) 'c',
+            if (s['is_keeper'] == true) 'wk',
+          ].join('/'),
+    };
     final latest = innings.last;
     final scInnings = innings.firstWhere(
       (i) => i['id'] == _scorecardInnings,
@@ -275,6 +284,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
                 allInnings: innings,
                 teams: teams,
                 names: names,
+                roles: roles,
                 onPickInnings: (id) => setState(() => _scorecardInnings = id),
               ),
               _ChartsTab(matchId: widget.matchId, innings: latest),
@@ -610,6 +620,7 @@ class _ScorecardTab extends ConsumerWidget {
     required this.allInnings,
     required this.teams,
     required this.names,
+    this.roles = const {},
     required this.onPickInnings,
   });
 
@@ -618,6 +629,9 @@ class _ScorecardTab extends ConsumerWidget {
   final List<Map<String, dynamic>> allInnings;
   final Map<String, String> teams;
   final Map<String, String> names;
+
+  /// SCOR-13: member id -> 'c' / 'wk' / 'c/wk' suffix for the batting card.
+  final Map<String, String> roles;
   final ValueChanged<String> onPickInnings;
 
   @override
@@ -692,6 +706,7 @@ class _ScorecardTab extends ConsumerWidget {
         for (final b in battingRows)
           _row([
             '${names[b['batter_id']] ?? '-'}'
+                '${roles.containsKey(b['batter_id']) ? ' (${roles[b['batter_id']]})' : ''}'
                 '${b['batter_id'] == strikerId || b['batter_id'] == nonStrikerId ? '  *' : ''}',
             '${_i(b['runs'])}',
             '${_i(b['balls'])}',

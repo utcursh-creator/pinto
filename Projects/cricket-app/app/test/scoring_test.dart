@@ -4,8 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pitch_app/src/features/identity/data/identity_providers.dart';
 import 'package:pitch_app/src/features/scoring/data/match_providers.dart';
+import 'package:pitch_app/src/features/scoring/data/match_repository.dart';
 import 'package:pitch_app/src/features/scoring/presentation/scoring_console_screen.dart';
 import 'package:pitch_app/src/features/scoring/presentation/start_match_screen.dart';
+
+/// The console writes the innings-break status (SCOR-1) as soon as the break
+/// panel shows - the widget test needs that write to land somewhere harmless.
+class _FakeMatchRepository extends Fake implements MatchRepository {
+  @override
+  Future<void> markInningsBreak(String matchId) async {}
+}
 
 void main() {
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
@@ -84,6 +92,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            matchRepositoryProvider.overrideWithValue(_FakeMatchRepository()),
             matchProvider.overrideWith(
               (ref, id) async => {'balls_per_over': 6, 'status': 'live'},
             ),

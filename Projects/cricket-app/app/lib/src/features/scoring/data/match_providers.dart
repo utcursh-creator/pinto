@@ -45,9 +45,12 @@ final matchSquadProvider =
       final rows = await c
           .from('match_squad')
           .select(
-            'team_id, team_member_id, team_members(id, guest_name, profiles(display_name))',
+            'team_id, team_member_id, batting_order, is_captain, is_keeper, '
+            'team_members(id, guest_name, profiles(display_name))',
           )
-          .eq('match_id', matchId);
+          .eq('match_id', matchId)
+          // SCOR-13: squad lists follow the declared batting order
+          .order('batting_order', ascending: true, nullsFirst: false);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 

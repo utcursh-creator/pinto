@@ -101,16 +101,18 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
                   if (battingTeam != null) ...[
                     Text('Opening pair',
                         style: Theme.of(context).textTheme.labelLarge),
-                    _picker('Striker', _striker, batters,
+                    // SCOR-14: mutually exclusive pickers - the chosen striker
+                    // disappears from the non-striker list and vice versa.
+                    _picker('Striker', _striker, batters, _nonStriker,
                         (v) => setState(() => _striker = v)),
-                    _picker('Non-striker', _nonStriker, batters,
+                    _picker('Non-striker', _nonStriker, batters, _striker,
                         (v) => setState(() => _nonStriker = v)),
                   ],
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _busy
                         ? null
-                        : () => _start(teamA, teamB, battingTeam),
+                        : () => _start(teamA, teamB, battingTeam, rows),
                     child: const Text('Start match'),
                   ),
                   if (_error != null) ...[
@@ -130,6 +132,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
     String label,
     String? value,
     List<Map<String, dynamic>> batters,
+    String? exclude,
     ValueChanged<String?> onChanged,
   ) {
     return Row(
@@ -142,10 +145,12 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
             hint: const Text('Choose'),
             items: [
               for (final b in batters)
-                DropdownMenuItem(
-                  value: b['team_member_id'] as String,
-                  child: Text(memberName(b['team_members'] as Map<String, dynamic>)),
-                ),
+                if (b['team_member_id'] != exclude)
+                  DropdownMenuItem(
+                    value: b['team_member_id'] as String,
+                    child:
+                        Text(memberName(b['team_members'] as Map<String, dynamic>)),
+                  ),
             ],
             onChanged: onChanged,
           ),
@@ -154,7 +159,8 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
     );
   }
 
-  Future<void> _start(String teamA, String teamB, String? battingTeam) async {
+  Future<void> _start(String teamA, String teamB, String? battingTeam,
+      List<Map<String, dynamic>> squadRows) async {
     if (battingTeam == null ||
         _striker == null ||
         _nonStriker == null ||
@@ -163,6 +169,15 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
       return;
     }
     final bowlingTeam = battingTeam == teamA ? teamB : teamA;
+    // SCOR-14: an empty bowling side cannot field a ball - catch it here
+    // (the server validates too, this is the friendlier stop).
+    final bowlers =
+        squadRows.where((r) => r['team_id'] == bowlingTeam).length;
+    if (bowlers < 2) {
+      setState(() => _error =
+          'The bowling side needs at least 2 squad members - go back and add them.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;

@@ -31,12 +31,14 @@ class AdaptiveScaffold extends StatelessWidget {
               ? null
               : Row(mainAxisSize: MainAxisSize.min, children: actions!),
         ),
-        // CupertinoPageScaffold provides no Material ancestor; Material widgets
-        // (TextField, ListTile, Chip, ...) need one. A transparent Material adds
-        // the ancestor without changing the Cupertino look.
-        child: Material(
-          type: MaterialType.transparency,
-          child: SafeArea(child: body),
+        // CupertinoPageScaffold provides no Material ancestor NOR a Scaffold,
+        // so Material widgets (TextField, ListTile, Chip, ...) crash and -
+        // far worse - ScaffoldMessenger SnackBars have nowhere to display:
+        // every toast in the app was silently invisible on iOS. A transparent
+        // Scaffold fixes both without changing the Cupertino look.
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(child: body),
         ),
       );
     }

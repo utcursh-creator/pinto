@@ -9,6 +9,11 @@ import '../data/match_repository.dart';
 /// can be edited, deleted, or have a missed ball inserted after it - wired to
 /// edit_ball / delete_ball / insert_ball. The server re-folds + re-stamps strike,
 /// so the scorecard stays correct after any change.
+///
+/// SCOR-18: the editor captures a delivery's FULL composition (off-bat runs +
+/// wide/no-ball + byes + leg-byes + penalty + fielder + who was out), not one
+/// mutually-exclusive "type". Event rows (retirements, strike swaps) can only
+/// be deleted - they carry no ball to edit.
 class BallLogScreen extends ConsumerWidget {
   const BallLogScreen({required this.matchId, super.key});
 
@@ -58,17 +63,20 @@ class BallLogScreen extends ConsumerWidget {
         var legalBefore = 0;
         final items = <Widget>[];
         for (final d in rows) {
-          final isLegal = (d['is_legal'] as bool?) ?? true;
-          final overBall = isLegal
-              ? '${legalBefore ~/ bpo}.${legalBefore % bpo + 1}'
-              : '${legalBefore ~/ bpo}.${legalBefore % bpo}+';
+          final isEvent = d['event_kind'] != null;
+          final isLegal = !isEvent && ((d['is_legal'] as bool?) ?? true);
+          final overBall = isEvent
+              ? '-'
+              : isLegal
+                  ? '${legalBefore ~/ bpo}.${legalBefore % bpo + 1}'
+                  : '${legalBefore ~/ bpo}.${legalBefore % bpo}+';
           if (isLegal) legalBefore++;
           items.add(_BallTile(
             over: overBall,
-            outcome: _outcome(d),
+            outcome: _outcome(d, names),
             striker: names[d['striker_id']] ?? '-',
-            bowler: names[d['bowler_id']] ?? '-',
-            onTap: () => _actions(context, ref, inningsId, d, bpo, squad,
+            bowler: isEvent ? 'between balls' : (names[d['bowler_id']] ?? '-'),
+            onTap: () => _actions(context, ref, inningsId, d, rows, bpo, squad,
                 battingTeam, bowlingTeam, names),
           ));
         }
@@ -84,19 +92,33 @@ class BallLogScreen extends ConsumerWidget {
     );
   }
 
-  String _outcome(Map<String, dynamic> d) {
+  String _outcome(Map<String, dynamic> d, Map<String, String> names) {
+    // v14 event rows are not balls - describe the event itself
+    final event = d['event_kind'] as String?;
+    if (event == 'strike_swap') return 'Strike swapped';
+    if (event == 'retirement') {
+      final who = names[d['dismissed_player_id']] ?? 'Batter';
+      final out = d['wicket_type'] != 'retired_not_out';
+      return '$who retired ${out ? 'out' : 'hurt'}';
+    }
     final w = d['wicket_type'] as String?;
     final parts = <String>[];
     final wides = (d['extra_wides'] as num?)?.toInt() ?? 0;
     final nb = (d['extra_no_ball_penalty'] as num?)?.toInt() ?? 0;
     final byes = (d['extra_byes'] as num?)?.toInt() ?? 0;
     final lb = (d['extra_leg_byes'] as num?)?.toInt() ?? 0;
+    final pen = (d['extra_penalty'] as num?)?.toInt() ?? 0;
     final rob = (d['runs_off_bat'] as num?)?.toInt() ?? 0;
     if (wides > 0) parts.add('Wd${wides > 1 ? wides : ''}');
     if (nb > 0) parts.add('Nb${rob > 0 ? '+$rob' : ''}');
     if (byes > 0) parts.add('B$byes');
     if (lb > 0) parts.add('Lb$lb');
-    if (nb == 0 && wides == 0 && byes == 0 && lb == 0) parts.add('$rob');
+    if (pen > 0) parts.add('Pen+$pen');
+    if (nb == 0 && wides == 0 && byes == 0 && lb == 0 && pen == 0) {
+      parts.add('$rob');
+    } else if (nb == 0 && rob > 0) {
+      parts.add('+$rob bat');
+    }
     if (w != null && w != 'retired_not_out') parts.add('W ${w.replaceAll('_', ' ')}');
     return parts.join(' ');
   }
@@ -106,29 +128,33 @@ class BallLogScreen extends ConsumerWidget {
     WidgetRef ref,
     String inningsId,
     Map<String, dynamic> d,
+    List<Map<String, dynamic>> allRows,
     int bpo,
     List<Map<String, dynamic>> squad,
     String battingTeam,
     String bowlingTeam,
     Map<String, String> names,
   ) async {
+    final isEvent = d['event_kind'] != null;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(
-            leading: const Icon(Icons.edit_outlined),
-            title: const Text('Edit this ball'),
-            onTap: () => Navigator.pop(ctx, 'edit'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Insert a ball after this'),
-            onTap: () => Navigator.pop(ctx, 'insert'),
-          ),
+          if (!isEvent)
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit this ball'),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
+          if (!isEvent)
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Insert a ball after this'),
+              onTap: () => Navigator.pop(ctx, 'insert'),
+            ),
           ListTile(
             leading: const Icon(Icons.delete_outline),
-            title: const Text('Delete this ball'),
+            title: Text(isEvent ? 'Remove this event' : 'Delete this ball'),
             onTap: () => Navigator.pop(ctx, 'delete'),
           ),
         ]),
@@ -136,20 +162,34 @@ class BallLogScreen extends ConsumerWidget {
     );
     if (action == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
+    // SCOR-2/5: a batter dismissed or retired on ANOTHER ball cannot be
+    // offered as this ball's incoming batter.
+    final outElsewhere = <String>{
+      for (final r in allRows)
+        if (r['id'] != d['id'] && r['wicket_type'] != null)
+          (r['wicket_type'] == 'run_out' ||
+                  r['wicket_type'] == 'obstructing' ||
+                  r['event_kind'] == 'retirement')
+              ? (r['dismissed_player_id'] as String? ?? '')
+              : (r['striker_id'] as String? ?? ''),
+    }..remove('');
     final batters = [
       for (final s in squad)
-        if (s['team_id'] == battingTeam) s['team_member_id'] as String,
+        if (s['team_id'] == battingTeam &&
+            !outElsewhere.contains(s['team_member_id']))
+          s['team_member_id'] as String,
     ];
-    final bowlers = [
+    final fielders = [
       for (final s in squad)
         if (s['team_id'] == bowlingTeam) s['team_member_id'] as String,
     ];
+    final bowlers = fielders;
     try {
       if (action == 'delete') {
         final ok = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Delete this ball?'),
+            title: Text(isEvent ? 'Remove this event?' : 'Delete this ball?'),
             content: const Text('The over and scorecard will recompute.'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -164,7 +204,12 @@ class BallLogScreen extends ConsumerWidget {
         }
       } else if (action == 'edit') {
         final res = await _showBallEditor(context,
-            initial: _BallEdit.fromDelivery(d), batters: batters, names: names);
+            initial: _BallEdit.fromDelivery(d),
+            batters: batters,
+            fielders: fielders,
+            names: names,
+            strikerId: d['striker_id'] as String?,
+            nonStrikerId: d['non_striker_id'] as String?);
         if (res != null) {
           await ref.read(matchRepositoryProvider).editBall(
             deliveryId: d['id'] as String,
@@ -173,9 +218,12 @@ class BallLogScreen extends ConsumerWidget {
             noBallPenalty: res.noBallPenalty,
             byes: res.byes,
             legByes: res.legByes,
+            penalty: res.penalty,
+            noballSecondaryKind: res.noballSecondaryKind,
             wicketType: res.wicketType,
-            dismissedPlayerId: res.wicketType == null ? null : d['striker_id'] as String?,
+            dismissedPlayerId: res.dismissedId,
             incomingBatterId: res.incomingId,
+            fielderId: res.fielderId,
           );
           ref.invalidate(inningsDeliveriesProvider(inningsId));
           ref.invalidate(inningsStateProvider(inningsId));
@@ -184,7 +232,10 @@ class BallLogScreen extends ConsumerWidget {
         final res = await _showBallEditor(context,
             initial: const _BallEdit(),
             batters: batters,
+            fielders: fielders,
             names: names,
+            strikerId: d['striker_id'] as String?,
+            nonStrikerId: d['non_striker_id'] as String?,
             bowlers: bowlers);
         if (res != null && res.bowlerId != null) {
           await ref.read(matchRepositoryProvider).insertBall(
@@ -196,8 +247,12 @@ class BallLogScreen extends ConsumerWidget {
             noBallPenalty: res.noBallPenalty,
             byes: res.byes,
             legByes: res.legByes,
+            penalty: res.penalty,
+            noballSecondaryKind: res.noballSecondaryKind,
             wicketType: res.wicketType,
+            dismissedPlayerId: res.dismissedId,
             incomingBatterId: res.incomingId,
+            fielderId: res.fielderId,
           );
           ref.invalidate(inningsDeliveriesProvider(inningsId));
           ref.invalidate(inningsStateProvider(inningsId));
@@ -240,53 +295,59 @@ class _BallTile extends StatelessWidget {
   }
 }
 
-/// The kind of ball captured by the editor; maps onto record/edit/insert params.
-enum _BallType { runs, wide, noBall, bye, legBye }
-
+/// SCOR-18: the delivery's full composition - every field independent, exactly
+/// like the columns edit_ball/insert_ball accept.
 class _BallEdit {
   const _BallEdit({
-    this.type = _BallType.runs,
-    this.value = 0,
+    this.runsOffBat = 0,
+    this.wides = 0,
+    this.noBallPenalty = 0,
+    this.byes = 0,
+    this.legByes = 0,
+    this.penalty = 0,
     this.wicketType,
+    this.dismissedId,
     this.incomingId,
+    this.fielderId,
     this.bowlerId,
   });
 
-  final _BallType type;
-  final int value; // off-bat runs for runs/noBall; extra count otherwise
+  final int runsOffBat;
+  final int wides;
+  final int noBallPenalty;
+  final int byes;
+  final int legByes;
+  final int penalty;
   final String? wicketType;
+  final String? dismissedId;
   final String? incomingId;
+  final String? fielderId;
   final String? bowlerId;
 
-  int get runsOffBat =>
-      (type == _BallType.runs || type == _BallType.noBall) ? value : 0;
-  int get wides => type == _BallType.wide ? (value < 1 ? 1 : value) : 0;
-  int get noBallPenalty => type == _BallType.noBall ? 1 : 0;
-  int get byes => type == _BallType.bye ? value : 0;
-  int get legByes => type == _BallType.legBye ? value : 0;
+  String? get noballSecondaryKind => noBallPenalty > 0
+      ? (runsOffBat > 0
+          ? 'off_bat'
+          : byes > 0
+              ? 'byes'
+              : legByes > 0
+                  ? 'leg_byes'
+                  : null)
+      : null;
 
   factory _BallEdit.fromDelivery(Map<String, dynamic> d) {
     int n(String k) => (d[k] as num?)?.toInt() ?? 0;
     final w = d['wicket_type'] as String?;
-    final wide = n('extra_wides');
-    final nb = n('extra_no_ball_penalty');
-    final byes = n('extra_byes');
-    final lb = n('extra_leg_byes');
-    final rob = n('runs_off_bat');
-    final (type, value) = wide > 0
-        ? (_BallType.wide, wide)
-        : nb > 0
-            ? (_BallType.noBall, rob)
-            : byes > 0
-                ? (_BallType.bye, byes)
-                : lb > 0
-                    ? (_BallType.legBye, lb)
-                    : (_BallType.runs, rob);
     return _BallEdit(
-      type: type,
-      value: value,
+      runsOffBat: n('runs_off_bat'),
+      wides: n('extra_wides'),
+      noBallPenalty: n('extra_no_ball_penalty'),
+      byes: n('extra_byes'),
+      legByes: n('extra_leg_byes'),
+      penalty: n('extra_penalty'),
       wicketType: (w == null || w == 'retired_not_out') ? null : w,
+      dismissedId: d['dismissed_player_id'] as String?,
       incomingId: d['incoming_batter_id'] as String?,
+      fielderId: d['fielder_id'] as String?,
     );
   }
 }
@@ -297,7 +358,10 @@ Future<_BallEdit?> _showBallEditor(
   BuildContext context, {
   required _BallEdit initial,
   required List<String> batters,
+  required List<String> fielders,
   required Map<String, String> names,
+  String? strikerId,
+  String? nonStrikerId,
   List<String>? bowlers,
 }) {
   return showModalBottomSheet<_BallEdit>(
@@ -306,7 +370,10 @@ Future<_BallEdit?> _showBallEditor(
     builder: (ctx) => _BallEditorSheet(
       initial: initial,
       batters: batters,
+      fielders: fielders,
       names: names,
+      strikerId: strikerId,
+      nonStrikerId: nonStrikerId,
       bowlers: bowlers,
     ),
   );
@@ -316,13 +383,19 @@ class _BallEditorSheet extends StatefulWidget {
   const _BallEditorSheet({
     required this.initial,
     required this.batters,
+    required this.fielders,
     required this.names,
+    this.strikerId,
+    this.nonStrikerId,
     this.bowlers,
   });
 
   final _BallEdit initial;
   final List<String> batters;
+  final List<String> fielders;
   final Map<String, String> names;
+  final String? strikerId;
+  final String? nonStrikerId;
   final List<String>? bowlers;
 
   @override
@@ -330,23 +403,48 @@ class _BallEditorSheet extends StatefulWidget {
 }
 
 class _BallEditorSheetState extends State<_BallEditorSheet> {
-  late _BallType _type = widget.initial.type;
-  late int _value = widget.initial.value;
+  late int _runs = widget.initial.runsOffBat;
+  // 'legal' | 'wide' | 'no_ball' - a genuinely exclusive cricket fact
+  late String _delivery = widget.initial.wides > 0
+      ? 'wide'
+      : widget.initial.noBallPenalty > 0
+          ? 'no_ball'
+          : 'legal';
+  late int _wideRuns = widget.initial.wides;
+  late int _byes = widget.initial.byes;
+  late int _legByes = widget.initial.legByes;
+  late bool _penalty = widget.initial.penalty > 0;
   late bool _wicket = widget.initial.wicketType != null;
   late String _wicketType = widget.initial.wicketType ?? 'bowled';
   late String? _incoming = widget.initial.incomingId;
+  late String? _fielder = widget.initial.fielderId;
+  late String _whoOut = widget.initial.dismissedId != null &&
+          widget.initial.dismissedId == widget.nonStrikerId
+      ? 'non_striker'
+      : 'striker';
   String? _bowler;
 
   bool get _isInsert => widget.bowlers != null;
   bool get _valid => !_isInsert || _bowler != null;
 
-  static const _typeLabels = {
-    _BallType.runs: 'Runs',
-    _BallType.wide: 'Wide',
-    _BallType.noBall: 'No-ball',
-    _BallType.bye: 'Bye',
-    _BallType.legBye: 'Leg-bye',
-  };
+  static bool _needsWhoOut(String t) =>
+      t == 'run_out' || t == 'obstructing' || t == 'retired_out';
+  static bool _needsFielder(String t) =>
+      t == 'caught' || t == 'stumped' || t == 'run_out';
+
+  Widget _stepper(String label, int value, ValueChanged<int> set, {int min = 0}) =>
+      Row(children: [
+        Expanded(child: Text(label)),
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: value > min ? () => setState(() => set(value - 1)) : null,
+        ),
+        Text('$value', style: const TextStyle(fontSize: 16)),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => setState(() => set(value + 1)),
+        ),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -381,36 +479,57 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
                 ),
                 const SizedBox(height: 12),
               ],
-              const Text('Ball type'),
+              const Text('Delivery'),
               Wrap(
                 spacing: 8,
                 children: [
-                  for (final t in _BallType.values)
+                  for (final (v, l) in const [
+                    ('legal', 'Legal'),
+                    ('wide', 'Wide'),
+                    ('no_ball', 'No-ball'),
+                  ])
                     ChoiceChip(
-                      label: Text(_typeLabels[t]!),
-                      selected: _type == t,
-                      onSelected: (_) => setState(() => _type = t),
+                      label: Text(l),
+                      selected: _delivery == v,
+                      onSelected: (_) => setState(() {
+                        _delivery = v;
+                        if (v == 'wide') {
+                          _runs = 0; // nothing comes off the bat on a wide
+                          if (_wideRuns < 1) _wideRuns = 1;
+                        }
+                      }),
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(_type == _BallType.runs
-                  ? 'Runs off the bat'
-                  : _type == _BallType.noBall
-                      ? 'Runs off the bat (plus the no-ball)'
-                      : 'Runs'),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (var n = 0; n <= 6; n++)
-                    ChoiceChip(
-                      label: Text('$n'),
-                      selected: _value == n,
-                      onSelected: (_) => setState(() => _value = n),
-                    ),
-                ],
-              ),
+              if (_delivery == 'wide') ...[
+                const SizedBox(height: 8),
+                _stepper('Wide runs (1 = just the wide)', _wideRuns,
+                    (v) => _wideRuns = v,
+                    min: 1),
+              ] else ...[
+                const SizedBox(height: 12),
+                const Text('Runs off the bat'),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (var n = 0; n <= 6; n++)
+                      ChoiceChip(
+                        label: Text('$n'),
+                        selected: _runs == n,
+                        onSelected: (_) => setState(() => _runs = n),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
+              _stepper('Byes', _byes, (v) => _byes = v),
+              _stepper('Leg-byes', _legByes, (v) => _legByes = v),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('+5 penalty runs'),
+                value: _penalty,
+                onChanged: (v) => setState(() => _penalty = v),
+              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Wicket'),
@@ -421,7 +540,10 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
                 Wrap(
                   spacing: 8,
                   children: [
-                    for (final t in const ['bowled', 'caught', 'lbw', 'run_out', 'stumped'])
+                    for (final t in const [
+                      'bowled', 'caught', 'lbw', 'run_out', 'stumped',
+                      'hit_wicket', 'obstructing', 'hit_ball_twice',
+                    ])
                       ChoiceChip(
                         label: Text(t.replaceAll('_', ' ')),
                         selected: _wicketType == t,
@@ -429,11 +551,43 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
                       ),
                   ],
                 ),
+                if (_needsWhoOut(_wicketType)) ...[
+                  const SizedBox(height: 8),
+                  const Text('Who was out?'),
+                  Wrap(spacing: 8, children: [
+                    ChoiceChip(
+                      label: Text(widget.names[widget.strikerId] ?? 'Striker'),
+                      selected: _whoOut == 'striker',
+                      onSelected: (_) => setState(() => _whoOut = 'striker'),
+                    ),
+                    ChoiceChip(
+                      label: Text(
+                          widget.names[widget.nonStrikerId] ?? 'Non-striker'),
+                      selected: _whoOut == 'non_striker',
+                      onSelected: (_) => setState(() => _whoOut = 'non_striker'),
+                    ),
+                  ]),
+                ],
+                if (_needsFielder(_wicketType)) ...[
+                  const SizedBox(height: 8),
+                  const Text('Fielder'),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: _fielder,
+                    hint: const Text('Choose (optional)'),
+                    items: [
+                      for (final id in widget.fielders)
+                        DropdownMenuItem(
+                            value: id, child: Text(widget.names[id] ?? '-')),
+                    ],
+                    onChanged: (v) => setState(() => _fielder = v),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 const Text('Incoming batter'),
                 DropdownButton<String>(
                   isExpanded: true,
-                  value: _incoming,
+                  value: widget.batters.contains(_incoming) ? _incoming : null,
                   hint: const Text('Choose'),
                   items: [
                     for (final id in widget.batters)
@@ -450,10 +604,23 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
                       ? () => Navigator.pop(
                             context,
                             _BallEdit(
-                              type: _type,
-                              value: _value,
+                              runsOffBat: _delivery == 'wide' ? 0 : _runs,
+                              wides: _delivery == 'wide' ? _wideRuns : 0,
+                              noBallPenalty: _delivery == 'no_ball' ? 1 : 0,
+                              byes: _byes,
+                              legByes: _legByes,
+                              penalty: _penalty ? 5 : 0,
                               wicketType: _wicket ? _wicketType : null,
+                              dismissedId: _wicket
+                                  ? (_needsWhoOut(_wicketType) &&
+                                          _whoOut == 'non_striker'
+                                      ? widget.nonStrikerId
+                                      : widget.strikerId)
+                                  : null,
                               incomingId: _wicket ? _incoming : null,
+                              fielderId: _wicket && _needsFielder(_wicketType)
+                                  ? _fielder
+                                  : null,
                               bowlerId: _bowler,
                             ),
                           )
