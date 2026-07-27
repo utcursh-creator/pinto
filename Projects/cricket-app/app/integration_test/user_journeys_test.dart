@@ -133,6 +133,21 @@ void main() {
     }
   }
 
+  /// Taps a run button and dismisses the wagon-wheel prompt.
+  ///
+  /// Every scoring shot opens a "Where did N run(s) go?" sheet so the scorer can
+  /// place the shot. That is the intended feature - but in a test the sheet
+  /// swallows the NEXT tap, so scoring two balls in a row silently records only
+  /// the first (run 16 read 1/0 when it expected 5/0, three steps later).
+  Future<void> scoreRuns(WidgetTester tester, String runs) async {
+    await tester.tap(find.widgetWithText(OutlinedButton, runs));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    if (find.text('Skip').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Skip').last);
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    }
+  }
+
   Future<void> pickFromDropdown(
       WidgetTester tester, int index, String optionText) async {
     final dd = find.byType(DropdownButton<String>);
@@ -524,11 +539,9 @@ void main() {
     await tester.tap(find.text('Foe1').last);
     await tester.pumpAndSettle(const Duration(seconds: 1));
 
-    // score a single, then a four
-    await tester.tap(find.widgetWithText(OutlinedButton, '1'));
-    await tester.pumpAndSettle(const Duration(seconds: 1));
-    await tester.tap(find.widgetWithText(OutlinedButton, '4'));
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    // score a single, then a four (each opens the wagon prompt; skip it)
+    await scoreRuns(tester, '1');
+    await scoreRuns(tester, '4');
     await shot(tester, 'je1_five_scored');
     expect(find.textContaining('5/0'), findsWidgets,
         reason: 'a single and a four is five');
