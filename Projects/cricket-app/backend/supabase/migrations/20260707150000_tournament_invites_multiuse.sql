@@ -12,7 +12,16 @@ alter table public.tournament_invites add column uses int not null default 0;
 
 -- Multi-use, expiring, and row-locked. Returns the tournament id (unchanged
 -- contract). Re-redeeming for a team already entered burns no use.
-create or replace function public.join_tournament_with_token(
+--
+-- The old signature carried a `_group_label text default 'A'` that no caller
+-- ever passed - and group PLACEMENT is now a separate organizer-gated RPC
+-- (set_tournament_team_group), so entry has no business setting it. Drop the old
+-- function rather than leaving a 3-arg overload: two candidates make a 2-arg
+-- call ambiguous and PostgREST 300s (this is the exact overload trap the review
+-- flagged, and test 106 caught me creating one).
+drop function public.join_tournament_with_token(text, uuid, text);
+
+create function public.join_tournament_with_token(
   _invite_token text, _team_id uuid
 ) returns uuid language plpgsql security definer set search_path = public as $$
 declare
@@ -24,7 +33,7 @@ begin
   end if;
   -- the redeeming admin's own team-admin right IS the consent (SEC-8)
   if not public.is_team_admin(_team_id) then
-    raise exception 'you must be an admin of this team to enter it' using errcode = 'P0001';
+    raise exception 'you must be an admin of the team you are entering' using errcode = 'P0001';
   end if;
 
   -- FOR UPDATE: without the lock two admins could both redeem one token
@@ -44,7 +53,7 @@ begin
     raise exception 'invite fully used' using errcode = 'P0001';
   end if;
   if (select status from public.tournaments where id = _tid) <> 'setup' then
-    raise exception 'tournament is not in setup' using errcode = 'P0001';
+    raise exception 'registration is closed for this tournament' using errcode = 'P0001';
   end if;
 
   select exists (

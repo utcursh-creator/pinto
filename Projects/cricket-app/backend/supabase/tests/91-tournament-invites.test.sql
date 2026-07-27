@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(11);
 -- SEC-8 proper fix: a team the organizer does NOT admin enters a tournament only
 -- by that team's own admin redeeming a join token (consent-by-opt-in), mirroring
 -- CricHeroes' invite-link / PIN model. Direct-add stays admin-gated.
@@ -29,14 +29,19 @@ select tests.authenticate_as('capt@s.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('capt@s.dev'), 'Capt');
 select public.create_team('Strikers', 'C') as _team \gset
 
--- the captain redeems the token, dropping THEIR team into group B (b)(g). The
--- RPC returns the tournament id so the joiner can be routed to it.
-select is(public.join_tournament_with_token(:'_tok'::text, :'_team'::uuid, 'B'),
+-- the captain redeems the token, entering THEIR team. The RPC returns the
+-- tournament id so the joiner can be routed to it.
+--
+-- The redeemer no longer chooses the group: entry and PLACEMENT are separate
+-- (penetration review 2026-07-07). Placement is the organizer's call via
+-- set_tournament_team_group, because an invited club cannot be allowed to pick
+-- its own group. Entry always lands in 'A' and the organizer moves it.
+select is(public.join_tournament_with_token(:'_tok'::text, :'_team'::uuid),
   :'_t'::uuid, 'redeeming returns the joined tournament id');
 select is(
   (select group_label from public.tournament_teams
      where tournament_id = :'_t'::uuid and team_id = :'_team'::uuid),
-  'B', 'the redeemed team lands in the tournament in the chosen group');
+  'A', 'entry lands the team in group A; the organizer places it');
 select is(
   (select added_via from public.tournament_teams
      where tournament_id = :'_t'::uuid and team_id = :'_team'::uuid),
@@ -44,9 +49,11 @@ select is(
 
 -- only the organizer can read the invite rows (RLS), so check the status as them (g)
 select tests.authenticate_as('org@s.dev');
+-- MULTI-USE (2026-07-07): status is no longer flipped on redemption; `uses` is
+-- incremented instead, so the link keeps working for the rest of the group.
 select is(
   (select status::text from public.tournament_invites where invite_token = :'_tok'),
-  'accepted', 'the invite is marked accepted after redemption');
+  'pending', 'the invite stays live: it is multi-use now, so one share reaches a whole group');
 
 -- (h) the invite-joined team flows into the tournament: it shows in standings at P0
 select is(
@@ -56,19 +63,26 @@ select is(
      where e->>'team_id' = :'_team'),
   0, 'the invite-joined team appears in standings at P0');
 
--- the token is single-use: a second redemption fails (e). Back to the team admin
--- so we get past the consent check and hit the token check.
+-- The token is MULTI-USE now (2026-07-07): an organizer shares one link with a
+-- whole group of clubs, so a second redemption must WORK, and re-redeeming for a
+-- team already entered must burn no additional use.
 select tests.authenticate_as('capt@s.dev');
-select throws_ok(
-  format($$ select public.join_tournament_with_token(%L, %L, 'B') $$, :'_tok'::text, :'_team'::uuid),
-  'P0001', 'invite not found or already used', 'a used token cannot be redeemed again');
+select lives_ok(
+  format($$ select public.join_tournament_with_token(%L, %L) $$, :'_tok'::text, :'_team'::uuid),
+  'the link still works after one redemption (multi-use)');
+-- tournament_invites is organizer-only readable, so read the row AS the
+-- organizer (a lesson this suite has learned before).
+select tests.authenticate_as('org@s.dev');
+select is((select uses from public.tournament_invites where invite_token = :'_tok'),
+  1, 're-redeeming for an already-entered team burns no extra use');
+select tests.authenticate_as('capt@s.dev');
 
 -- a user who is NOT admin of the chosen team cannot redeem (c) - the consent gate
 select tests.authenticate_as('org@s.dev');
 select public.create_tournament_invite(:'_t'::uuid) as _tok2 \gset
 select tests.authenticate_as('rando@s.dev');
 select throws_ok(
-  format($$ select public.join_tournament_with_token(%L, %L, 'A') $$, :'_tok2'::text, :'_team'::uuid),
+  format($$ select public.join_tournament_with_token(%L, %L) $$, :'_tok2'::text, :'_team'::uuid),
   'P0001', 'you must be an admin of the team you are entering',
   'a non-admin of the team cannot enter it with a valid token');
 
@@ -79,7 +93,7 @@ update public.tournaments set status = 'group_stage' where id = :'_t'::uuid;
 select tests.authenticate_as('capt@s.dev');
 select public.create_team('Late', 'C') as _late \gset
 select throws_ok(
-  format($$ select public.join_tournament_with_token(%L, %L, 'A') $$, :'_tok2'::text, :'_late'::uuid),
+  format($$ select public.join_tournament_with_token(%L, %L) $$, :'_tok2'::text, :'_late'::uuid),
   'P0001', 'registration is closed for this tournament',
   'a token cannot be redeemed once the tournament leaves setup');
 
