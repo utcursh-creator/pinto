@@ -133,6 +133,46 @@ void main() {
     }
   }
 
+  Future<void> pickFromDropdown(
+      WidgetTester tester, int index, String optionText) async {
+    final dd = find.byType(DropdownButton<String>);
+    final option = find.text(optionText);
+    // A DropdownButton keeps EVERY item in an IndexedStack inside the button
+    // itself (so it can size to the widest one), so `find.text(option)` matches
+    // even when the menu never opened. Detecting "open" that way taps a hidden
+    // child, the value never changes, and the failure lands two steps later on
+    // the next screen - which is exactly how run 11 reported a missing "Squads"
+    // header when the real problem was an unset opponent. Count the matches
+    // BEFORE tapping and wait for the count to GROW: the extra one is the
+    // overlay item, and only that is real evidence the route is up.
+    final before = option.evaluate().length;
+    await tester.ensureVisible(dd.at(index));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(dd.at(index));
+    var opened = false;
+    for (var i = 0; i < 25; i++) {
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      if (option.evaluate().length > before) {
+        opened = true;
+        break;
+      }
+    }
+    if (!opened) {
+      await binding.takeScreenshot('timeout_dropdown_$optionText');
+      fail('dropdown $index never opened a menu offering "$optionText" '
+          '(matches stayed at $before)');
+    }
+    await tester.tap(option.last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    // Assert the OUTCOME, not the tap: a DropdownButton whose menu closed
+    // without a selection looks identical on screen.
+    final w = tester.widget<DropdownButton<String>>(dd.at(index));
+    if (w.value == null) {
+      await binding.takeScreenshot('unset_dropdown_$optionText');
+      fail('dropdown $index still has no value after picking "$optionText"');
+    }
+  }
+
   // ==========================================================================
   testWidgets('JOURNEY A: run a tournament end to end', (tester) async {
     app.main();
@@ -296,46 +336,8 @@ void main() {
     // than any single pumpAndSettle on a loaded simulator, and the failure then
     // looks like a missing option ("Bad state: No element") rather than a slow
     // menu. Screenshots on failure so the next run shows the real state.
-    Future<void> pickFromDropdown(int index, String optionText) async {
-      final dd = find.byType(DropdownButton<String>);
-      final option = find.text(optionText);
-      // A DropdownButton keeps EVERY item in an IndexedStack inside the button
-      // itself (so it can size to the widest one), so `find.text(option)` matches
-      // even when the menu never opened. Detecting "open" that way taps a hidden
-      // child, the value never changes, and the failure lands two steps later on
-      // the next screen - which is exactly how run 11 reported a missing "Squads"
-      // header when the real problem was an unset opponent. Count the matches
-      // BEFORE tapping and wait for the count to GROW: the extra one is the
-      // overlay item, and only that is real evidence the route is up.
-      final before = option.evaluate().length;
-      await tester.ensureVisible(dd.at(index));
-      await tester.pumpAndSettle(const Duration(milliseconds: 200));
-      await tester.tap(dd.at(index));
-      var opened = false;
-      for (var i = 0; i < 25; i++) {
-        await tester.pumpAndSettle(const Duration(milliseconds: 300));
-        if (option.evaluate().length > before) {
-          opened = true;
-          break;
-        }
-      }
-      if (!opened) {
-        await binding.takeScreenshot('timeout_dropdown_$optionText');
-        fail('dropdown $index never opened a menu offering "$optionText" '
-            '(matches stayed at $before)');
-      }
-      await tester.tap(option.last);
-      await tester.pumpAndSettle(const Duration(milliseconds: 600));
-      // Assert the OUTCOME, not the tap: a DropdownButton whose menu closed
-      // without a selection looks identical on screen.
-      final w = tester.widget<DropdownButton<String>>(dd.at(index));
-      if (w.value == null) {
-        await binding.takeScreenshot('unset_dropdown_$optionText');
-        fail('dropdown $index still has no value after picking "$optionText"');
-      }
-    }
 
-    await pickFromDropdown(0, 'Bat $run'); // your team
+    await pickFromDropdown(tester, 0, 'Bat $run'); // your team
     // The opponent is a search sheet now, not a dropdown of every team in the
     // database. Type the club name and take the result.
     await tester.tap(find.text('Choose the opponent'));
@@ -373,8 +375,8 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 400));
     // openers appear once the batting side is known
     await settle(tester, find.text('Striker'), label: 'openers_visible');
-    await pickFromDropdown(0, 'Bat1');   // striker
-    await pickFromDropdown(1, 'Bat2');   // non-striker
+    await pickFromDropdown(tester, 0, 'Bat1');   // striker
+    await pickFromDropdown(tester, 1, 'Bat2');   // non-striker
     await shot(tester, 'jd3_toss');
     await tapScrolled(tester, find.widgetWithText(FilledButton, 'Start match'),
         label: 'start_match_btn');
@@ -453,5 +455,136 @@ void main() {
     // no raw database error may have surfaced anywhere in the whole flow
     expect(find.textContaining('PostgrestException'), findsNothing);
     expect(find.textContaining('row-level security'), findsNothing);
+  });
+
+  // JOURNEY E: correct a ball after the fact.
+  //
+  // Every scorer mis-taps. The whole corrections subsystem exists for it, and it
+  // is the one place where a bug silently CORRUPTS a match rather than showing
+  // an error: edit_ball was a full overwrite until the 2026-07-07 review, so
+  // editing the runs on a delivery wiped its penalty, its wagon shot and its
+  // run-out "crossed" flag. This journey drives the correction the way a scorer
+  // would - open the log, edit the ball, and check the score actually moved.
+  testWidgets('JOURNEY E: correct a ball in the log', (tester) async {
+    app.main();
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+
+    await signUpFresh(tester, run, 'Fixer $run');
+    await createTeamWithGuests(tester, 'Fix $run', ['Fix1', 'Fix2']);
+    await tester.pageBack();
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    await createTeamWithGuests(tester, 'Foe $run', ['Foe1', 'Foe2']);
+
+    await tester.tap(find.text('Matches').last);
+    await settle(tester, find.byIcon(Icons.add), label: 'matches_tab_e');
+    await tester.tap(find.byIcon(Icons.add).first);
+    await settle(tester, find.text('Start a match'), label: 'start_match_e');
+
+    await tester.tap(find.byType(DropdownButton<String>).first);
+    await tester.pumpAndSettle(const Duration(milliseconds: 800));
+    await tester.tap(find.text('Fix $run').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    await tester.tap(find.text('Choose the opponent'));
+    await settle(tester, find.text('Search teams'), label: 'opponent_sheet_e');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Search teams'), 'Foe $run');
+    await settle(tester, find.text('Foe $run'), label: 'opponent_result_e');
+    await tester.tap(find.text('Foe $run').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    await tester.enterText(find.widgetWithText(TextField, 'Overs'), '2');
+    await tester.pumpAndSettle();
+    await tapScrolled(tester, find.textContaining('Next: squads'),
+        label: 'to_squads_e');
+
+    await settle(tester, find.text('Squads'), label: 'squads_screen_e');
+    for (final n in ['Fix1', 'Fix2', 'Foe1', 'Foe2']) {
+      final row = find.text(n);
+      if (row.evaluate().isNotEmpty) {
+        await tester.tap(row.first);
+        await tester.pumpAndSettle(const Duration(milliseconds: 250));
+      }
+    }
+    await tapScrolled(tester, find.textContaining('Next: toss'),
+        label: 'to_toss_e');
+
+    await settle(tester, find.text('Toss winner'), label: 'toss_screen_e');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Fix $run'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Bat'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await pickFromDropdown(tester, 0, 'Fix1');
+    await pickFromDropdown(tester, 1, 'Fix2');
+    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Start match'),
+        label: 'start_match_e2');
+
+    await settle(tester, find.text('Live scoring'), label: 'console_e');
+    await tester.tap(find.text('Pick'));
+    await settle(tester, find.text('Foe1'), label: 'bowler_sheet_e');
+    await tester.tap(find.text('Foe1').last);
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // score a single, then a four
+    await tester.tap(find.widgetWithText(OutlinedButton, '1'));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await tester.tap(find.widgetWithText(OutlinedButton, '4'));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await shot(tester, 'je1_five_scored');
+    expect(find.textContaining('5/0'), findsWidgets,
+        reason: 'a single and a four is five');
+
+    // THE CORRECTION: that four was really a two.
+    await tester.tap(find.byIcon(Icons.edit_note));
+    await settle(tester, find.text('Ball log'), label: 'ball_log_e');
+    await shot(tester, 'je2_ball_log');
+    await tester.tap(find.byType(ListTile).first);
+    await settle(tester, find.text('Edit this ball'), label: 'ball_actions_e');
+    await tester.tap(find.text('Edit this ball'));
+    await settle(tester, find.text('Runs off the bat'), label: 'edit_sheet_e');
+    await tester.tap(find.widgetWithText(ChoiceChip, '2'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Save'),
+        label: 'save_edit_e');
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await shot(tester, 'je3_after_edit');
+
+    expect(find.textContaining('PostgrestException'), findsNothing);
+    expect(find.textContaining('row-level security'), findsNothing);
+
+    // back to the console: the score must have followed the correction
+    await tester.pageBack();
+    await settle(tester, find.text('Live scoring'), label: 'console_after_edit');
+    await shot(tester, 'je4_console_after_edit');
+    expect(find.textContaining('3/0'), findsWidgets,
+        reason: 'the four became a two, so 5 must have become 3');
+  });
+
+  // JOURNEY K: the very first thing anyone sees.
+  //
+  // Every new user arrives signed OUT. If browsing is a dead end - a spinner, a
+  // raw 403, a screen with no way to sign in - they never become a user at all.
+  testWidgets('JOURNEY K: browse anonymously before signing up', (tester) async {
+    app.main();
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await ensureSignedOut(tester);
+    await shot(tester, 'jk1_anon_discover');
+
+    // Discover must render something an anonymous visitor can act on, not an
+    // error and not an endless spinner.
+    expect(find.textContaining('PostgrestException'), findsNothing);
+    expect(find.textContaining('row-level security'), findsNothing);
+    expect(find.text('Sign in'), findsWidgets,
+        reason: 'an anonymous visitor must always have a way in');
+
+    // the other tabs must be reachable and must not blow up either
+    for (final tab in ['Matches', 'Profile', 'Discover']) {
+      await tester.tap(find.text(tab).last);
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(find.textContaining('PostgrestException'), findsNothing,
+          reason: '$tab must be viewable signed out');
+      expect(find.textContaining('Exception'), findsNothing,
+          reason: '$tab must not surface a raw exception signed out');
+      await shot(tester, 'jk2_anon_$tab');
+    }
   });
 }
