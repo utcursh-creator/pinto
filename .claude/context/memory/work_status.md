@@ -106,6 +106,17 @@ historical running log, newest-first; do not treat older entries as current.
     SEARCH BOX it had typed into, pgTAP 112's post was excluded for being
     EXPIRED rather than by the match-date floor it names, and pgTAP 114 checked
     a bound with one row in the fixture.
+  * **`47112d0` - THE STRENGTHENED ASSERTION PAID OFF ON ITS FIRST RUN.**
+    Journey B failed and the frame showed the composer STILL OPEN after Post,
+    with no visible reason. Two real things: (a) every submit form rendered its
+    error AFTER the submit button, and the button is the last widget in a long
+    scrolling form - so the message landed OFF-SCREEN below the fold and tapping
+    Post appeared to do nothing. SEVEN forms did this (composer, create profile,
+    edit profile, start match, toss, create team, create tournament); the error
+    now renders above the button. (b) journey B never picked the REQUIRED flair,
+    so `_post()` bailed every time - **journey B had never once created a post**
+    and reported success for weeks, because its old wait was
+    `settle(find.text('Discover'))`, the tab label present on every screen.
 - **STILL TO FIX from the confirmed list** (work down
   `2026-07-07-rereview-confirmed.md`): the whole `left_at` cluster (leaving a
   team is irreversible; accept_invite no-ops; request_to_join says "already on
