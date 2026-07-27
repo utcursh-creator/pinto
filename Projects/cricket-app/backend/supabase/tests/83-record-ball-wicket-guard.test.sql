@@ -17,23 +17,24 @@ select public.add_squad_member(:'_mt'::uuid, :'_a'::uuid, :'_ns'::uuid, 2, false
 select public.add_squad_member(:'_mt'::uuid, :'_a'::uuid, :'_b3'::uuid, 3, false, false);
 select public.start_innings(:'_mt'::uuid, 1, :'_a'::uuid, :'_b'::uuid, :'_s'::uuid, :'_ns'::uuid) as _in \gset
 
--- (subqueries, not \gset vars: psql doesn't interpolate :'var' inside $$-quoting)
+-- psql does not interpolate :'var' inside $$-quoting, which is why this used
+-- unscoped subqueries. format()/%L is the correct way to get the captured ids in
+-- (penetration review 2026-07-07) - the unscoped form addressed a stranger's
+-- innings and threw 'not authorized' instead of the guard under test.
 select throws_ok(
-  $$ select public.record_ball(
-       _innings_id := (select id from public.innings limit 1),
-       _bowler_id := (select id from public.team_members where guest_name = 'Bowl'),
+  format($$ select public.record_ball(
+       _innings_id := %L, _bowler_id := %L,
        _wicket_type := 'bowled'::public.wicket_type,
-       _dismissed_player_id := (select id from public.team_members where guest_name = 'S')) $$,
-  'P0001', null,
+       _dismissed_player_id := %L) $$, :'_in', :'_bw', :'_s'),
+  'P0001', 'an incoming batter is required (this is not the last wicket)',
   'a non-final wicket with no incoming batter is rejected');
 
 select lives_ok(
-  $$ select public.record_ball(
-       _innings_id := (select id from public.innings limit 1),
-       _bowler_id := (select id from public.team_members where guest_name = 'Bowl'),
+  format($$ select public.record_ball(
+       _innings_id := %L, _bowler_id := %L,
        _wicket_type := 'bowled'::public.wicket_type,
-       _dismissed_player_id := (select id from public.team_members where guest_name = 'S'),
-       _incoming_batter_id := (select id from public.team_members where guest_name = 'B3')) $$,
+       _dismissed_player_id := %L, _incoming_batter_id := %L) $$,
+    :'_in', :'_bw', :'_s', :'_b3'),
   'the same wicket WITH an incoming batter is accepted');
 
 select * from finish();

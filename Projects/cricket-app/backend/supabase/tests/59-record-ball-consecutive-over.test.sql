@@ -24,22 +24,19 @@ select public.record_ball(:'_in'::uuid, :'_b1'::uuid, 0);
 
 -- (preserved) the same bowler still cannot bowl two overs in a row
 select throws_ok(
-  $$ select public.record_ball((select id from public.innings limit 1),
-       (select id from public.team_members where guest_name='Bowl1'), 0) $$,
+  format($$ select public.record_ball(%L, %L, 0) $$, :'_in', :'_b1'),
   'P0001', 'bowler cannot bowl consecutive overs',
   'same bowler bowling consecutive overs is still rejected');
 
 -- a DIFFERENT bowler may start the new over with a wide (the boundary ball)
 select lives_ok(
-  $$ select public.record_ball((select id from public.innings limit 1),
-       (select id from public.team_members where guest_name='Bowl2'), 0, 1) $$,
+  format($$ select public.record_ball(%L, %L, 0, 1) $$, :'_in', :'_b2'),
   'new over may start with a wide (different bowler)');
 
 -- ...and may then bowl a legal ball even though the legal-ball count is still a
 -- multiple of balls_per_over (the false-positive that used to reject this).
 select lives_ok(
-  $$ select public.record_ball((select id from public.innings limit 1),
-       (select id from public.team_members where guest_name='Bowl2'), 1) $$,
+  format($$ select public.record_ball(%L, %L, 1) $$, :'_in', :'_b2'),
   'continuing the new over after a wide is allowed');
 
 select * from finish();

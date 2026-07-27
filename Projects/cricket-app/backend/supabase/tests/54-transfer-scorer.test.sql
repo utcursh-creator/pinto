@@ -23,13 +23,13 @@ select public.create_match(:'_ta'::uuid, :'_tb'::uuid, 20) as _m \gset
 
 -- 1. current scorer transfers to a member of the OPPONENT team (asymmetric allowed)
 select lives_ok(
-  $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('mate@m.dev')) $$,
+  format($$ select public.transfer_scorer(%L, tests.get_supabase_uid('mate@m.dev')) $$, :'_m'),
   'current scorer transfers to a member of the opponent team');
 select is((select scorer_id from public.matches where id = :'_m'::uuid), tests.get_supabase_uid('mate@m.dev'), 'scorer_id is now mate');
 
 -- 2. team-A admin (caller=scorer), who is NOT the current scorer (mate is), transfers back to scorer
 select lives_ok(
-  $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('scorer@m.dev')) $$,
+  format($$ select public.transfer_scorer(%L, tests.get_supabase_uid('scorer@m.dev')) $$, :'_m'),
   'a team admin who is not the current scorer can transfer');
 select is((select scorer_id from public.matches where id = :'_m'::uuid), tests.get_supabase_uid('scorer@m.dev'), 'scorer_id is back to scorer');
 
@@ -42,18 +42,18 @@ select ok(not public.is_match_scorer(:'_m'::uuid), 'a former scorer no longer pa
 -- 3. unauthorized caller (neither scorer nor admin of either team)
 select tests.authenticate_as('rando@m.dev');
 select throws_ok(
-  $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('mate@m.dev')) $$,
+  format($$ select public.transfer_scorer(%L, tests.get_supabase_uid('mate@m.dev')) $$, :'_m'),
   '42501', null, 'a non-scorer non-admin cannot transfer');
 
 -- 4. authorized caller, but new scorer is not a member of either team
 select tests.authenticate_as('scorer@m.dev');
 select throws_ok(
-  $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('rando@m.dev')) $$,
+  format($$ select public.transfer_scorer(%L, tests.get_supabase_uid('rando@m.dev')) $$, :'_m'),
   'P0001', null, 'cannot transfer to a non-member of either team');
 
 -- 5. idempotent no-op when new == current and current is eligible
 select lives_ok(
-  $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('scorer@m.dev')) $$,
+  format($$ select public.transfer_scorer(%L, tests.get_supabase_uid('scorer@m.dev')) $$, :'_m'),
   'idempotent no-op when new scorer equals the current eligible scorer');
 
 -- 6. status guard: once the match is complete, transfer is refused
@@ -61,7 +61,7 @@ reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set status='complete' where id = :'_m'::uuid;
 select tests.authenticate_as('scorer@m.dev');
 select throws_ok(
-  $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('mate@m.dev')) $$,
+  format($$ select public.transfer_scorer(%L, tests.get_supabase_uid('mate@m.dev')) $$, :'_m'),
   'P0001', null, 'cannot transfer once the match is complete');
 
 -- 7. validate-always: an INELIGIBLE self no-op still raises (neutral is the current

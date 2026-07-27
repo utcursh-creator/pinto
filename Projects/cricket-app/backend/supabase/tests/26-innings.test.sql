@@ -17,12 +17,11 @@ select is((select innings_number from public.innings where match_id = :'_mt'::uu
 -- non-scorer cannot start an innings
 select tests.authenticate_as('out@s.dev');
 insert into public.profiles(id,display_name) values (tests.get_supabase_uid('out@s.dev'),'Out');
+-- scoped to the match THIS test created (see 25 for why the unscoped form was
+-- vacuous even while green).
 select throws_ok(
-  $$ select public.start_innings(
-       (select id from public.matches limit 1), 2,
-       (select team_b_id from public.matches limit 1), (select team_a_id from public.matches limit 1),
-       (select id from public.team_members where guest_name='Striker'),
-       (select id from public.team_members where guest_name='NonStriker')) $$,
+  format($$ select public.start_innings(%L, 2, %L, %L, %L, %L) $$,
+    :'_mt', :'_b', :'_a', :'_s', :'_ns'),
   'P0001', 'not authorized', 'non-scorer cannot start an innings');
 
 select * from finish();

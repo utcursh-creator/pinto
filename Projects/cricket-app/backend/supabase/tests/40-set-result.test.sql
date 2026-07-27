@@ -17,7 +17,7 @@ select is((select result->>'result_type' from public.matches where id = :'_mt'::
 select tests.authenticate_as('out@s.dev');
 insert into public.profiles(id,display_name) values (tests.get_supabase_uid('out@s.dev'),'Out');
 select throws_ok(
-  $$ select public.set_match_result((select id from public.matches limit 1), 'abandoned') $$,
+  format($$ select public.set_match_result(%L, 'abandoned') $$, :'_mt'),
   'P0001', 'not authorized', 'non-scorer cannot set a match result');
 select * from finish();
 rollback;

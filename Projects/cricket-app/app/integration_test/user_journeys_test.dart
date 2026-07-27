@@ -114,13 +114,13 @@ void main() {
     await tester.enterText(
         find.widgetWithText(TextField, 'Team name'), teamName);
     await tester.pumpAndSettle();
-    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Create team'),
+    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Create'),
         label: 'create_team_submit');
     await settle(tester, find.text(teamName), label: 'team_page_$teamName');
 
     // ADDING PLAYERS: guests, through the roster UI
     for (final g in guests) {
-      await tapScrolled(tester, find.textContaining('Add guest'),
+      await tapScrolled(tester, find.textContaining('Add guest player'),
           label: 'add_guest_cta');
       await settle(tester, find.byType(TextField), label: 'guest_dialog');
       await tester.enterText(find.byType(TextField).last, g);
@@ -164,7 +164,8 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Tournament name'),
         'Cup $run');
     await tester.pumpAndSettle();
-    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Create'),
+    await tapScrolled(tester,
+        find.widgetWithText(FilledButton, 'Create tournament'),
         label: 'create_tournament_submit');
     await settle(tester, find.text('Manage tournament'), label: 'manage');
     await shot(tester, 'ja4_manage_tournament');

@@ -22,18 +22,16 @@ select is(
 
 -- adding to a team not in the match is rejected
 select throws_ok(
-  $$ select public.add_match_guest(
-       (select id from public.matches limit 1),
-       (select id from public.teams where name = 'C'), 'Nope') $$,
+  format($$ select public.add_match_guest(
+       %L, %L, 'Nope') $$, :'_m', :'_c'),
   'P0001', 'team is not in this match', 'cannot add a guest to a non-participating team');
 
 -- a non-scorer cannot add a guest
 select tests.authenticate_as('rando@s.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('rando@s.dev'), 'Rando');
 select throws_ok(
-  $$ select public.add_match_guest(
-       (select id from public.matches limit 1),
-       (select id from public.teams where name = 'A'), 'Sneaky') $$,
+  format($$ select public.add_match_guest(
+       %L, %L, 'Sneaky') $$, :'_m', :'_a'),
   'P0001', 'not authorized', 'a non-scorer cannot add a match guest');
 
 select * from finish();

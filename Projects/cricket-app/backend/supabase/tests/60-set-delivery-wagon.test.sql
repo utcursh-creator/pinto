@@ -17,14 +17,19 @@ select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:
 -- a boundary (wagon-applicable) ball
 select public.record_ball(:'_in'::uuid, :'_bw'::uuid, 4);
 
+-- scoped to OUR innings. `order by seq desc limit 1` over the whole table
+-- picked an arbitrary row, and since fold v14 that row can be a non-ball EVENT
+-- (strike_swap / retirement) which cannot carry a shot at all.
+select id as _d from public.deliveries
+  where innings_id = :'_in'::uuid and event_kind is null
+  order by seq desc limit 1 \gset
+
 select lives_ok(
-  $$ select public.set_delivery_wagon(
-       (select id from public.deliveries order by seq desc limit 1),
-       0.7::real, 0.4::real, 3::smallint) $$,
+  format($$ select public.set_delivery_wagon(%L, 0.7::real, 0.4::real, 3::smallint) $$, :'_d'),
   'scorer can set a wagon location on a delivery');
 
 select is(
-  (select wagon_zone from public.deliveries order by seq desc limit 1),
+  (select wagon_zone from public.deliveries where id = :'_d'::uuid),
   3::smallint,
   'wagon zone persisted');
 

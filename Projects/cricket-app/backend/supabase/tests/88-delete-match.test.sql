@@ -15,7 +15,7 @@ select public.create_match(:'_a'::uuid, :'_b'::uuid, 20) as _m \gset
 select tests.authenticate_as('other@s.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('other@s.dev'), 'Other');
 select throws_ok(
-  $$ select public.delete_match((select id from public.matches limit 1)) $$,
+  format($$ select public.delete_match(%L) $$, :'_m'),
   'P0001', 'only the match owner can delete this match',
   'a non-owner cannot delete the match');
 
@@ -35,7 +35,7 @@ insert into public.tournament_matches(match_id, tournament_id, stage)
   values (:'_tm'::uuid, :'_t'::uuid, 'group');
 select tests.authenticate_as('own@s.dev');
 select throws_ok(
-  $$ select public.delete_match((select match_id from public.tournament_matches limit 1)) $$,
+  format($$ select public.delete_match(%L) $$, :'_tm'),
   'P0001', 'a tournament match cannot be deleted here',
   'a tournament match is not deletable via delete_match');
 select is((select count(*)::int from public.matches where id = :'_tm'::uuid), 1,

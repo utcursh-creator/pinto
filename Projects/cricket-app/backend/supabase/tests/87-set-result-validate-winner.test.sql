@@ -14,15 +14,13 @@ select public.create_match(:'_a'::uuid, :'_b'::uuid, 20) as _m \gset
 
 -- a forged/foreign winner is rejected
 select throws_ok(
-  $$ select public.set_match_result(
-       (select id from public.matches limit 1), 'win_by_runs',
-       (select id from public.teams where name = 'X')) $$,
+  format($$ select public.set_match_result(%L, 'win_by_runs', %L) $$, :'_m', :'_x'),
   'P0001', 'the winner must be one of the two teams in this match',
   'a winner that is not a participant is rejected');
 
 -- a win result with no winner is rejected
 select throws_ok(
-  $$ select public.set_match_result((select id from public.matches limit 1), 'win_by_wickets') $$,
+  format($$ select public.set_match_result(%L, 'win_by_wickets') $$, :'_m'),
   'P0001', 'a winner is required for a win_by_wickets result',
   'a win result requires a winner');
 
@@ -35,8 +33,7 @@ select is((select status::text from public.matches where id = :'_m'::uuid),
 
 -- the match is now terminal: a second result is refused
 select throws_ok(
-  $$ select public.set_match_result((select id from public.matches limit 1), 'win_by_runs',
-       (select team_a_id from public.matches limit 1)) $$,
+  format($$ select public.set_match_result(%L, 'win_by_runs', %L) $$, :'_m', :'_a'),
   'P0001', 'this match already has a final result',
   'a completed match cannot be re-resulted');
 

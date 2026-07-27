@@ -18,12 +18,14 @@ select fk_ok('public','deliveries','striker_id','public','team_members','id');
 select has_column('public','deliveries','is_legal','is_legal column');
 
 -- CHECK: a delivery cannot be both a wide and a no-ball
+-- Addressed by the ids this test created (via format/%L), NOT
+-- `(select id from public.innings limit 1)`: on any database that holds other
+-- rows that picked a STRANGER'S innings, so the insert was refused by RLS
+-- (42501) and the CHECK constraint this test exists to prove was never reached
+-- (penetration review 2026-07-07).
 select throws_ok(
-  $$ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_wides,extra_no_ball_penalty)
-     values ((select id from public.innings limit 1), 1,
-             (select id from public.team_members where guest_name='Bowl'),
-             (select id from public.team_members where guest_name='S'),
-             (select id from public.team_members where guest_name='NS'), 1, 1) $$,
+  format($$ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_wides,extra_no_ball_penalty)
+     values (%L, 1, %L, %L, %L, 1, 1) $$, :'_in', :'_bw', :'_s', :'_ns'),
   '23514', null, 'cannot be both wide and no-ball');
 
 select has_index('public','deliveries','deliveries_innings_seq_uidx','unique (innings_id, seq) index');

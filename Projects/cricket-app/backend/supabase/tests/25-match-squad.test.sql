@@ -16,12 +16,12 @@ select is((select batting_order from public.match_squad where match_id = :'_mt':
 -- non-scorer cannot add to the squad
 select tests.authenticate_as('out@s.dev');
 insert into public.profiles(id,display_name) values (tests.get_supabase_uid('out@s.dev'),'Out');
+-- scoped to the match THIS test created. Unscoped, it addressed an arbitrary
+-- match - which also returns 'not authorized', so the assertion passed without
+-- ever proving anything about our own match (penetration review 2026-07-07).
 select throws_ok(
-  $$ select public.add_squad_member(
-       (select id from public.matches limit 1),
-       (select team_a_id from public.matches limit 1),
-       (select id from public.team_members where guest_name = 'Guest A1'),
-       2, false, false) $$,
+  format($$ select public.add_squad_member(%L, %L, %L, 2, false, false) $$,
+    :'_mt', :'_a', :'_m'),
   'P0001', 'not authorized', 'non-scorer cannot add squad member');
 
 select * from finish();
