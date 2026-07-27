@@ -23,7 +23,6 @@ void main() {
         ProviderScope(
           overrides: [
             myTeamsProvider.overrideWith((ref) async => []),
-            allTeamsProvider.overrideWith((ref) async => []),
           ],
           child: const MaterialApp(home: StartMatchScreen()),
         ),

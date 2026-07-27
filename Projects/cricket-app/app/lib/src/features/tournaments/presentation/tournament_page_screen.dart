@@ -27,6 +27,9 @@ class _TournamentPageScreenState extends ConsumerState<TournamentPageScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(tournamentOverviewProvider(widget.tournamentId));
     return AdaptiveScaffold(
+      // A shared link cold-starts here, outside the tab shell: offer a way
+      // into the app rather than leaving the visitor on an island.
+      onEnterApp: () => context.go(Routes.discover),
       title: async.value?.info.name ?? 'Tournament',
       actions: [
         IconButton(

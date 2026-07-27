@@ -14,7 +14,7 @@ select id as _cap from public.team_members where profile_id = :'_uid'::uuid and 
 select public.add_guest_member(:'_a'::uuid,'P2') as _p2 \gset
 select public.add_guest_member(:'_b'::uuid,'Bw') as _bw \gset
 
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _m \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _m \gset
 select public.add_squad_member(:'_m'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _in \gset
 -- cap scores three fours via the real append path

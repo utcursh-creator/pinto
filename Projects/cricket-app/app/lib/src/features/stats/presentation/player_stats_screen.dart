@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../data/stats_models.dart';
 import '../data/stats_providers.dart';
+import '../../../core/routing/routes.dart';
 
 /// Public, login-free career stats for one player (keyed by profile id, or -
 /// STAT-2 - by team_members.id for an unclaimed guest via [isGuest]):
@@ -24,6 +26,9 @@ class PlayerStatsScreen extends ConsumerWidget {
         ? guestPlayerStatsProvider(profileId)
         : playerStatsProvider(profileId));
     return AdaptiveScaffold(
+      // A shared link cold-starts here, outside the tab shell: offer a way
+      // into the app rather than leaving the visitor on an island.
+      onEnterApp: () => context.go(Routes.discover),
       title: async.value?.identity.displayName ?? 'Player',
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),

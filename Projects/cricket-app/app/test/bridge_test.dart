@@ -6,7 +6,6 @@ import 'package:pitch_app/src/core/auth/auth_providers.dart';
 import 'package:pitch_app/src/features/discover/data/discover_providers.dart';
 import 'package:pitch_app/src/features/discover/presentation/post_detail_screen.dart';
 import 'package:pitch_app/src/features/identity/data/identity_providers.dart';
-import 'package:pitch_app/src/features/scoring/data/match_providers.dart';
 import 'package:pitch_app/src/features/scoring/presentation/start_match_screen.dart';
 
 Future<void> _pumpPost(WidgetTester tester, String mode) async {
@@ -74,10 +73,11 @@ void main() {
           ProviderScope(
             overrides: [
               myTeamsProvider.overrideWith((ref) async => []),
-              allTeamsProvider.overrideWith(
-                (ref) async => [
-                  {'id': 'team-b', 'name': 'Dadar CC', 'city': 'Mumbai'},
-                ],
+              // The opponent field resolves a bridged id through teamProvider
+              // now that the picker searches instead of listing every team.
+              teamProvider('team-b').overrideWith(
+                (ref) async =>
+                    {'id': 'team-b', 'name': 'Dadar CC', 'city': 'Mumbai'},
               ),
             ],
             child: const MaterialApp(
@@ -87,11 +87,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        // The opponent dropdown shows the bridged team as selected.
+        // The opponent field names the bridged team rather than showing a uuid
+        // or the "Choose the opponent" placeholder.
         expect(find.text('Dadar CC'), findsOneWidget);
-        final dropdowns =
-            tester.widgetList<DropdownButton<String>>(find.byType(DropdownButton<String>));
-        expect(dropdowns.any((d) => d.value == 'team-b'), isTrue);
+        expect(find.text('Choose the opponent'), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -105,10 +104,11 @@ void main() {
           ProviderScope(
             overrides: [
               myTeamsProvider.overrideWith((ref) async => []),
-              allTeamsProvider.overrideWith(
-                (ref) async => [
-                  {'id': 'team-b', 'name': 'Dadar CC', 'city': 'Mumbai'},
-                ],
+              // The opponent field resolves a bridged id through teamProvider
+              // now that the picker searches instead of listing every team.
+              teamProvider('team-b').overrideWith(
+                (ref) async =>
+                    {'id': 'team-b', 'name': 'Dadar CC', 'city': 'Mumbai'},
               ),
             ],
             child: const MaterialApp(

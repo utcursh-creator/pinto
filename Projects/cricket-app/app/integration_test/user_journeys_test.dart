@@ -298,28 +298,53 @@ void main() {
     // menu. Screenshots on failure so the next run shows the real state.
     Future<void> pickFromDropdown(int index, String optionText) async {
       final dd = find.byType(DropdownButton<String>);
+      final option = find.text(optionText);
+      // A DropdownButton keeps EVERY item in an IndexedStack inside the button
+      // itself (so it can size to the widest one), so `find.text(option)` matches
+      // even when the menu never opened. Detecting "open" that way taps a hidden
+      // child, the value never changes, and the failure lands two steps later on
+      // the next screen - which is exactly how run 11 reported a missing "Squads"
+      // header when the real problem was an unset opponent. Count the matches
+      // BEFORE tapping and wait for the count to GROW: the extra one is the
+      // overlay item, and only that is real evidence the route is up.
+      final before = option.evaluate().length;
       await tester.ensureVisible(dd.at(index));
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       await tester.tap(dd.at(index));
-      final option = find.text(optionText);
       var opened = false;
       for (var i = 0; i < 25; i++) {
         await tester.pumpAndSettle(const Duration(milliseconds: 300));
-        if (option.evaluate().isNotEmpty) {
+        if (option.evaluate().length > before) {
           opened = true;
           break;
         }
       }
       if (!opened) {
         await binding.takeScreenshot('timeout_dropdown_$optionText');
-        fail('dropdown $index never offered "$optionText"');
+        fail('dropdown $index never opened a menu offering "$optionText" '
+            '(matches stayed at $before)');
       }
       await tester.tap(option.last);
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
+      // Assert the OUTCOME, not the tap: a DropdownButton whose menu closed
+      // without a selection looks identical on screen.
+      final w = tester.widget<DropdownButton<String>>(dd.at(index));
+      if (w.value == null) {
+        await binding.takeScreenshot('unset_dropdown_$optionText');
+        fail('dropdown $index still has no value after picking "$optionText"');
+      }
     }
 
-    await pickFromDropdown(0, 'Bat $run');     // your team
-    await pickFromDropdown(1, 'Bowl $run');    // opponent
+    await pickFromDropdown(0, 'Bat $run'); // your team
+    // The opponent is a search sheet now, not a dropdown of every team in the
+    // database. Type the club name and take the result.
+    await tester.tap(find.text('Choose the opponent'));
+    await settle(tester, find.text('Search teams'), label: 'opponent_sheet');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Search teams'), 'Bowl $run');
+    await settle(tester, find.text('Bowl $run'), label: 'opponent_result');
+    await tester.tap(find.text('Bowl $run').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
     await tester.enterText(find.widgetWithText(TextField, 'Overs'), '1');
     await tester.pumpAndSettle();
     await tapScrolled(tester, find.textContaining('Next: squads'),

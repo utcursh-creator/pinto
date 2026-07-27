@@ -81,6 +81,14 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
           isKeeper: _keeperOf[teamId] == memberId,
         );
       }
+      // The squad we just wrote is what the toss screen reads to offer the
+      // opening pair. This screen has been watching matchSquadProvider since it
+      // opened, so the provider is alive and still holding the value it had
+      // BEFORE these writes - an empty list. pushReplacement builds the toss
+      // screen in the same frame, so it inherits that stale empty list, and the
+      // scorer lands on Striker/Non-striker dropdowns with nothing in them and
+      // no way to start the match. Refresh before leaving.
+      ref.invalidate(matchSquadProvider(widget.matchId));
       if (mounted) context.pushReplacement(Routes.matchToss(widget.matchId));
     } catch (e) {
       // golden-path audit: an aborted squad save must not fail silently

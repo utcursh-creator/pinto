@@ -14,7 +14,7 @@ select public.add_guest_member(:'_a'::uuid,'P2') as _p2 \gset
 select public.add_guest_member(:'_b'::uuid,'Bw') as _bw \gset
 
 -- COMPLETE match: cap 24 (4 sixes)
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _mc \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mc \gset
 select public.add_squad_member(:'_mc'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mc'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _ic \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
@@ -22,7 +22,7 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
 select public.set_match_result(:'_mc'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 
 -- LIVE match (no result): cap 36 - must NOT be visible to anon
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _ml \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _ml \gset
 select public.add_squad_member(:'_ml'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_ml'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _il \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)

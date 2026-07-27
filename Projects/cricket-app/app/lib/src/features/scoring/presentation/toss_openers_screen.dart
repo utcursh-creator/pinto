@@ -217,6 +217,10 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
         openingStriker: _striker!,
         openingNonStriker: _nonStriker!,
       );
+      // Same trap as the squads screen: this screen has held matchProvider
+      // alive since it opened, so the console would inherit the PRE-toss match
+      // row (no toss, not yet live) that we have just replaced.
+      ref.invalidate(matchProvider(widget.matchId));
       if (mounted) context.pushReplacement(Routes.scoreMatch(widget.matchId));
     } catch (e) {
       // golden-path audit: a silent failure here strands the user at the toss

@@ -4,6 +4,13 @@ class Routes {
 
   static const String splash = '/splash';
   static const String signIn = '/sign-in';
+
+  /// Sign in and come BACK to [returnTo]. Signing in flips the auth gate, and
+  /// the gate's ready branch sends every onboarding location to Discover - so a
+  /// plain `push(signIn)` from an invite or tournament-join link threw that link
+  /// away at the moment the user became able to accept it.
+  static String signInThenReturnTo(String returnTo) =>
+      '$signIn?next=${Uri.encodeComponent(returnTo)}';
   static const String createProfile = '/onboarding/create-profile';
   static const String discover = '/discover';
   static const String matches = '/matches';

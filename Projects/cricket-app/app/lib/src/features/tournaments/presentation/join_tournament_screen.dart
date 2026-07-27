@@ -70,6 +70,9 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
   Widget build(BuildContext context) {
     final isAnon = ref.watch(isAnonymousProvider);
     return AdaptiveScaffold(
+      // A shared link cold-starts here, outside the tab shell: offer a way
+      // into the app rather than leaving the visitor on an island.
+      onEnterApp: () => context.go(Routes.discover),
       title: 'Join tournament',
       body: Center(
         child: Padding(
@@ -92,7 +95,8 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
           ),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: () => context.push(Routes.signIn),
+            onPressed: () => context.push(
+                Routes.signInThenReturnTo(Routes.joinTournament(widget.token))),
             child: const Text('Sign in to join'),
           ),
         ],

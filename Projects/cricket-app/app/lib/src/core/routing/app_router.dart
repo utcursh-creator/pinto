@@ -49,7 +49,17 @@ import 'routes.dart';
 /// so a shared/deep link resolves even before auth settles and even for a user
 /// with no profile. This (plus being a top-level route) is the deep-link
 /// cold-start fix - StatefulShellRoute branch routes do not cold-start reliably.
-String? onboardingRedirect(AuthGate gate, String loc) {
+/// An in-app destination carried through sign-in, or null if there is none we
+/// are willing to follow. Anything that is not a plain absolute in-app path is
+/// dropped: a `next` arrives in a URL, and a URL is not a trusted input.
+String? _safeNext(String? next) {
+  if (next == null || next.isEmpty) return null;
+  if (!next.startsWith('/')) return null;
+  if (next.startsWith('//')) return null; // protocol-relative, i.e. off-app
+  return next;
+}
+
+String? onboardingRedirect(AuthGate gate, String loc, {String? next}) {
   // Public, login-free deep links bypass the onboarding gate entirely. /invite
   // renders for anyone (the screen prompts anonymous users to sign in).
   if (loc.startsWith('/watch/') ||
@@ -59,6 +69,11 @@ String? onboardingRedirect(AuthGate gate, String loc) {
       loc.startsWith('/tournament/')) {
     return null;
   }
+  // Where to land once onboarding is done. An invite or tournament-join link
+  // asks an anonymous visitor to sign in; without this the ready branch below
+  // sent them to /discover, discarding the very link they were accepting at the
+  // moment they became able to accept it.
+  final onward = _safeNext(next) ?? Routes.discover;
   switch (gate) {
     case AuthGate.loading:
     case AuthGate.error:
@@ -68,12 +83,18 @@ String? onboardingRedirect(AuthGate gate, String loc) {
     case AuthGate.anonymous:
       return loc == Routes.splash ? Routes.discover : null;
     case AuthGate.needsProfile:
-      return loc == Routes.createProfile ? null : Routes.createProfile;
+      if (loc == Routes.createProfile) return null;
+      // Carry the link across profile creation too - a brand-new user is the
+      // most likely one to be arriving from someone else's invite.
+      final safe = _safeNext(next);
+      return safe == null
+          ? Routes.createProfile
+          : '${Routes.createProfile}?next=${Uri.encodeComponent(safe)}';
     case AuthGate.ready:
       if (loc == Routes.splash ||
           loc == Routes.signIn ||
           loc == Routes.createProfile) {
-        return Routes.discover;
+        return onward;
       }
       return null;
   }
@@ -94,8 +115,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: refresh,
-    redirect: (context, state) =>
-        onboardingRedirect(ref.read(authGateProvider), state.matchedLocation),
+    redirect: (context, state) => onboardingRedirect(
+      ref.read(authGateProvider),
+      state.matchedLocation,
+      next: state.uri.queryParameters['next'],
+    ),
     routes: [
       GoRoute(
         path: Routes.splash,

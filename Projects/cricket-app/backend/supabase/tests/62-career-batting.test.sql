@@ -14,7 +14,7 @@ select public.add_guest_member(:'_a'::uuid,'P3') as _p3 \gset
 select public.add_guest_member(:'_b'::uuid,'Bw') as _bw \gset
 
 -- M1: cap 50 not out (8 sixes + a two)
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _m1 \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _m1 \gset
 select public.add_squad_member(:'_m1'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m1'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _i1 \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
@@ -24,7 +24,7 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
 select public.set_match_result(:'_m1'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 
 -- M2: cap 30 then bowled (5 sixes + a wicket ball)
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _m2 \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _m2 \gset
 select public.add_squad_member(:'_m2'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m2'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _i2 \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)

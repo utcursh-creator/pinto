@@ -37,6 +37,10 @@ class StartMatchScreen extends ConsumerStatefulWidget {
 class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
   String? _teamA;
   String? _teamB;
+  /// Cached so the field can name a team the user just picked without a second
+  /// round trip. Null when the opponent arrived as an id from the discover
+  /// bridge - the field resolves that one itself.
+  String? _teamBName;
   late final _overs =
       TextEditingController(text: widget.initialOvers?.trim().isNotEmpty ?? false
           ? widget.initialOvers!.trim()
@@ -62,12 +66,29 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
 
   Future<void> _create() async {
     final overs = int.tryParse(_overs.text.trim());
-    if (_teamA == null || _teamB == null || overs == null) {
-      setState(() => _error = 'Pick both teams and overs.');
+    // Name what is actually missing. The old line ("Pick both teams and overs.")
+    // fired even when two of the three were filled, so a scorer who had only
+    // missed the opponent had to re-check every field to find it - and the
+    // opponent dropdown is the one that silently stays empty when you have a
+    // single team.
+    final missing = <String>[
+      if (_teamA == null) 'your team',
+      if (_teamB == null) 'the opponent',
+      if (overs == null) 'overs',
+    ];
+    if (missing.isNotEmpty || overs == null) {
+      setState(() => _error = 'Still needed: ${missing.join(', ')}.');
       return;
     }
     if (_teamA == _teamB) {
       setState(() => _error = 'Teams must be different.');
+      return;
+    }
+    // The Overs box is a bare numeric field, so 0 (or a mistyped 300) used to go
+    // straight through: create_match now refuses it server-side, but say it here
+    // rather than making the user round-trip to find out.
+    if (overs < 1 || overs > 100) {
+      setState(() => _error = 'Overs must be between 1 and 100.');
       return;
     }
     setState(() {
@@ -116,7 +137,6 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final myTeams = ref.watch(myTeamsProvider);
-    final allTeams = ref.watch(allTeamsProvider);
     return AdaptiveScaffold(
       title: 'Start a match',
       body: ListView(
@@ -159,24 +179,14 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
           ),
           const SizedBox(height: 16),
           Text('Opponent', style: Theme.of(context).textTheme.labelLarge),
-          allTeams.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text(humanError(e)),
-            data: (rows) => DropdownButton<String>(
-              isExpanded: true,
-              value: _teamB,
-              hint: const Text('Choose the opponent'),
-              items: [
-                // MTCH-6: don't offer your own team as the opponent.
-                for (final t in rows)
-                  if (t['id'] != _teamA)
-                    DropdownMenuItem(
-                      value: t['id'] as String,
-                      child: Text(t['name'] as String),
-                    ),
-              ],
-              onChanged: (v) => setState(() => _teamB = v),
-            ),
+          _OpponentField(
+            teamId: _teamB,
+            excludeTeamId: _teamA,
+            onPicked: (id, name) => setState(() {
+              _teamB = id;
+              _teamBName = name;
+            }),
+            knownName: _teamBName,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -230,6 +240,148 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
             const SizedBox(height: 16),
             Text(_error!, style: const TextStyle(color: Colors.red)),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The opponent picker. Tapping opens a search sheet; with an empty box it
+/// offers the clubs this user has actually played, which is the answer most of
+/// the time. It replaced a DropdownButton fed by every team in the database.
+class _OpponentField extends ConsumerWidget {
+  const _OpponentField({
+    required this.teamId,
+    required this.excludeTeamId,
+    required this.onPicked,
+    this.knownName,
+  });
+
+  final String? teamId;
+  final String? excludeTeamId;
+  final String? knownName;
+  final void Function(String id, String name) onPicked;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // An opponent carried in from the discover bridge arrives as a bare id, so
+    // resolve its name rather than showing the user a uuid.
+    final resolved = knownName ??
+        (teamId == null
+            ? null
+            : ref.watch(teamProvider(teamId!)).value?['name'] as String?);
+    final chosen = teamId != null;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.shield_outlined),
+      title: Text(
+        chosen ? (resolved ?? 'Opponent selected') : 'Choose the opponent',
+        style: chosen
+            ? null
+            : TextStyle(color: Theme.of(context).hintColor),
+      ),
+      trailing: const Icon(Icons.search),
+      onTap: () async {
+        final picked = await showModalBottomSheet<({String id, String name})>(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => _OpponentSearchSheet(excludeTeamId: excludeTeamId),
+        );
+        if (picked != null) onPicked(picked.id, picked.name);
+      },
+    );
+  }
+}
+
+class _OpponentSearchSheet extends ConsumerStatefulWidget {
+  const _OpponentSearchSheet({required this.excludeTeamId});
+
+  final String? excludeTeamId;
+
+  @override
+  ConsumerState<_OpponentSearchSheet> createState() =>
+      _OpponentSearchSheetState();
+}
+
+class _OpponentSearchSheetState extends ConsumerState<_OpponentSearchSheet> {
+  final _q = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _q.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final results = ref.watch(opponentSearchProvider(
+      (query: _query, excludeTeamId: widget.excludeTeamId),
+    ));
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Opponent', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _q,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Search teams',
+              hintText: 'Type a club name',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (v) => setState(() => _query = v),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 320,
+            child: results.when(
+              loading: () => const AppSkeletonList(rows: 5),
+              error: (e, _) => Center(child: Text(humanError(e))),
+              data: (rows) {
+                if (rows.isEmpty) {
+                  return AppEmpty(
+                    icon: Icons.shield_outlined,
+                    title: _query.trim().length < 2
+                        ? 'No past opponents yet'
+                        : 'No team called "${_query.trim()}"',
+                    message: _query.trim().length < 2
+                        ? 'Type a club name to find who you are playing.'
+                        : 'Check the spelling, or ask them to create their team '
+                            'on Pitch first.',
+                  );
+                }
+                return ListView.separated(
+                  itemCount: rows.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final t = rows[i];
+                    final city = t['city'] as String?;
+                    final played = t['last_played'] != null;
+                    return ListTile(
+                      title: Text(t['name'] as String),
+                      subtitle: Text([
+                        if (city != null && city.isNotEmpty) city,
+                        if (played) 'played before',
+                      ].join(' - ')),
+                      onTap: () => Navigator.of(context).pop(
+                        (id: t['id'] as String, name: t['name'] as String),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );

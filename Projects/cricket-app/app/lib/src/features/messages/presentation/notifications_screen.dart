@@ -36,26 +36,31 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         'post_reply' => Icons.reply_outlined,
         'dm' => Icons.chat_bubble_outline,
         'claim_request' => Icons.how_to_reg_outlined,
+        'join_request' => Icons.person_add_alt_outlined,
         'invite_accepted' => Icons.group_add_outlined,
         'match_live' => Icons.sensors,
         _ => Icons.notifications_none,
       };
 
-  void _open(BuildContext context, Map<String, dynamic> n) {
-    final ref_ = n['ref_id'] as String?;
-    if (ref_ == null) return;
-    switch (n['type'] as String?) {
-      case 'post_reply':
-        context.push(Routes.postDetail(ref_));
-      case 'dm':
-        context.push(Routes.dmThread(ref_));
-      case 'match_live':
-        context.push(Routes.viewMatch(ref_));
-      case 'invite_accepted':
-        context.push(Routes.teamPage(ref_));
-      default:
-        break; // claim_request reviews happen on the team page roster
-    }
+  /// Where a row leads, or null if it leads nowhere. Returning null (rather
+  /// than swallowing the tap) lets the list render the row as non-tappable:
+  /// `claim_request` and `join_request` rows used to look exactly like every
+  /// other row and do nothing at all when tapped, which reads as a broken app
+  /// at the precise moment a captain is trying to act on a request.
+  static String? _destination(Map<String, dynamic> n) {
+    final refId = n['ref_id'] as String?;
+    if (refId == null) return null;
+    return switch (n['type'] as String?) {
+      'post_reply' => Routes.postDetail(refId),
+      'dm' => Routes.dmThread(refId),
+      'match_live' => Routes.viewMatch(refId),
+      'invite_accepted' => Routes.teamPage(refId),
+      // ref_id is the membership row; the captain reviews claims in the inbox.
+      'claim_request' => Routes.claimInbox,
+      // ref_id is the team; join requests are reviewed on the team page.
+      'join_request' => Routes.teamPage(refId),
+      _ => null,
+    };
   }
 
   static String _when(dynamic createdAt) {
@@ -89,6 +94,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   itemBuilder: (context, i) {
                     final n = rows[i];
                     final unread = n['read_at'] == null;
+                    final dest = _destination(n);
                     return ListTile(
                       leading: Icon(_icon(n['type'] as String?),
                           color: unread ? const Color(0xFF0F6E56) : null),
@@ -98,9 +104,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             ? const TextStyle(fontWeight: FontWeight.w600)
                             : null,
                       ),
-                      trailing: Text(_when(n['created_at']),
+                      subtitle: Text(_when(n['created_at']),
                           style: Theme.of(context).textTheme.bodySmall),
-                      onTap: () => _open(context, n),
+                      // A row that goes somewhere says so; one that does not
+                      // stays inert rather than faking a tap target.
+                      trailing: dest == null
+                          ? null
+                          : const Icon(Icons.chevron_right, size: 18),
+                      onTap: dest == null ? null : () => context.push(dest),
                     );
                   },
                 ),

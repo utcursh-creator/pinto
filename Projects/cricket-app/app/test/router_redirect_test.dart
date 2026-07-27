@@ -33,5 +33,63 @@ void main() {
       expect(onboardingRedirect(AuthGate.ready, Routes.signIn), Routes.discover);
       expect(onboardingRedirect(AuthGate.ready, Routes.matches), isNull);
     });
+
+    // An invite or tournament-join link asks an anonymous visitor to sign in.
+    // Signing in flips the gate to ready, and the ready branch then sent every
+    // onboarding location to /discover - so the link the user was accepting was
+    // thrown away at the exact moment they qualified to accept it, with no way
+    // back to it. `next` carries the destination through the sign-in.
+    group('a link survives the sign-in it required', () {
+      test('ready returns to the link instead of the shell', () {
+        expect(
+          onboardingRedirect(AuthGate.ready, Routes.signIn,
+              next: '/invite/tok123'),
+          '/invite/tok123',
+        );
+        expect(
+          onboardingRedirect(AuthGate.ready, Routes.signIn,
+              next: '/join-tournament/tok9'),
+          '/join-tournament/tok9',
+        );
+      });
+
+      test('a user with no profile keeps the link across create-profile', () {
+        // sent to create-profile, but the link is carried along
+        expect(
+          onboardingRedirect(AuthGate.needsProfile, Routes.discover,
+              next: '/invite/tok123'),
+          '${Routes.createProfile}?next=%2Finvite%2Ftok123',
+        );
+        // and once the profile exists, it resolves
+        expect(
+          onboardingRedirect(AuthGate.ready, Routes.createProfile,
+              next: '/invite/tok123'),
+          '/invite/tok123',
+        );
+      });
+
+      test('an off-app or malformed next is ignored', () {
+        for (final bad in [
+          'https://evil.example/x',
+          '//evil.example/x',
+          'invite/tok',
+          '',
+        ]) {
+          expect(
+            onboardingRedirect(AuthGate.ready, Routes.signIn, next: bad),
+            Routes.discover,
+            reason: '"$bad" must not be followed',
+          );
+        }
+      });
+
+      test('next changes nothing for an ordinary in-app location', () {
+        expect(
+          onboardingRedirect(AuthGate.ready, Routes.matches,
+              next: '/invite/tok123'),
+          isNull,
+        );
+      });
+    });
   });
 }

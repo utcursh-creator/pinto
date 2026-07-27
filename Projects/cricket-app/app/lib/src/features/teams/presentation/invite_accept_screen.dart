@@ -57,6 +57,9 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
     final isAnon = ref.watch(isAnonymousProvider);
     final preview = ref.watch(invitePreviewProvider(widget.token));
     return AdaptiveScaffold(
+      // A shared link cold-starts here, outside the tab shell: offer a way
+      // into the app rather than leaving the visitor on an island.
+      onEnterApp: () => context.go(Routes.discover),
       title: 'Team invite',
       body: Center(
         child: Padding(
@@ -115,7 +118,8 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
         const SizedBox(height: 24),
         if (isAnon)
           FilledButton(
-            onPressed: () => context.push(Routes.signIn),
+            onPressed: () => context.push(
+                Routes.signInThenReturnTo(Routes.acceptInvite(widget.token))),
             child: const Text('Sign in to join'),
           )
         else

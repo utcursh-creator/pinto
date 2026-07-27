@@ -16,7 +16,7 @@ select public.add_guest_member(:'_b'::uuid,'b3') as _b3 \gset
 
 -- helper: a one-innings match where cap scores `_runs6*6` via sixes
 -- OLD match: cap 10 (a four + a six)
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _mo \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mo \gset
 select public.add_squad_member(:'_mo'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mo'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _io \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
@@ -27,7 +27,7 @@ update public.matches set created_at = now() - interval '3 days' where id = :'_m
 select tests.authenticate_as('cap@s.dev');
 
 -- MID match: cap 20 (a four + ... ) -> 20 via 5 fours
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _mm \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mm \gset
 select public.add_squad_member(:'_mm'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mm'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _im \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
@@ -38,7 +38,7 @@ update public.matches set created_at = now() - interval '2 days' where id = :'_m
 select tests.authenticate_as('cap@s.dev');
 
 -- NEW match (two innings): cap bats 30 (inns1) and bowls 2 wickets (inns2)
-select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _mn \gset
+select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mn \gset
 select public.add_squad_member(:'_mn'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mn'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _in1 \gset
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)

@@ -11,12 +11,22 @@ String memberName(Map<String, dynamic> m) {
   return (p?['display_name'] as String?) ?? 'Player';
 }
 
-/// All teams (for the opponent picker).
-final allTeamsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final c = ref.watch(supabaseClientProvider);
-  final rows = await c.from('teams').select('id, name, city').order('name');
-  return List<Map<String, dynamic>>.from(rows as List);
-});
+/// Opponent candidates. With no query this is who the user has actually played
+/// (their teams' past opponents, most recent first); with one it is a bounded
+/// name search. This replaces a `from('teams').select(...)` with no limit at
+/// all - the whole teams table, downloaded on every visit to Start-a-match and
+/// poured into a DropdownButton nobody could scroll (fix run 2026-07-07).
+final opponentSearchProvider = FutureProvider.family<
+    List<Map<String, dynamic>>, ({String query, String? excludeTeamId})>(
+  (ref, args) async {
+    final c = ref.watch(supabaseClientProvider);
+    final rows = await c.rpc('search_opponent_teams', params: {
+      '_query': args.query.trim().isEmpty ? null : args.query.trim(),
+      '_exclude': args.excludeTeamId,
+    });
+    return List<Map<String, dynamic>>.from(rows as List);
+  },
+);
 
 /// A team's members (for squad selection).
 final teamMembersProvider =

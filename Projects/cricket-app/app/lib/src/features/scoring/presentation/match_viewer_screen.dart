@@ -332,6 +332,9 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     }
 
     return AdaptiveScaffold(
+      // A shared link cold-starts here, outside the tab shell: offer a way
+      // into the app rather than leaving the visitor on an island.
+      onEnterApp: () => context.go(Routes.discover),
       title: title,
       actions: [
         if (ready)

@@ -11,7 +11,7 @@ insert into public.profiles(id, display_name) values (tests.get_supabase_uid('ex
 
 -- 1. an UNDATED post gets a 14-day expiry, not null
 select public.create_looking_for_post(
-  'players_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
+  'player_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
   19.0760, 72.8777, 'undated') as _undated \gset
 select ok(
   (select expires_at from public.looking_for_posts where id = :'_undated'::uuid)
@@ -20,7 +20,7 @@ select ok(
 
 -- 2. a DATED post dies the day after the match
 select public.create_looking_for_post(
-  'players_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
+  'player_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
   19.0760, 72.8777, 'dated',
   _match_at := now() + interval '2 days') as _dated \gset
 select ok(
@@ -30,7 +30,7 @@ select ok(
 
 -- 3. an explicit expiry still wins
 select public.create_looking_for_post(
-  'players_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
+  'player_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
   19.0760, 72.8777, 'explicit',
   _expires_at := now() + interval '1 hour') as _explicit \gset
 select ok(
@@ -40,7 +40,7 @@ select ok(
 
 -- 4. a match that already happened is NOT offered, however near it is
 select public.create_looking_for_post(
-  'players_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
+  'player_seeking_team'::public.lf_mode, 'practice_match'::public.lf_flair,
   19.0760, 72.8777, 'yesterday',
   _match_at := now() - interval '1 day') as _past \gset
 select is(
