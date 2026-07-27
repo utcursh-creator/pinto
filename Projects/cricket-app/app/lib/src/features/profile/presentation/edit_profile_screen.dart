@@ -115,7 +115,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } on PostgrestException catch (e) {
       setState(() => _error = e.code == '23505'
           ? 'That handle is taken - try another.'
-          : e.message);
+          : humanError(e, fallback: 'Could not save your profile.'));
+    } catch (e) {
+      setState(() => _error = humanError(e, fallback: 'Could not save your profile.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

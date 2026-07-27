@@ -715,11 +715,11 @@ class _JoinRequests extends ConsumerWidget {
                     'Player'),
             trailing: Wrap(spacing: 4, children: [
               TextButton(
-                onPressed: () => _respond(ref, r['id'] as String, true),
+                onPressed: () => _respond(context, ref, r['id'] as String, true),
                 child: const Text('Approve'),
               ),
               TextButton(
-                onPressed: () => _respond(ref, r['id'] as String, false),
+                onPressed: () => _respond(context, ref, r['id'] as String, false),
                 child: const Text('Decline',
                     style: TextStyle(color: Colors.red)),
               ),
@@ -729,14 +729,26 @@ class _JoinRequests extends ConsumerWidget {
     );
   }
 
-  Future<void> _respond(WidgetRef ref, String requestId, bool approve) async {
+  /// The old catch swallowed the failure with the comment "the list refresh
+  /// reflects reality" - it does not: on failure the request stays pending and
+  /// the captain sees the row again with no idea their tap was rejected
+  /// (penetration review 2026-07-07).
+  Future<void> _respond(BuildContext context, WidgetRef ref, String requestId,
+      bool approve) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       await ref
           .read(identityRepositoryProvider)
           .respondJoinRequest(requestId, approve);
       ref.invalidate(pendingJoinRequestsProvider(teamId));
       if (approve) ref.invalidate(teamRosterProvider(teamId));
-    } catch (_) {/* the list refresh reflects reality */}
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(
+          content: Text(humanError(e,
+              fallback: approve
+                  ? 'Could not approve that request.'
+                  : 'Could not decline that request.'))));
+    }
   }
 }
 

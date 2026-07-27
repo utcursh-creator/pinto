@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../identity/data/identity_providers.dart';
@@ -120,8 +119,8 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
       ref.invalidate(discoverFeedProvider);
       ref.invalidate(myPostsProvider);
       if (mounted) context.pop();
-    } on PostgrestException catch (e) {
-      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = humanError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

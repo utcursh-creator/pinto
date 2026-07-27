@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/match_providers.dart';
@@ -41,8 +40,8 @@ class _TransferScorerScreenState extends ConsumerState<TransferScorerScreen> {
       // Leave the scorer flow: pop the transfer screen and the console.
       context.pop();
       if (context.canPop()) context.pop();
-    } on PostgrestException catch (e) {
-      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = humanError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

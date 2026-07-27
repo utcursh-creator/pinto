@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../identity/data/identity_providers.dart';
@@ -33,10 +32,10 @@ class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
         ScaffoldMessenger.maybeOf(context)
             ?.showSnackBar(SnackBar(content: Text('$name approved')));
       }
-    } on PostgrestException catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)
-            ?.showSnackBar(SnackBar(content: Text(e.message)));
+            ?.showSnackBar(SnackBar(content: Text(humanError(e))));
       }
     } finally {
       if (mounted) setState(() => _busyId = null);

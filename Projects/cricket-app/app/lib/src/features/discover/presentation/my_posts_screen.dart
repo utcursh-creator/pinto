@@ -11,10 +11,21 @@ import '../../../core/ui/human_error.dart';
 class MyPostsScreen extends ConsumerWidget {
   const MyPostsScreen({super.key});
 
-  Future<void> _act(WidgetRef ref, Future<void> Function() action) async {
-    await action();
-    ref.invalidate(myPostsProvider);
-    ref.invalidate(discoverFeedProvider);
+  /// 'Mark filled' and 'Cancel' used to fail COMPLETELY silently: no try, no
+  /// message, and the row stayed exactly as it was, so the user tapped again and
+  /// again with no idea the write was being rejected (penetration review
+  /// 2026-07-07).
+  Future<void> _act(BuildContext context, WidgetRef ref,
+      Future<void> Function() action) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await action();
+      ref.invalidate(myPostsProvider);
+      ref.invalidate(discoverFeedProvider);
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(
+          content: Text(humanError(e, fallback: 'Could not update the post.'))));
+    }
   }
 
   @override
@@ -66,12 +77,12 @@ class MyPostsScreen extends ConsumerWidget {
                               children: [
                                 TextButton(
                                   onPressed: () =>
-                                      _act(ref, () => repo.markFilled(id)),
+                                      _act(context, ref, () => repo.markFilled(id)),
                                   child: const Text('Mark filled'),
                                 ),
                                 TextButton(
                                   onPressed: () =>
-                                      _act(ref, () => repo.cancelPost(id)),
+                                      _act(context, ref, () => repo.cancelPost(id)),
                                   child: const Text(
                                     'Cancel',
                                     style: TextStyle(color: Colors.red),

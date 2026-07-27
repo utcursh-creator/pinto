@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 class CreateTeamScreen extends ConsumerStatefulWidget {
   const CreateTeamScreen({super.key});
@@ -67,8 +67,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       }
       ref.invalidate(myTeamsProvider);
       if (mounted) context.pushReplacement(Routes.teamPage(teamId));
-    } on PostgrestException catch (e) {
-      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = humanError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -157,11 +157,11 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     } on PostgrestException catch (e) {
       setState(() => _error = e.code == '23505'
           ? 'That handle is already taken - pick another.'
-          : (e.message.isNotEmpty
-              ? e.message
-              : 'Could not save your profile. Please try again.'));
-    } catch (_) {
-      setState(() => _error = 'Could not save your profile. Please try again.');
+          : humanError(e, fallback: 'Could not save your profile.'));
+    } catch (e) {
+      // anything that is NOT a Postgres error - a dropped connection, a
+      // StateError - used to escape and leave the button live with no message
+      setState(() => _error = humanError(e, fallback: 'Could not save your profile.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

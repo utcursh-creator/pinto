@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
@@ -9,6 +8,7 @@ import '../../discover/data/discover_repository.dart';
 import '../../identity/data/identity_providers.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/app_primitives.dart';
 import '../../../core/ui/human_error.dart';
 
 class StartMatchScreen extends ConsumerStatefulWidget {
@@ -105,8 +105,8 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
       // the Matches list is cached; a new match must appear on return
       ref.invalidate(myMatchesProvider);
       if (mounted) context.pushReplacement(Routes.matchSquads(id));
-    } on PostgrestException catch (e) {
-      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = humanError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -125,19 +125,36 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
           myTeams.when(
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => Text(humanError(e)),
-            data: (rows) => DropdownButton<String>(
-              isExpanded: true,
-              value: _teamA,
-              hint: const Text('Choose your team'),
-              items: [
-                for (final r in rows)
-                  DropdownMenuItem(
-                    value: (r['teams'] as Map)['id'] as String,
-                    child: Text((r['teams'] as Map)['name'] as String),
-                  ),
-              ],
-              onChanged: (v) => setState(() => _teamA = v),
-            ),
+            data: (rows) {
+              // A brand-new signed-in user has no team, so this dropdown was
+              // empty, "Next: squads" stayed enabled, and the primary CTA of
+              // the whole app could never succeed - with no route to creating a
+              // team from here (penetration review 2026-07-07).
+              if (rows.isEmpty) {
+                return AppEmpty(
+                  icon: Icons.groups_outlined,
+                  title: 'You need a team first',
+                  message:
+                      'A match is played between two teams. Create yours - it '
+                      'takes a moment, and you can add guest players later.',
+                  actionLabel: 'Create a team',
+                  onAction: () => context.push(Routes.createTeam),
+                );
+              }
+              return DropdownButton<String>(
+                isExpanded: true,
+                value: _teamA,
+                hint: const Text('Choose your team'),
+                items: [
+                  for (final r in rows)
+                    DropdownMenuItem(
+                      value: (r['teams'] as Map)['id'] as String,
+                      child: Text((r['teams'] as Map)['name'] as String),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _teamA = v),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Text('Opponent', style: Theme.of(context).textTheme.labelLarge),
