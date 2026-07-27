@@ -35,7 +35,44 @@ historical running log, newest-first; do not treat older entries as current.
   re-send or dictate that code, and it undercut the "Have an invite code?" entry
   added earlier in the run. Code now shows as selectable monospace, tapping the
   row copies the full link (`963c837`).
-- **IN FLIGHT when this was written**: journey run 17 (`/tmp/journeys_run17.log`,
+- **RUN 17: ALL SIX JOURNEYS GREEN** (`+7 All tests passed`) - A/B/C/D/E/K.
+- **BUT reading run 17's frames found a real defect the green run hid.** The ball
+  log showed `0.1 = 2 runs to Fix2` / `0.2 = 1 run to Fix1` while the DATABASE
+  held the opposite and cricket-correct thing (seq 1 = 1 to Fix1, seq 2 = 2 to
+  Fix2 after the single rotated strike). Cause: **postgrest-dart's `order()` is
+  declared `{bool ascending = false}`, so a bare `.order('seq')` sorts
+  DESCENDING** (verified in the package source). SEVEN call sites were written
+  that way and every one wanted ascending - the ball log (labels computed by
+  POSITION, so every over label was attached to the wrong delivery), DM threads
+  (history backwards, new messages appended to the far end), post replies, the
+  claim inbox and join-request queue (LIFO instead of FIFO), and the innings
+  switcher (2nd innings before 1st, contradicting its own comment). Fixed in
+  `c06c4c4` + `test/query_ordering_test.dart` proven RED. **This is the SECOND
+  time a journey passed over a real defect - the assertion checked the total,
+  which was right, and never looked at the arrangement.**
+- **THE RE-REVIEW IS FINDING A LOT** - raw findings dumped to
+  `Projects/cricket-app/2026-07-07-rereview-raw.md` (`71865e7`) so they survive
+  compaction; **read the workflow's final confirmed/refuted split before acting,
+  several were refuted.** The headline claims:
+    * CRITICAL - `authGateProvider` (a SYNC Provider) watches `myProfileProvider`
+      (async). Confirmed to exist; it uses `.when()` so it will not crash, but
+      the claim is a token refresh flips it to `loading` and the router then
+      wipes the nav stack to /splash. NEEDS VERIFYING.
+    * HIGH - the `next=` sign-in fix from this run **does not fire in the real
+      flow**: the `loading` branch returns a bare `/splash` and drops `next`.
+    * HIGH - the create-profile "Sign out" escape **does not escape**.
+    * HIGH - a whole cluster of `left_at` consequences I did not chase:
+      accept_invite silently no-ops for a departed member, request_to_join says
+      "already on this team", a departed guest's NAME is permanently burned,
+      transfer_scorer can hand live scoring to a departed player, and the
+      last-captain guard counts departed captains.
+    * HIGH - several of MY OWN journey assertions cannot fail (D's
+      Undo/Swap/Retire, A's tournament step, B's post-created check).
+    * HIGH - finishing a tournament fixture never invalidates
+      tournamentOverviewProvider, so playoffs can never be generated (the same
+      stale-provider class as the squad handoff).
+- **IN FLIGHT when this was written**: journey run 18 (confirms the ball-log
+  order on device) and journey run 17 (`/tmp/journeys_run17.log`,
   all six journeys with the wagon fix) and journey run 16 (`/tmp/journeys_run16.log`,
   adds journeys E ball-log corrections and K anonymous browsing) and a
   six-dimension adversarial re-review Workflow of everything the fix run changed
