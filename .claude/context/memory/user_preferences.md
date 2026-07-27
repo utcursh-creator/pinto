@@ -166,3 +166,6 @@ These are how he adds value within partnerships, not standalone offers:
 - Tell them plainly when a request is technically impossible as stated (shadcn/ui in Flutter) - flag it in a sentence, offer the nearest real thing, and let them pick. They picked the honest option immediately.
 - Own regressions in your own recent work explicitly and without hedging. Several of the worst findings came from the sweep I had just called "verified"; naming that directly is expected.
 - Separate what is ON THEM from what is on me (hosted push, credential rotation, store accounts) - they ask "what's on me now?" and want a short, concrete list.
+- **"Don't stop" means ARM A LOOP, not just work longer.** The user escalated twice about stopping between turns. For long multi-unit work, use /loop dynamic mode (ScheduleWakeup at the end of each turn) so progress continues without them prompting, and report per-unit rather than asking what to do next.
+- They want the iOS simulator actually driven as a user would: tournament flow, finding a team, finding/adding players - verified by me, not described.
+
