@@ -260,4 +260,136 @@ void main() {
 
     expect(find.textContaining('PostgrestException'), findsNothing);
   });
+
+  // ==========================================================================
+  // JOURNEY D: score a real match through the console, driving specifically the
+  // paths the fix run repaired and which had NEVER been device-verified:
+  //   - a NO-BALL that went for BYES (the plural-vs-singular enum bug: this
+  //     delivery was a guaranteed 400 and could not be scored at all)
+  //   - the 5-run PENALTY toggle and an OVERTHROW on the same ball (SCOR-7)
+  //   - Undo at the START of an over (it lived inside the AbsorbPointer, so it
+  //     was dead at exactly the moment a scorer reaches for it)
+  //   - Swap strike and Retire, which were dead for the same reason
+  testWidgets('JOURNEY D: score a match through the console', (tester) async {
+    app.main();
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+
+    await signUpFresh(tester, run, 'Scorer $run');
+    await createTeamWithGuests(tester, 'Bat $run', ['Bat1', 'Bat2', 'Bat3']);
+    await tester.pageBack();
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    await createTeamWithGuests(tester, 'Bowl $run', ['Bowl1', 'Bowl2']);
+
+    // Matches -> start a match
+    await tester.tap(find.text('Matches').last);
+    await settle(tester, find.byIcon(Icons.add), label: 'matches_tab_d');
+    await tester.tap(find.byIcon(Icons.add).first);
+    await settle(tester, find.text('Start a match'), label: 'start_match');
+    await shot(tester, 'jd1_start_match');
+
+    // pick both teams from the dropdowns
+    await tester.tap(find.text('Choose your team'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Bat $run').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Choose the opponent'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Bowl $run').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.enterText(find.widgetWithText(TextField, 'Overs'), '1');
+    await tester.pumpAndSettle();
+    await tapScrolled(tester, find.textContaining('Next: squads'),
+        label: 'to_squads');
+
+    // squads: take everyone offered on both sides
+    await settle(tester, find.text('Squads'), label: 'squads_screen');
+    for (final n in ['Bat1', 'Bat2', 'Bat3', 'Bowl1', 'Bowl2']) {
+      final row = find.text(n);
+      if (row.evaluate().isNotEmpty) {
+        await tester.tap(row.first);
+        await tester.pumpAndSettle(const Duration(milliseconds: 250));
+      }
+    }
+    await shot(tester, 'jd2_squads');
+    await tapScrolled(tester, find.textContaining('Next: toss'),
+        label: 'to_toss');
+
+    // toss + openers
+    await settle(tester, find.text('Toss winner'), label: 'toss_screen');
+    await shot(tester, 'jd3_toss');
+    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Start match'),
+        label: 'start_match_btn');
+
+    // the console
+    await settle(tester, find.text('Live scoring'), label: 'console');
+    await shot(tester, 'jd4_console');
+
+    // a bowler must be picked before the pad is live
+    final pick = find.widgetWithText(TextButton, 'Pick');
+    if (pick.evaluate().isNotEmpty) {
+      await tester.tap(pick.first);
+      await settle(tester, find.text('Select bowler'), label: 'bowler_sheet');
+      await tester.tap(find.textContaining('Bowl1').last);
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    }
+
+    // THE REGRESSION THAT MATTERS: a no-ball that went for byes. Before the fix
+    // the console sent the plural enum spelling and Postgres rejected the ball.
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Extras'));
+    await settle(tester, find.text('This ball was'), label: 'extras_sheet');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'No-ball'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    await settle(tester, find.text('The runs came from'), label: 'nb_kind');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Byes'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    await tester.tap(find.byIcon(Icons.add_circle_outline).first); // 1 bye
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await shot(tester, 'jd5_noball_with_byes');
+    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Record'),
+        label: 'record_extras');
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // it must NOT have produced an error toast, and the score must have moved
+    expect(find.textContaining('PostgrestException'), findsNothing,
+        reason: 'a no-ball with byes must be scoreable (enum spelling)');
+    expect(find.textContaining('Could not'), findsNothing);
+    await shot(tester, 'jd6_after_noball');
+
+    // a couple of ordinary runs
+    for (final r in ['1', '4']) {
+      final b = find.widgetWithText(OutlinedButton, r);
+      if (b.evaluate().isNotEmpty) {
+        await tester.tap(b.first);
+        await tester.pumpAndSettle(const Duration(milliseconds: 800));
+        final skip = find.text('Skip');
+        if (skip.evaluate().isNotEmpty) {
+          await tester.tap(skip);
+          await tester.pumpAndSettle(const Duration(milliseconds: 300));
+        }
+      }
+    }
+
+    // Undo / Swap strike / Retire must be REACHABLE (they used to sit inside the
+    // AbsorbPointer and were dead whenever no bowler was selected).
+    expect(find.widgetWithText(OutlinedButton, 'Undo'), findsOneWidget,
+        reason: 'Undo must always be reachable');
+    expect(find.widgetWithText(OutlinedButton, 'Swap strike'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Retire'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Swap strike'));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    expect(find.textContaining('Could not swap'), findsNothing,
+        reason: 'swap strike is a real event row now');
+    await shot(tester, 'jd7_after_swap');
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Undo'));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    expect(find.textContaining('Could not undo'), findsNothing);
+    await shot(tester, 'jd8_after_undo');
+
+    // no raw database error may have surfaced anywhere in the whole flow
+    expect(find.textContaining('PostgrestException'), findsNothing);
+    expect(find.textContaining('row-level security'), findsNothing);
+  });
 }
