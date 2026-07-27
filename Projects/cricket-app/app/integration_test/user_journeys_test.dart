@@ -291,13 +291,30 @@ void main() {
     // Tap the DropdownButton WIDGET, not its hint text: the device run warned
     // "derived an Offset that would not hit test" for every hint-text tap,
     // because the Text sits inside the button but the hit test lands elsewhere.
+    // Opens the Nth DropdownButton and picks [optionText]. Polls for the menu
+    // rather than assuming a fixed delay - the overlay route can take longer
+    // than any single pumpAndSettle on a loaded simulator, and the failure then
+    // looks like a missing option ("Bad state: No element") rather than a slow
+    // menu. Screenshots on failure so the next run shows the real state.
     Future<void> pickFromDropdown(int index, String optionText) async {
       final dd = find.byType(DropdownButton<String>);
       await tester.ensureVisible(dd.at(index));
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       await tester.tap(dd.at(index));
-      await tester.pumpAndSettle(const Duration(milliseconds: 600));
-      await tester.tap(find.text(optionText).last);
+      final option = find.text(optionText);
+      var opened = false;
+      for (var i = 0; i < 25; i++) {
+        await tester.pumpAndSettle(const Duration(milliseconds: 300));
+        if (option.evaluate().isNotEmpty) {
+          opened = true;
+          break;
+        }
+      }
+      if (!opened) {
+        await binding.takeScreenshot('timeout_dropdown_$optionText');
+        fail('dropdown $index never offered "$optionText"');
+      }
+      await tester.tap(option.last);
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
     }
 
