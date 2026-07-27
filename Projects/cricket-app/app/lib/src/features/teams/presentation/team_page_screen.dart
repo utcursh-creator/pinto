@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -240,10 +241,33 @@ class TeamPageScreen extends ConsumerWidget {
                         ListTile(
                           dense: true,
                           leading: const Icon(Icons.link, size: 20),
-                          title: Text('Used ${i['uses'] ?? 0}'
-                              '${i['max_uses'] != null ? ' of ${i['max_uses']}' : ''} times'),
+                          // SHOW THE CODE. The list fetched invite_token all
+                          // along and never displayed it, so once a captain had
+                          // shared an invite they could never read it again or
+                          // re-send it - and the "Have an invite code?" entry on
+                          // My teams asks for a code nobody could see. Selectable
+                          // so it can be copied or read out over the phone.
+                          title: SelectableText(
+                            (i['invite_token'] as String?) ?? '-',
+                            style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w600),
+                          ),
                           subtitle: Text(
-                              'Expires ${(i['expires_at'] as String?)?.split('T').first ?? '-'}'),
+                              'Used ${i['uses'] ?? 0}'
+                              '${i['max_uses'] != null ? ' of ${i['max_uses']}' : ''}'
+                              '  -  expires '
+                              '${(i['expires_at'] as String?)?.split('T').first ?? '-'}'),
+                          onTap: () async {
+                            final token = i['invite_token'] as String?;
+                            if (token == null) return;
+                            // capture before the await - the sheet can close
+                            final messenger = ScaffoldMessenger.maybeOf(context);
+                            await Clipboard.setData(
+                                ClipboardData(text: inviteLink(token)));
+                            messenger?.showSnackBar(const SnackBar(
+                                content: Text('Invite link copied')));
+                          },
                           trailing: TextButton(
                             onPressed: () async {
                               final messenger =
