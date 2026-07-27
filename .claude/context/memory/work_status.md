@@ -17,7 +17,7 @@ historical running log, newest-first; do not treat older entries as current.
   `/tmp/pitch_merged_findings.json`) under a standing `/loop` - the user's
   instruction is "don't stop until zero errors, re-run the review repeatedly, and
   verify on the iOS simulator as a real user".
-- **30 commits in the run** (`eacdd23`..`6c0da59`). Gates: backend **621 pgTAP /
+- **36 commits in the run** (`eacdd23`..`285b6f7`). Gates: backend **621 pgTAP /
   104 files**, app **analyze clean + 198 widget tests**, **all 3 device journeys
   green** (`+4 All tests passed`, 0 crashes, screenshots in `/tmp/pitch_shots`).
 - **DONE**: Units 1 (both criticals), 2a/2b/2c (high backend), 3a/3b (high
@@ -34,8 +34,21 @@ historical running log, newest-first; do not treat older entries as current.
   never been shown - the form revealed its requirements only on failure. Now
   always shown, with a hint before the toss is decided. (My sloppy test - tapping
   Start with nothing selected - is what surfaced it.)
-- **NEXT**: journeys E-K (handoff §7), remaining medium + low findings, the
-  shadow push, then re-run the 12-front review until it returns zero.
+- **JOURNEY D is still being stabilised** (the APP is fine - jd2_squads.png shows
+  batting order auto-numbered 1/2/3 and the Captain/Wicket-keeper pickers working,
+  i.e. SCOR-13 delivering on device). Two TEST traps found and fixed: tapping a
+  DropdownButton's hint text does not hit-test (menu silently never opens ->
+  misleading "Bad state: No element"), and a fixed 600ms wait is too short for the
+  overlay route - the helper now polls ~7s and screenshots on failure.
+- **WRITTEN BUT NOT YET TESTED** (needs a `db reset`, which would break the
+  in-flight journey run): `20260707160000_posts_expire.sql` +
+  `tests/112-posts-expire.test.sql` - MEDIUM discover-posts-never-expire. Adds a
+  real expires_at default (dated post dies the day after the match, undated after
+  14 days), backfills nulls, a match-date floor in the feed, and recency in the
+  ORDER BY so played matches sink. **Run `supabase db reset && supabase test db`
+  before trusting it.**
+- **NEXT**: finish Journey D, then journeys E-K (handoff §7), remaining medium +
+  low findings, the shadow push, then re-run the 12-front review until zero.
 - **USER-ONLY, most urgent**: rotate `dev@pitch.local`/`password123` on the hosted
   project (real credentials, shipped in the friend's APK), then the hosted
   `supabase db push` (**77 pending migrations**), then rebuild the APK.
