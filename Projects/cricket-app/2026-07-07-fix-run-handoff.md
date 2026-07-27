@@ -131,13 +131,40 @@ flutter drive --driver=test_driver/integration_test.dart \
 
 ## 5. WHAT IS LEFT - the actual TODO
 
+### 5a0. DONE SINCE THE LAST HANDOFF UPDATE (commits 650ce3c..4a347c3)
+- `posts_expire` (MEDIUM) - real expires_at default + a match-date floor in the
+  feed + recency in the ORDER BY. **Verified**, test 112.
+- **THE SQUAD HANDOFF** (found on the device, flow-breaking): squads saved, toss
+  screen offered NO openers, match unstartable. Stale-provider handoff across
+  `pushReplacement` - see the gotcha in section 6. Fixed in `match_squads_screen`
+  and `toss_openers_screen`; regression test `squads_to_toss_test.dart` proven RED.
+  **A full audit of every write-then-navigate site found only those two.**
+- **The opponent picker** was `from('teams').select(...)` with NO limit - the whole
+  teams table on every visit to Start-a-match, in a DropdownButton. Replaced by
+  `search_opponent_teams` (recent opponents by default, bounded name search
+  otherwise, capped at 25) + a search sheet. Test 114.
+- **overs sanity**: `overs_limit` had no constraint and create_match passed 0 or
+  negative through, producing an unplayable match with no way out. RPC guard +
+  check constraint, 1-100 overs / 1-12 bpo. Test 113. Six stats fixtures used
+  bpo=50 as a trick; retargeted to 12 (still stops the over completing).
+- **leave_team** (MEDIUM): the raw delete could never succeed for anyone who had
+  played (nine NO ACTION FKs). `left_at` soft departure + RPC + both authz helpers
+  now require `left_at is null`. Test 115. **Its own test caught a NULL-logic hole
+  in the new RPC** - a guest row has profile_id null, so `not (false or NULL)`
+  never fires and any user could remove any guest. Use `coalesce(..., false)`.
+- **OAuth could not come back**: `io.supabase.pitch://login-callback` was
+  registered on NEITHER platform. CFBundleURLTypes + intent-filter added;
+  Runner.entitlements created for Apple sign-in and wired into all three Runner
+  build configs. **URL scheme verified in the built Info.plist; the entitlement is
+  still UNVERIFIED end-to-end** (an incremental simulator build does not re-sign -
+  do a clean `flutter build ios --simulator` and `codesign -d --entitlements`).
+- Notification dead taps, public-deep-link stranding, sign-in destroying the
+  invite (`next=`), "Have an invite code?" entry, named validation on Start-a-match,
+  did_not_bat excluding anyone who reached the crease, insert_ball anon revoke,
+  storage enumeration (**verified empirically both ways**), duplicate GlobalKey,
+  iPad sharePositionOrigin, create-profile sign-out escape.
+
 ### 5a. Remaining MEDIUM findings
-- `discover-posts-never-expire`: `expires_at` is never written by any client and
-  `discover_posts` has no match-date floor, so dead posts accumulate forever and
-  outrank fresh ones. Fix: default `expires_at` server-side
-  (`coalesce(_expires_at, _match_at + 1 day, now() + 14 days)`), add
-  `and (p.match_at is null or p.match_at >= now() - interval '6 hours')`, and put
-  recency in the ORDER BY.
 - `team-member-delete-fk-restrict`: "Leave this team" / "Remove this player" can
   never succeed for anyone who appeared in a match squad - unhandled FK RESTRICT,
   raw Postgres error shown. Fix: `left_at timestamptz` soft-departure + a
