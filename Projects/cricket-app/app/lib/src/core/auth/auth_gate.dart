@@ -12,6 +12,23 @@ final authGateProvider = Provider<AuthGate>((ref) {
   if (isAnonymousSession(session)) return AuthGate.anonymous;
   final profile = ref.watch(myProfileProvider);
   return profile.when(
+    // CRITICAL (re-review 2026-07-07): `when()` defaults skipLoadingOnReload to
+    // FALSE, so a provider that rebuilds because a WATCHED DEPENDENCY changed
+    // reports loading even though it is still holding a perfectly good value.
+    //
+    // supabase_flutter auto-refreshes the JWT about an hour in (and on every
+    // resume from background); gotrue's Session == compares the tokens, so
+    // currentSessionProvider yields a NEW session, myProfileProvider reloads,
+    // and this gate flipped ready -> loading. The router listens to the gate,
+    // re-runs its redirect, and the loading branch sends every non-public
+    // location to /splash - a top-level route OUTSIDE the tab shell, so the
+    // shell and every branch navigator were torn down. A scorer half way
+    // through an innings was dumped on Discover having touched nothing.
+    //
+    // A reload is not a cold start: keep answering with what we already know.
+    // The FIRST load has no previous value, so it still reports loading and the
+    // splash gate still works.
+    skipLoadingOnReload: true,
     data: (row) => row == null ? AuthGate.needsProfile : AuthGate.ready,
     loading: () => AuthGate.loading,
     // AUTH-4: a transient profile-read failure must NOT dump an onboarded user
