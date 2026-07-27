@@ -17,16 +17,25 @@ historical running log, newest-first; do not treat older entries as current.
   `/tmp/pitch_merged_findings.json`) under a standing `/loop` - the user's
   instruction is "don't stop until zero errors, re-run the review repeatedly, and
   verify on the iOS simulator as a real user".
-- **26 commits in the run** (`eacdd23`..`2b86201`). Gates: backend **621 pgTAP /
+- **30 commits in the run** (`eacdd23`..`6c0da59`). Gates: backend **621 pgTAP /
   104 files**, app **analyze clean + 198 widget tests**, **all 3 device journeys
   green** (`+4 All tests passed`, 0 crashes, screenshots in `/tmp/pitch_shots`).
 - **DONE**: Units 1 (both criticals), 2a/2b/2c (high backend), 3a/3b (high
   frontend), 4a/4b/4c (primitives + humanError + error-UX), 5a/5b (medium
   structural), 6a (release config), 7a (pgTAP rescoping), plus the device-found
   Discover build-phase crash (3 attempts).
-- **NEXT**: remaining medium + low findings, MORE user journeys (the user asked
-  for the full realistic set - list is in the handoff doc §7), the shadow push,
-  then re-run the 12-front review until it returns zero.
+- **JOURNEY D added** (`d9eceb4`): score a match through the console - drives the
+  no-ball-with-byes enum bug, the penalty/overthrow composer, and asserts
+  Undo/Swap strike/Retire are REACHABLE (they were dead inside the AbsorbPointer).
+  First device run stalled at the toss and the SCREENSHOT found a real defect
+  (`6c0da59`): the "Opening pair" section was gated behind
+  `if (battingTeam != null)`, so a first-time scorer saw only Toss winner /
+  Elected to / Start match, tapped Start, and was told to pick openers they had
+  never been shown - the form revealed its requirements only on failure. Now
+  always shown, with a hint before the toss is decided. (My sloppy test - tapping
+  Start with nothing selected - is what surfaced it.)
+- **NEXT**: journeys E-K (handoff §7), remaining medium + low findings, the
+  shadow push, then re-run the 12-front review until it returns zero.
 - **USER-ONLY, most urgent**: rotate `dev@pitch.local`/`password123` on the hosted
   project (real credentials, shipped in the friend's APK), then the hosted
   `supabase db push` (**77 pending migrations**), then rebuild the APK.
