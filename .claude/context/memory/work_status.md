@@ -75,6 +75,19 @@ historical running log, newest-first; do not treat older entries as current.
     I had written a comment asserting it worked without verifying it.
   * **Ball log order CONFIRMED FIXED ON DEVICE** (run 18 frame: 0.1 = 1 to Fix1,
     0.2 = 4 to Fix2). Journey E now asserts the ARRANGEMENT, not just the total.
+  * **HIGH cluster `a274db8`** - leaving a team was a ONE-WAY DOOR. The `left_at`
+    tombstone was read by every re-entry path without filtering, so accept_invite
+    returned the dead row and said "You joined the team" over a no-op,
+    request_to_join said "you are already on this team", a departed guest's NAME
+    was burned, and transfer_scorer would hand LIVE SCORING to a departed player.
+    One idea fixed all five: a departed membership is REVIVABLE - re-entry clears
+    left_at on the SAME row so all its match history stays attached. Test 117
+    proved RED on exactly those paths. pgTAP now 672/110.
+    (Two review dimensions DISAGREED on the last-captain guard; the test shows it
+    is already correct in the reachable case, so that part is hardening, not a
+    fix. Recorded as such.)
+- **RUN 19: all six journeys green** with journey E now asserting the ball-log
+  ARRANGEMENT, not just the total.
 - **STILL TO FIX from the confirmed list** (work down
   `2026-07-07-rereview-confirmed.md`): the whole `left_at` cluster (leaving a
   team is irreversible; accept_invite no-ops; request_to_join says "already on
