@@ -288,15 +288,21 @@ void main() {
     await settle(tester, find.text('Start a match'), label: 'start_match');
     await shot(tester, 'jd1_start_match');
 
-    // pick both teams from the dropdowns
-    await tester.tap(find.text('Choose your team'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Bat $run').last);
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Choose the opponent'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Bowl $run').last);
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    // Tap the DropdownButton WIDGET, not its hint text: the device run warned
+    // "derived an Offset that would not hit test" for every hint-text tap,
+    // because the Text sits inside the button but the hit test lands elsewhere.
+    Future<void> pickFromDropdown(int index, String optionText) async {
+      final dd = find.byType(DropdownButton<String>);
+      await tester.ensureVisible(dd.at(index));
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      await tester.tap(dd.at(index));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+      await tester.tap(find.text(optionText).last);
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    }
+
+    await pickFromDropdown(0, 'Bat $run');     // your team
+    await pickFromDropdown(1, 'Bowl $run');    // opponent
     await tester.enterText(find.widgetWithText(TextField, 'Overs'), '1');
     await tester.pumpAndSettle();
     await tapScrolled(tester, find.textContaining('Next: squads'),
@@ -325,14 +331,8 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 400));
     // openers appear once the batting side is known
     await settle(tester, find.text('Striker'), label: 'openers_visible');
-    await tester.tap(find.text('Choose').first);
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Bat1').last);
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Choose').first);
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Bat2').last);
-    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await pickFromDropdown(0, 'Bat1');   // striker
+    await pickFromDropdown(1, 'Bat2');   // non-striker
     await shot(tester, 'jd3_toss');
     await tapScrolled(tester, find.widgetWithText(FilledButton, 'Start match'),
         label: 'start_match_btn');
