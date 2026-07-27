@@ -114,12 +114,21 @@ last_updated: 2026-06-27
 
 ## Pitch - state as of 2026-07-07 (see the handoff doc for the live TODO)
 - **Authoritative resume file: `Projects/cricket-app/2026-07-07-fix-run-handoff.md`.**
-- Backend 159 migrations / 104 pgTAP files / 621 tests green. App analyze clean,
-  198 widget tests green. All 3 device user journeys green on the iPhone 17 sim.
+- Backend 165 migrations / 109 pgTAP files / **660 tests** green. App analyze
+  clean, **228 widget tests** green. **All four device journeys green on the
+  iPhone 17 sim** (A tournament, B find a team, C find players, D score a match
+  through the console) - the first fully green run, 2026-07-07.
 - The app is genuinely functional end-to-end on the simulator now: sign-up ->
   profile+handle -> create teams -> add guest players -> create a tournament ->
   place teams in groups; post a looking-for ad; search players by name and
-  @handle.
+  @handle; AND score a real match - squads, toss, openers, a no-ball with byes
+  (2/0 at Over 0.0 with a FREE HIT and strike rotated, i.e. cricket-correct),
+  swap strike, undo.
+- **The two worst defects of the whole fix run were found by DRIVING the app, not
+  by any test**: a stale Riverpod provider across `pushReplacement` left the toss
+  screen with no openers (match unstartable) while analyze and 228 widget tests
+  were green, and the opponent picker downloaded the entire teams table into a
+  dropdown. Keep driving the simulator; the unit tiers cannot see these.
 - **77 migrations are pending on the hosted project** (`ocejkqihgiinonpyafhl`,
   still at the 2026-06-27 schema). The friend's release APK talks to that old
   schema, so it is broken until the user pushes.
