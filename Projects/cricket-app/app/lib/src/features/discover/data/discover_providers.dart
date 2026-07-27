@@ -5,28 +5,39 @@ import '../../../core/supabase/supabase_providers.dart';
 import 'discover_models.dart';
 import 'discover_repository.dart';
 
-/// The geo anchor (lat/lng + radius) the feed searches around. Defaults to a
-/// city centre until the user's saved home base loads (or they set one on the
-/// Location screen). [adoptHome] applies the persisted home base only if the
-/// user hasn't already chosen an anchor this session.
+/// The geo anchor (lat/lng + radius) the feed searches around. Derives itself
+/// from the user's saved home base, falling back to a city centre, and stops
+/// deriving once the user picks an anchor this session.
+///
+/// This USED to be driven from DiscoverScreen.build via
+/// `ref.listen(homeLocationProvider, ... adoptHome(...))`. Registering that
+/// listener flushes homeLocationProvider DURING build, whose notification
+/// invalidated a dependent provider, which called setState on the
+/// ProviderScope mid-build - a hard framework assertion every time a signed-in
+/// user opened the Discover tab (found by driving the app on the simulator,
+/// penetration-review fix run 2026-07-07). Deriving it here means no widget
+/// mutates a provider during build.
 typedef Anchor = ({double lat, double lng, double radiusM});
 
 class AnchorNotifier extends Notifier<Anchor> {
+  static const _fallback = (lat: 19.07, lng: 72.87, radiusM: 25000.0);
   bool _userSet = false;
+  Anchor? _chosen;
 
   @override
-  Anchor build() => (lat: 19.07, lng: 72.87, radiusM: 25000);
+  Anchor build() {
+    // Once the user picks an anchor it wins over the saved home base, and it
+    // must survive rebuilds triggered by homeLocationProvider resolving.
+    if (_userSet && _chosen != null) return _chosen!;
+    final home = ref.watch(homeLocationProvider).value;
+    if (home == null) return _fallback;
+    return (lat: home.lat, lng: home.lng, radiusM: _fallback.radiusM);
+  }
 
   void set(Anchor anchor) {
     _userSet = true;
+    _chosen = anchor;
     state = anchor;
-  }
-
-  /// Apply the saved home base as the default, unless the user already picked
-  /// an anchor this session.
-  void adoptHome(double lat, double lng) {
-    if (_userSet) return;
-    state = (lat: lat, lng: lng, radiusM: state.radiusM);
   }
 }
 

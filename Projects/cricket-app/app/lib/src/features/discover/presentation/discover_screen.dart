@@ -38,15 +38,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return const AdaptiveScaffold(title: 'Discover', body: _SignInToDiscover());
     }
 
-    // Centre the feed on the user's saved home base once it loads (unless they
-    // have already picked an anchor this session).
-    ref.listen(homeLocationProvider, (_, next) {
-      final home = next.value;
-      if (home != null) {
-        ref.read(anchorProvider.notifier).adoptHome(home.lat, home.lng);
-      }
-    });
-
+    // The anchor derives itself from the saved home base (see AnchorNotifier).
+    // Doing it here with ref.listen + a notifier mutation modified a provider
+    // during build and threw a framework assertion on every Discover open.
     final anchor = ref.watch(anchorProvider);
     final query = DiscoverQuery(
       lat: anchor.lat,
