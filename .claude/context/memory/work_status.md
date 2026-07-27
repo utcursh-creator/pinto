@@ -50,7 +50,42 @@ historical running log, newest-first; do not treat older entries as current.
   `c06c4c4` + `test/query_ordering_test.dart` proven RED. **This is the SECOND
   time a journey passed over a real defect - the assertion checked the total,
   which was right, and never looked at the arrangement.**
-- **THE RE-REVIEW IS FINDING A LOT** - raw findings dumped to
+- **RE-REVIEW COMPLETE: 19 CONFIRMED, 12 REFUTED** (37 agents, 3.57M tokens).
+  Full text in `Projects/cricket-app/2026-07-07-rereview-confirmed.md` (`3445319`)
+  **including the refuted list - do not chase those.** Two claims I relayed
+  before verification were REFUTED: the `next=` sign-in fix DOES work, and
+  journeys A and K DO have assertions that can fail.
+- **FIXED THIS TURN:**
+  * **CRITICAL `00c17a8`** - `authGateProvider` (sync) watches `myProfileProvider`
+    (async) and `when()` defaults `skipLoadingOnReload` to FALSE, so every JWT
+    auto-refresh (~hourly, and on every resume from background) flipped the gate
+    ready -> loading, the router re-ran its redirect, and the loading branch sent
+    every non-public location to /splash - a TOP-LEVEL route outside the tab
+    shell, so the shell and every branch navigator were torn down. A scorer
+    mid-innings landed on Discover having touched nothing. Fix
+    `skipLoadingOnReload: true`. `test/auth_gate_reload_test.dart` OBSERVES the
+    default emitting loading, so it proves the mechanism, not just the fix - it
+    needed a real async gap, because without one the reload resolves in one
+    microtask batch and the intermediate state is invisible.
+  * **HIGH `0065e20`** - the create-profile "Sign out" I added earlier this run
+    did NOT leave the screen. The anonymous branch only moved people off SPLASH,
+    so it returned null for create-profile. Signed out, still on the form, no
+    back button, no tabs - and the form stayed LIVE over a fresh anonymous
+    session, so Continue would have written a profile row for the wrong user.
+    I had written a comment asserting it worked without verifying it.
+  * **Ball log order CONFIRMED FIXED ON DEVICE** (run 18 frame: 0.1 = 1 to Fix1,
+    0.2 = 4 to Fix2). Journey E now asserts the ARRANGEMENT, not just the total.
+- **STILL TO FIX from the confirmed list** (work down
+  `2026-07-07-rereview-confirmed.md`): the whole `left_at` cluster (leaving a
+  team is irreversible; accept_invite no-ops; request_to_join says "already on
+  this team"; a departed guest's NAME is burned; transfer_scorer can hand
+  scoring to a departed player; last-captain guard counts departed captains), a
+  departed player stuck in a resumed squad, tournamentOverviewProvider never
+  invalidated after a fixture ends (playoffs ungeneratable), the discover
+  match-date floor hiding posts the composer happily creates, the opponent sheet
+  overflowing on a 375x667 phone, opponentSearchProvider caching a failed search
+  per keystroke, and four of my own test assertions that cannot fail.
+- **(earlier) THE RE-REVIEW FOUND A LOT** - raw findings dumped to
   `Projects/cricket-app/2026-07-07-rereview-raw.md` (`71865e7`) so they survive
   compaction; **read the workflow's final confirmed/refuted split before acting,
   several were refuted.** The headline claims:
