@@ -105,3 +105,9 @@ last_updated: 2026-06-27
 ## Key People
 - **Yosef** — Primary client. Utkarsh builds automations for him and his clients.
 - **Ben Van Sprundel** — Runs BenAI (benai.co). AI Accelerator community, mentorship program. His audience = Utkarsh's ICP. Utkarsh posts content in his community.
+
+## Pitch (cricket app) - state as of 2026-07-07
+- 8-slice rebuild + 4-unit full sweep are DONE and committed locally. Then a whole-system penetration review (12 adversarial fronts, run twice, 52 agents) found **100 confirmed defects** - see `Projects/cricket-app/2026-07-07-penetration-review.md`. Fix Unit 1 (both criticals) is committed (eacdd23); Units 2-7 queued as tasks #78-83, working straight down the severity list.
+- Verification baseline (UPDATE these numbers when they move; the older audit doc's "520/159" is stale): backend **582 pgTAP across 99 files**, app **183 widget tests**, analyze clean. Caveat: pgTAP only passes after a fresh `db reset` until Unit 7 rescopes the 13 `limit 1` test files.
+- BLOCKED ON THE USER: hosted `supabase db push` (65+ pending migrations; classifier-blocked for me, needs their explicit go), release APK rebuild after it, and **urgently** rotating `dev@pitch.local`/`password123` on the hosted project (live credential shipped in the friend's APK).
+- Still credential/infra-gated: pitch.app/privacy + /terms pages (store blocker; shadcn/ui would suit these), iOS Google client, deep-link domain, push notifications, Maps SDK key for the Discover place picker, Apple ($99) + Play ($25) accounts.

@@ -159,3 +159,10 @@ These are how he adds value within partnerships, not standalone offers:
 - Wants clear daily priorities (not endless lists)
 - Needs execution schema — what to work on, when, and why
 - Values weekly reviews to check alignment between work and goals
+
+## Review / audit expectations (2026-07-07)
+- When the user says "attack it from all fronts", they mean an ADVERSARIAL, evidence-backed penetration review - not a tidy summary. Deliver the full enumerated list (they explicitly accept "even if there are 100 things to fix"), persisted as a project doc, then fix in order.
+- They chose "everything, straight down the severity list" over a triaged release-gate subset. Do not silently narrow scope to the urgent items.
+- Tell them plainly when a request is technically impossible as stated (shadcn/ui in Flutter) - flag it in a sentence, offer the nearest real thing, and let them pick. They picked the honest option immediately.
+- Own regressions in your own recent work explicitly and without hedging. Several of the worst findings came from the sweep I had just called "verified"; naming that directly is expected.
+- Separate what is ON THEM from what is on me (hosted push, credential rotation, store accounts) - they ask "what's on me now?" and want a short, concrete list.
