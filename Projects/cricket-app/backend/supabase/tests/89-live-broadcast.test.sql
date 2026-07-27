@@ -23,12 +23,16 @@ select is(public.match_is_publicly_viewable(:'_m'::uuid), false,
   'a setup match is not publicly viewable');
 
 -- once live, it is viewable (the matches_broadcast trigger also fires harmlessly)
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set status = 'live' where id = :'_m'::uuid;
+select tests.authenticate_as('sc@s.dev');
 select is(public.match_is_publicly_viewable(:'_m'::uuid), true,
   'a live match is publicly viewable');
 
 -- a completed match stays viewable (history)
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set status = 'complete' where id = :'_m'::uuid;
+select tests.authenticate_as('sc@s.dev');
 select is(public.match_is_publicly_viewable(:'_m'::uuid), true,
   'a completed match is publicly viewable');
 

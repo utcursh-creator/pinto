@@ -22,7 +22,9 @@ select public.add_squad_member(:'_m'::uuid, :'_ta'::uuid, :'_scm'::uuid);
 select public.add_squad_member(:'_m'::uuid, :'_ta'::uuid, :'_g'::uuid);
 
 -- match goes live
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set status='live' where id = :'_m'::uuid;
+select tests.authenticate_as('sc@m.dev');
 
 -- ANON
 select tests.clear_authentication();
@@ -34,7 +36,9 @@ select is((select count(*)::int from public.teams where id = :'_tc'::uuid), 0, '
 
 -- revert to setup -> everything becomes invisible to anon
 select tests.authenticate_as('sc@m.dev');
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set status='setup' where id = :'_m'::uuid;
+select tests.authenticate_as('sc@m.dev');
 select tests.clear_authentication();
 select is((select count(*)::int from public.matches where id = :'_m'::uuid), 0, 'anon cannot see a setup match');
 select is((select count(*)::int from public.match_squad where match_id = :'_m'::uuid), 0, 'anon cannot see a setup match squad');

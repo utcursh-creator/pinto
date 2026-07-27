@@ -22,7 +22,9 @@ select public.start_innings(:'_mo'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
   (:'_io'::uuid,1,:'_b1'::uuid,:'_cap'::uuid,:'_p2'::uuid,4),(:'_io'::uuid,2,:'_b1'::uuid,:'_cap'::uuid,:'_p2'::uuid,6);
 select public.set_match_result(:'_mo'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set created_at = now() - interval '3 days' where id = :'_mo'::uuid;
+select tests.authenticate_as('cap@s.dev');
 
 -- MID match: cap 20 (a four + ... ) -> 20 via 5 fours
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _mm \gset
@@ -31,7 +33,9 @@ select public.start_innings(:'_mm'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_im'::uuid, g, :'_b1'::uuid, :'_cap'::uuid, :'_p2'::uuid, 4 from generate_series(1,5) g;
 select public.set_match_result(:'_mm'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set created_at = now() - interval '2 days' where id = :'_mm'::uuid;
+select tests.authenticate_as('cap@s.dev');
 
 -- NEW match (two innings): cap bats 30 (inns1) and bowls 2 wickets (inns2)
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,50) as _mn \gset
@@ -44,7 +48,9 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
   (:'_in2'::uuid,1,:'_cap'::uuid,:'_b1'::uuid,:'_b2'::uuid,'bowled',:'_b3'::uuid),
   (:'_in2'::uuid,2,:'_cap'::uuid,:'_b3'::uuid,:'_b2'::uuid,'bowled',:'_b1'::uuid);
 select public.set_match_result(:'_mn'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set created_at = now() - interval '1 day' where id = :'_mn'::uuid;
+select tests.authenticate_as('cap@s.dev');
 
 select is(jsonb_array_length(public.player_recent_form(tests.get_supabase_uid('cap@s.dev'),2)), 2,
   'recent form respects the _n limit (2)');

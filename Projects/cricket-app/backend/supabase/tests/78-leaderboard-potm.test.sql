@@ -30,7 +30,9 @@ select public.start_innings(:'_m'::uuid,2,:'_z'::uuid,:'_x'::uuid,:'_z1'::uuid,:
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_i2'::uuid, gs, :'_xb'::uuid, :'_z1'::uuid, :'_z2'::uuid, 1 from generate_series(1,5) gs;
 select public.set_match_result(:'_m'::uuid,'win_by_runs'::public.result_type,:'_x'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_m'::uuid,:'_t'::uuid,'group','A');
+select tests.authenticate_as('org@s.dev');
 
 select is((public.tournament_leaderboard(:'_t'::uuid)->'most_runs'->0->>'member_id'), (:'_x1'::uuid)::text,
   'top run-scorer is x1');

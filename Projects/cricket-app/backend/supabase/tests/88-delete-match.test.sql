@@ -30,8 +30,10 @@ select public.create_match(:'_a'::uuid, :'_b'::uuid, 20) as _tm \gset
 insert into public.tournaments(id, name, organizer_id, overs_limit, group_count, qualifiers_per_group)
   values (gen_random_uuid(), 'Cup', tests.get_supabase_uid('own@s.dev'), 20, 1, 2)
   returning id as _t \gset
+reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id, tournament_id, stage)
   values (:'_tm'::uuid, :'_t'::uuid, 'group');
+select tests.authenticate_as('own@s.dev');
 select throws_ok(
   $$ select public.delete_match((select match_id from public.tournament_matches limit 1)) $$,
   'P0001', 'a tournament match cannot be deleted here',

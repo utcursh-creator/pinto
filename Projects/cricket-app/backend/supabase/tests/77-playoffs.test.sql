@@ -3,6 +3,17 @@
 begin;
 select plan(8);
 select tests.create_supabase_user('org@s.dev');
+-- fixture-only: linking a match to a tournament is no longer a client-granted
+-- write (penetration review 2026-07-07 revoked it; fixtures are created by the
+-- SECURITY DEFINER generators). Defined BEFORE authenticate_as so its definer is
+-- the session owner, not the test user.
+create or replace function pg_temp.link_fixture(_m uuid, _t uuid, _grp text)
+returns void language plpgsql security definer as $$
+begin
+  insert into public.tournament_matches(match_id,tournament_id,stage,group_label)
+  values (_m,_t,'group',_grp);
+end; $$;
+
 select tests.authenticate_as('org@s.dev');
 insert into public.profiles(id,display_name) values (tests.get_supabase_uid('org@s.dev'),'Org');
 
@@ -32,7 +43,7 @@ declare _m uuid;
 begin
   _m := public.create_match(_ta,_tb,20,6,'{"squad_size":2}'::jsonb);
   perform pg_temp.score(_m,_ra,_rb);
-  insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (_m,_t,'group',_grp);
+  perform pg_temp.link_fixture(_m,_t,_grp);
 end; $$;
 
 select public.create_tournament('Cup', 20, 2, 2) as _t \gset

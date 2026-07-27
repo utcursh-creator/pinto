@@ -44,7 +44,9 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type)
   values (:'_ixz2'::uuid,51,:'_xb'::uuid,:'_z1'::uuid,:'_z2'::uuid,'bowled');
 select public.set_match_result(:'_mxz'::uuid,'win_by_runs'::public.result_type,:'_x'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_mxz'::uuid,:'_t'::uuid,'group','A');
+select tests.authenticate_as('org@s.dev');
 
 -- Match X v Y: X 90 (20 ov), Y 70 (20 ov) -> X wins
 select public.create_match(:'_x'::uuid,:'_y'::uuid,20,6,'{"squad_size":2}'::jsonb) as _mxy \gset
@@ -55,7 +57,9 @@ select public.start_innings(:'_mxy'::uuid,2,:'_y'::uuid,:'_x'::uuid,:'_y1'::uuid
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_ixy2'::uuid, gs, :'_xb'::uuid, :'_y1'::uuid, :'_y2'::uuid, case when gs<=70 then 1 else 0 end from generate_series(1,120) gs;
 select public.set_match_result(:'_mxy'::uuid,'win_by_runs'::public.result_type,:'_x'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_mxy'::uuid,:'_t'::uuid,'group','A');
+select tests.authenticate_as('org@s.dev');
 
 -- Match Y v Z: Y 80 (20 ov), Z 60 (20 ov) -> Y wins
 select public.create_match(:'_y'::uuid,:'_z'::uuid,20,6,'{"squad_size":2}'::jsonb) as _myz \gset
@@ -66,7 +70,9 @@ select public.start_innings(:'_myz'::uuid,2,:'_z'::uuid,:'_y'::uuid,:'_z1'::uuid
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_iyz2'::uuid, gs, :'_yb'::uuid, :'_z1'::uuid, :'_z2'::uuid, case when gs<=60 then 1 else 0 end from generate_series(1,120) gs;
 select public.set_match_result(:'_myz'::uuid,'win_by_runs'::public.result_type,:'_y'::uuid);
+reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_myz'::uuid,:'_t'::uuid,'group','A');
+select tests.authenticate_as('org@s.dev');
 
 -- standings: a function reading group A rows, sorted points desc then NRR desc
 select is((select (e->>'points')::int from jsonb_array_elements(

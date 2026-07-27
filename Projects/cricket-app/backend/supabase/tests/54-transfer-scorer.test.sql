@@ -57,7 +57,9 @@ select lives_ok(
   'idempotent no-op when new scorer equals the current eligible scorer');
 
 -- 6. status guard: once the match is complete, transfer is refused
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set status='complete' where id = :'_m'::uuid;
+select tests.authenticate_as('scorer@m.dev');
 select throws_ok(
   $$ select public.transfer_scorer((select id from public.matches limit 1), tests.get_supabase_uid('mate@m.dev')) $$,
   'P0001', null, 'cannot transfer once the match is complete');
@@ -67,7 +69,9 @@ select throws_ok(
 --    so an admin creates the match and scoring is handed to neutral directly.
 select tests.authenticate_as('scorer@m.dev');
 select public.create_match(:'_ta'::uuid, :'_tb'::uuid, 20) as _m2 \gset
+reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set scorer_id = tests.get_supabase_uid('neutral@m.dev') where id = :'_m2'::uuid;
+select tests.authenticate_as('scorer@m.dev');
 select tests.authenticate_as('neutral@m.dev');
 select throws_ok(
   $$ select public.transfer_scorer((select id from public.matches where scorer_id = tests.get_supabase_uid('neutral@m.dev')), tests.get_supabase_uid('neutral@m.dev')) $$,

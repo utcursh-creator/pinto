@@ -62,15 +62,22 @@ class MatchRepository {
     return id as String;
   }
 
+  /// Records the toss. Goes through set_toss, NOT a direct table UPDATE:
+  /// UPDATE on matches is no longer granted to clients, because a blanket grant
+  /// made every guard in set_match_result and update_match_schedule decorative
+  /// (a scorer could PATCH result/status/team ids straight onto the row and
+  /// fabricate a public record - penetration review 2026-07-07). The RPC also
+  /// validates that the toss winner is actually one of the two teams playing.
   Future<void> setToss({
     required String matchId,
     required String winnerTeamId,
     required String decision, // 'bat' | 'bowl'
   }) =>
-      _c
-          .from('matches')
-          .update({'toss_winner_id': winnerTeamId, 'toss_decision': decision})
-          .eq('id', matchId);
+      _c.rpc('set_toss', params: {
+        '_match_id': matchId,
+        '_winner_team_id': winnerTeamId,
+        '_decision': decision,
+      });
 
   Future<String> startInnings({
     required String matchId,
