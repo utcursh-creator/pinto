@@ -169,3 +169,27 @@ These are how he adds value within partnerships, not standalone offers:
 - **"Don't stop" means ARM A LOOP, not just work longer.** The user escalated twice about stopping between turns. For long multi-unit work, use /loop dynamic mode (ScheduleWakeup at the end of each turn) so progress continues without them prompting, and report per-unit rather than asking what to do next.
 - They want the iOS simulator actually driven as a user would: tournament flow, finding a team, finding/adding players - verified by me, not described.
 
+## Working with them on Pitch (2026-07-07, reinforced repeatedly)
+- **"Don't stop" is literal.** They have said it four times, with visible
+  frustration at turn boundaries. Always end a turn by re-arming `/loop`
+  (ScheduleWakeup) unless told to stop. Never end with "shall I continue?".
+- **They do not want a summary of options; they want the work done and reported.**
+  Report per unit with the gate numbers, then keep going.
+- **They expect the simulator to be DRIVEN, not described.** "Adding the players
+  and all of those things needs to be done by and verified BY YOU." Screenshots
+  are the evidence; read them, don't just check the exit code.
+- **They assume more defects remain and have been right every single time.** The
+  8-slice rebuild was declared done, then a 10-agent audit rejected it, then a
+  100-finding review found more, then the device found a crash none of it caught.
+  Treat "it passes" as provisional.
+- **They want the root fixed, not the symptom** ("every emerging issue from the
+  roots of it must be fixed"). A patch that relocates a bug is a failure - and I
+  did that twice on one crash before finding the class.
+- **Honesty is load-bearing.** They react well to plainly stated mistakes
+  (unfounded claims, wrong fixes) and badly to confident summaries that turn out
+  hollow. State corrections without hedging or over-apologising.
+- **shadcn/ui**: they asked for it for the UI. It is React+Tailwind and cannot run
+  in Flutter; what ports is its composition discipline (semantic tokens,
+  Skeleton/Empty/Alert/Field/ToggleGroup). They accepted that framing. They also
+  have a genuinely web deliverable pending: pitch.app/privacy + /terms.
+

@@ -1,5 +1,16 @@
 # Cricket App ("Pitch") - Development Index & Protocol
 
+> ## ⚠️ ACTIVE WORK IN PROGRESS - READ THE HANDOFF FIRST
+> **`Projects/cricket-app/2026-07-07-fix-run-handoff.md` is the CURRENT state of
+> the project and the live TODO.** Read it before this file. It supersedes the
+> "Build state" section below, which describes 2026-06-27 and is historical.
+>
+> One-line summary: a 100-finding adversarial penetration review
+> (`2026-07-07-penetration-review.md`) is being fixed unit by unit under a
+> standing `/loop`. 26 commits done; backend 621 pgTAP / 104 files green, app 198
+> widget tests green, all 3 device journeys green. Remaining: medium + low tiers,
+> more user journeys, a shadow push, then re-run the review until it returns zero.
+
 **READ THIS FIRST every iteration.** It is the single source of truth for the cricket-app build.
 After compaction, read this file top-to-bottom, then skim the doc index below before doing anything.
 Re-read it after each slice so you stay on track and don't build the wrong thing.
@@ -33,7 +44,7 @@ For every screen / wiring / integration, "verified" means ALL of:
 4. **Live backend check**: hit the exact RPCs/queries the screen calls as the signed-in dev user (REST or in-app) and confirm real data round-trips.
 5. Commit per slice with the Co-Authored-By trailer. Keep everything LOCAL (do not push/PR without explicit user go - task parked).
 
-## Build state (as of 2026-06-27)
+## Build state (HISTORICAL - as of 2026-06-27; see the handoff doc for current)
 - **Backend: 6 sub-projects COMPLETE, ~396 pgTAP tests green (72 test files), and NOW HOSTED on Supabase.**
   1. Identity & Teams; 2. Scoring Core (event-sourced fold); 3. Matchmaking & Discovery (PostGIS + DMs); 4. Frontend-prep (flair, transfer_scorer, anon viewing, wagon hint) + post attachments; 5. **Player stats** (re-fold: compute_innings_cards + player_career_stats / player_recent_form / player_public_profile, anon-safe; commit c225ec5); 6. **Tournaments** (groups round-robin -> top-2/group -> semifinals -> final; tournament_matches join table reuses the scoring engine; tournament_standings with the ICC NRR all-out full-quota rule; generate_group_fixtures / generate_playoffs / advance_playoffs / tournament_leaderboard / match_potm / tournament_overview; commits 89bbce0..0d5be60).
 - **HOSTED (2026-06-27): Supabase ref `ocejkqihgiinonpyafhl`** (https://ocejkqihgiinonpyafhl.supabase.co). All 72 migrations pushed (`supabase link --project-ref ocejkqihgiinonpyafhl` + `supabase db push` with SUPABASE_ACCESS_TOKEN in `backend/.env.hosted` gitignored). Anonymous sign-ins ON; dev@pitch.local + other@pitch.local seeded. App reaches hosted via `flutter ... --dart-define-from-file=hosted_defines.json` (`app/hosted_defines.json` gitignored: SUPABASE_URL + anon key + GOOGLE_WEB_CLIENT_ID). Default (no flag) = local 127.0.0.1. Verified end-to-end on the iOS sim (integration_test/hosted_smoke_test.dart). HOSTING GOTCHAS: Management API (api.supabase.com) needs a browser User-Agent or 403s (Cloudflare 1010); our migrations grant only authenticated/anon NOT service_role -> seed via the Management API query endpoint (runs as postgres); the anon JWT works as supabase_flutter `publishableKey`.
@@ -65,6 +76,10 @@ Frontend design+plan (`Projects/cricket-app/`):
 - `2026-06-17-flutter-identity-ui-plan.md` (s2)
 - `2026-06-17-flutter-discover-ui-plan.md` (s3)
 - `cricheroes-frontend-map.md` - the ~55-screen nav map + 6 open decisions + anti-clone principles.
+- **`2026-07-01-master-issue-map.md`** - the 94-issue defect map + 8-slice rebuild plan (that rebuild is DONE).
+- **`2026-07-05-final-done-audit.md`** - the 10-agent audit that rejected the first "done" claim.
+- **`2026-07-07-penetration-review.md`** - THE 100-finding adversarial review (12 fronts, run twice, skeptic-verified) + synthesis with the release gate and fix order.
+- **`2026-07-07-fix-run-handoff.md`** - **RESUME HERE.** Current state, done/remaining units, hard-won gotchas, the user-only actions.
 Memory: `.claude/context/memory/work_status.md` (detailed running log - the per-turn truth), `learnings.md` (reusable gotchas), `user_preferences.md`.
 
 ## Run / build / test / seed (copy-paste)
@@ -87,6 +102,15 @@ Env (prepend to bash):
 - go_router StatefulShellRoute does NOT cold-start deep into a non-default branch (only in-app push works) - fix in slice 6 for share/deep links.
 - Postgres: changing a function's return type/signature needs DROP+CREATE; a `returns table` SRF errors in scalar context.
 - Migrations are MANUALLY timestamped (the slow `supabase migration new` truncates writes). One object per file.
+
+## Fix-run gotchas (2026-07-07 - full detail in the handoff doc + learnings.md)
+- **Riverpod: a SYNC provider must never watch an ASYNC provider.** The first widget watch during build flushes the async ancestor, which notifies the sync dependent, which calls invalidateSelf -> setState MID-BUILD. Widgets may watch async providers; intermediate sync providers may not. Crashed Discover on every open; took 3 attempts because there were 3 instances. `flutter analyze` + widget tests passed for all three broken versions - only the device caught it.
+- **When a crash moves to a new line after your fix, you fixed an INSTANCE, not the class.** Enumerate the shape across the codebase before touching anything else.
+- **`flutter build ios` error 74** -> `rm -rf build/ios` (stale dir + the `com.apple.provenance` xattr on files under `.claude/worktrees/`). A direct `xcodebuild -sdk iphonesimulator build` succeeding proves the app code is fine.
+- **pgTAP: psql does NOT interpolate `:'var'` inside `$$`-quoting** - hence the old `(select id from public.X limit 1)` habit, which made guard tests catch the WRONG error and pass for the wrong reason. Use `format($$ ... %L ... $$, :'var')`. Prove a scoping fix by seeding a decoy row.
+- **`create or replace function` with a new arity creates an OVERLOAD**, not a replacement -> ambiguous calls, PostgREST 300. `drop function <exact old signature>` first.
+- **`integration_test` runs all tests in ONE process and supabase_flutter persists the session** - later journeys start signed in; reset first.
+- **Verified UI labels** (do not guess): create-team button `Create`, guest CTA `Add guest player`, tournament submit `Create tournament`.
 
 ## Subagent/workflow note
 Direct `Agent` tool dispatch is billing-blocked ("1M context usage credits"); **Workflow-tool agents work** - use them for research/verification (versions, APIs, adversarial review), not for writing interdependent Flutter code (build that directly, controller-TDD).

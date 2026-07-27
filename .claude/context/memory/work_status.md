@@ -6,7 +6,32 @@ last_updated: 2026-07-07
 
 # Work Status
 
-## 📌 CURRENT STATE SNAPSHOT (2026-06-27, read this first)
+## 📌 READ THIS FIRST (2026-07-07)
+
+**The authoritative current state is `Projects/cricket-app/2026-07-07-fix-run-handoff.md`.**
+Read that, then `Projects/cricket-app/CLAUDE.md`. Everything below this block is a
+historical running log, newest-first; do not treat older entries as current.
+
+- **ACTIVE: fixing a 100-finding adversarial penetration review**
+  (`Projects/cricket-app/2026-07-07-penetration-review.md`; machine-readable at
+  `/tmp/pitch_merged_findings.json`) under a standing `/loop` - the user's
+  instruction is "don't stop until zero errors, re-run the review repeatedly, and
+  verify on the iOS simulator as a real user".
+- **26 commits in the run** (`eacdd23`..`2b86201`). Gates: backend **621 pgTAP /
+  104 files**, app **analyze clean + 198 widget tests**, **all 3 device journeys
+  green** (`+4 All tests passed`, 0 crashes, screenshots in `/tmp/pitch_shots`).
+- **DONE**: Units 1 (both criticals), 2a/2b/2c (high backend), 3a/3b (high
+  frontend), 4a/4b/4c (primitives + humanError + error-UX), 5a/5b (medium
+  structural), 6a (release config), 7a (pgTAP rescoping), plus the device-found
+  Discover build-phase crash (3 attempts).
+- **NEXT**: remaining medium + low findings, MORE user journeys (the user asked
+  for the full realistic set - list is in the handoff doc §7), the shadow push,
+  then re-run the 12-front review until it returns zero.
+- **USER-ONLY, most urgent**: rotate `dev@pitch.local`/`password123` on the hosted
+  project (real credentials, shipped in the friend's APK), then the hosted
+  `supabase db push` (**77 pending migrations**), then rebuild the APK.
+
+## Historical snapshot (2026-06-27)
 - **Project = "Pitch", a CricHeroes-inspired iOS+Android cricket app. Stack: Flutter + Supabase. Canonical dev index = `Projects/cricket-app/CLAUDE.md` (read it next).** Solo builder = the user. Brand teal `#0F6E56`, anti-CricHeroes-red, low-density, sentence case.
 - **BACKEND = 6 sub-projects COMPLETE + NOW HOSTED.** Identity&Teams, Scoring Core (event-sourced fold), Matchmaking&Discovery (PostGIS+DMs), Frontend-prep (flair/transfer/anon/wagon)+attachments, **Stats** (re-fold career/leaderboard), **Tournaments** (groups->semis->final, NRR all-out rule). Local pgTAP: **72 files / ~396 tests green** via `cd backend && supabase db reset && supabase test db`. **HOSTED on Supabase ref `ocejkqihgiinonpyafhl` (https://ocejkqihgiinonpyafhl.supabase.co): all 72 migrations pushed (`supabase link --project-ref` + `db push` with SUPABASE_ACCESS_TOKEN in backend/.env.hosted gitignored), anonymous sign-ins ON, dev@pitch.local+other@pitch.local seeded.**
 - **FRONTEND = feature-complete for v1, all verified on the iOS sim.** Foundation + slices: identity, discover/matchmaking, match setup+scoring console, live viewer, stats screen, tournaments (list/create/manage/public 4-tab page), corrections (ball log), home-base location, team invites, photo upload. **App suite = 107 tests green (`cd app && flutter test`), analyze clean.** Reaches HOSTED via `flutter ... --dart-define-from-file=hosted_defines.json` (app/hosted_defines.json GITIGNORED: SUPABASE_URL + anon key + GOOGLE_WEB_CLIENT_ID). Default (no flag) still targets local 127.0.0.1. Hosted round-trip VERIFIED (integration_test/hosted_smoke_test.dart).

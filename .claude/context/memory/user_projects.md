@@ -111,3 +111,20 @@ last_updated: 2026-06-27
 - Verification baseline (UPDATE these numbers when they move; the older audit doc's "520/159" is stale): backend **582 pgTAP across 99 files**, app **183 widget tests**, analyze clean. Caveat: pgTAP only passes after a fresh `db reset` until Unit 7 rescopes the 13 `limit 1` test files.
 - BLOCKED ON THE USER: hosted `supabase db push` (65+ pending migrations; classifier-blocked for me, needs their explicit go), release APK rebuild after it, and **urgently** rotating `dev@pitch.local`/`password123` on the hosted project (live credential shipped in the friend's APK).
 - Still credential/infra-gated: pitch.app/privacy + /terms pages (store blocker; shadcn/ui would suit these), iOS Google client, deep-link domain, push notifications, Maps SDK key for the Discover place picker, Apple ($99) + Play ($25) accounts.
+
+## Pitch - state as of 2026-07-07 (see the handoff doc for the live TODO)
+- **Authoritative resume file: `Projects/cricket-app/2026-07-07-fix-run-handoff.md`.**
+- Backend 159 migrations / 104 pgTAP files / 621 tests green. App analyze clean,
+  198 widget tests green. All 3 device user journeys green on the iPhone 17 sim.
+- The app is genuinely functional end-to-end on the simulator now: sign-up ->
+  profile+handle -> create teams -> add guest players -> create a tournament ->
+  place teams in groups; post a looking-for ad; search players by name and
+  @handle.
+- **77 migrations are pending on the hosted project** (`ocejkqihgiinonpyafhl`,
+  still at the 2026-06-27 schema). The friend's release APK talks to that old
+  schema, so it is broken until the user pushes.
+- **A live credential (`dev@pitch.local`/`password123`) is on the hosted project
+  AND inside the friend's APK.** The prefill is now debug-only but the account is
+  still valid. This is the most time-sensitive open item and only the user can do
+  it.
+
