@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../discover/data/discover_providers.dart';
+import '../data/dm_realtime.dart';
 import '../../discover/data/discover_repository.dart';
 
 /// A 1:1 DM thread. Loads history once, then subscribes to the private
@@ -27,7 +28,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   final _scroll = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
   final Set<String> _ids = {};
-  RealtimeChannel? _channel;
+  void Function()? _detach;
   bool _loading = true;
   bool _sending = false;
 
@@ -66,31 +67,20 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   }
 
   void _subscribe() {
-    // Private channel needs a JWT on the socket for the participant-scoped
-    // receive policy.
-    _c.realtime.setAuth(_c.auth.currentSession?.accessToken);
-    final channel = _c.channel(
-      'dm:${widget.threadId}',
-      opts: const RealtimeChannelConfig(private: true),
-    );
-    channel
-        .onBroadcast(
-          event: 'INSERT',
-          callback: (payload) {
-            final record =
-                (payload['payload'] as Map?)?['record'] as Map<String, dynamic>?;
-            if (record == null) return;
-            final id = record['id'] as String?;
-            if (id == null || _ids.contains(id)) return;
-            _ids.add(id);
-            setState(() => _messages.add(record));
-            _jump();
-            // an incoming message while the thread is open is instantly read
-            if (record['sender_id'] != _me) _markRead();
-          },
-        )
-        .subscribe();
-    _channel = channel;
+    // ONE shared channel per topic (DmRealtime). This screen used to open its
+    // own channel on 'dm:<id>' while the inbox already had one on the same
+    // topic - two joins on one topic, which killed live delivery in the very
+    // conversation the user was reading (penetration review 2026-07-07).
+    _detach = ref.read(dmRealtimeProvider).listen(widget.threadId, (record) {
+      if (!mounted) return;
+      final id = record['id'] as String?;
+      if (id == null || _ids.contains(id)) return;
+      _ids.add(id);
+      setState(() => _messages.add(record));
+      _jump();
+      // an incoming message while the thread is open is instantly read
+      if (record['sender_id'] != _me) _markRead();
+    });
   }
 
   void _jump() {
@@ -171,7 +161,9 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
 
   @override
   void dispose() {
-    if (_channel != null) _c.removeChannel(_channel!);
+    // no ref.read() here: Riverpod throws StateError once the element is gone,
+    // which previously leaked the channel AND the controllers below it.
+    _detach?.call();
     _input.dispose();
     _scroll.dispose();
     super.dispose();

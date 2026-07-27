@@ -324,13 +324,17 @@ class _BallEdit {
   final String? fielderId;
   final String? bowlerId;
 
+  /// Must emit public.noball_secondary_kind values, which are SINGULAR:
+  /// ('off_bat','bye','leg_bye'). This used to emit the plural UI spellings, so
+  /// correcting a no-ball that went for byes was a hard 400 - the same defect
+  /// the scoring console had (penetration review 2026-07-07).
   String? get noballSecondaryKind => noBallPenalty > 0
       ? (runsOffBat > 0
           ? 'off_bat'
           : byes > 0
-              ? 'byes'
+              ? 'bye'
               : legByes > 0
-                  ? 'leg_byes'
+                  ? 'leg_bye'
                   : null)
       : null;
 

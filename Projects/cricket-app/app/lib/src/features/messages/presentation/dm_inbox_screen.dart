@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
-import '../../../core/supabase/supabase_providers.dart';
 import '../../discover/data/discover_providers.dart';
+import '../data/dm_realtime.dart';
 import '../../discover/data/discover_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
 
@@ -37,52 +36,51 @@ class DmInboxScreen extends ConsumerStatefulWidget {
 }
 
 class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
-  final Map<String, RealtimeChannel> _subs = {};
+  /// DM-5: keep exactly ONE shared subscription per visible thread (see
+  /// DmRealtime). Previously the inbox opened its own channel per thread, which
+  /// collided with the thread screen's channel on the same topic.
+  final Map<String, void Function()> _detach = {};
 
-  /// DM-5: keep one private-channel subscription per visible thread; any
-  /// incoming INSERT re-reads the inbox (unread badge, preview, ordering).
   void _syncSubscriptions(List<Map<String, dynamic>> threads) {
-    final SupabaseClient c;
+    final DmRealtime rt;
     try {
-      c = ref.read(supabaseClientProvider);
+      rt = ref.read(dmRealtimeProvider);
     } catch (_) {
       return; // no client bootstrapped (tests) - pull-to-refresh still works
     }
     final wanted = {for (final t in threads) t['thread_id'] as String};
-    for (final id in _subs.keys.toList()) {
-      if (!wanted.contains(id)) {
-        c.removeChannel(_subs.remove(id)!);
-      }
+    for (final id in _detach.keys.toList()) {
+      if (!wanted.contains(id)) _detach.remove(id)!();
     }
     for (final id in wanted) {
-      if (_subs.containsKey(id)) continue;
-      c.realtime.setAuth(c.auth.currentSession?.accessToken);
-      final ch = c.channel('dm:$id',
-          opts: const RealtimeChannelConfig(private: true));
-      ch
-          .onBroadcast(
-            event: 'INSERT',
-            callback: (_) => ref.invalidate(dmInboxProvider),
-          )
-          .subscribe();
-      _subs[id] = ch;
+      if (_detach.containsKey(id)) continue;
+      _detach[id] = rt.listen(id, (_) => ref.invalidate(dmInboxProvider));
     }
   }
 
   @override
   void dispose() {
-    if (_subs.isNotEmpty) {
-      final c = ref.read(supabaseClientProvider);
-      for (final ch in _subs.values) {
-        c.removeChannel(ch);
-      }
+    // NEVER ref.read() here - Riverpod throws StateError once the element is
+    // disposed, which leaked every channel this screen opened. The detach
+    // closures captured what they need at subscribe time.
+    for (final d in _detach.values) {
+      d();
     }
+    _detach.clear();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final inbox = ref.watch(dmInboxProvider);
+    // ref.listen fires only on CHANGE. Entering the inbox with an already-cached
+    // provider therefore subscribed to nothing, so the feature was dead on the
+    // normal entry path. Sync from the current value as well.
+    final cached = inbox.value;
+    if (cached != null) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _syncSubscriptions(cached));
+    }
     ref.listen(dmInboxProvider, (_, next) {
       final threads = next.value;
       if (threads != null) _syncSubscriptions(threads);

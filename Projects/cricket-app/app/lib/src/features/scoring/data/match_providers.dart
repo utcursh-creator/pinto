@@ -118,7 +118,16 @@ final inningsDeliveriesProvider =
           .select(
             'id, seq, bowler_id, striker_id, non_striker_id, runs_off_bat, '
             'extra_wides, extra_no_ball_penalty, extra_byes, extra_leg_byes, '
-            'is_legal, wicket_type, dismissed_player_id, incoming_batter_id, fielder_id',
+            'is_legal, wicket_type, dismissed_player_id, incoming_batter_id, fielder_id, '
+            // The ball log used to omit these, so a delivery with penalty runs,
+            // an overthrow, a run-out crossing or a wagon shot was DISPLAYED as
+            // if it had none - and the editor could not round-trip them
+            // (penetration review 2026-07-07). edit_ball is now patch-shaped so
+            // omitting a column no longer destroys it, but the log still has to
+            // tell the truth about what was recorded.
+            'extra_penalty, noball_secondary_kind, crossed, prevented_catch, '
+            'is_overthrow, overthrow_crossed, wagon_x, wagon_y, wagon_zone, '
+            'event_kind',
           )
           .eq('innings_id', inningsId)
           .order('seq');

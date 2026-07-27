@@ -24,7 +24,32 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
   final Map<String, String?> _captainOf = {}; // team id -> member id
   final Map<String, String?> _keeperOf = {}; // team id -> member id
   bool _busy = false;
+  bool _prefilled = false;
   String? _error;
+
+  /// Resuming a match whose squad was already partly saved used to re-insert the
+  /// same rows and die on a raw duplicate-key error, leaving the match stuck in
+  /// 'setup' with no way forward (penetration review 2026-07-07).
+  /// add_squad_member is now idempotent, and the screen also loads what is
+  /// already there so the scorer sees their existing XI instead of a blank slate.
+  void _prefillFrom(List<Map<String, dynamic>> squad) {
+    if (_prefilled || squad.isEmpty) return;
+    _prefilled = true;
+    final ordered = [...squad]..sort((x, y) {
+        final a = (x['batting_order'] as num?)?.toInt() ?? 1 << 30;
+        final b = (y['batting_order'] as num?)?.toInt() ?? 1 << 30;
+        return a.compareTo(b);
+      });
+    for (final row in ordered) {
+      final memberId = row['team_member_id'] as String?;
+      final teamId = row['team_id'] as String?;
+      if (memberId == null || teamId == null) continue;
+      _selected.add(memberId);
+      _teamOf[memberId] = teamId;
+      if (row['is_captain'] == true) _captainOf[teamId] = memberId;
+      if (row['is_wicket_keeper'] == true) _keeperOf[teamId] = memberId;
+    }
+  }
 
   Future<void> _next(String teamA, String teamB) async {
     // SCOR-14/M3: validate PER TEAM, not just the combined count - otherwise a
@@ -76,6 +101,9 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
           final teamB = m['team_b_id'] as String;
+          // resuming setup: start from the squad already saved, not a blank slate
+          final existing = ref.watch(matchSquadProvider(widget.matchId)).value;
+          if (existing != null) _prefillFrom(existing);
           // M1: show real team names, never "Team A"/"Team B".
           final names = ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
               const <String, String>{};

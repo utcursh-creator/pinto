@@ -525,7 +525,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
               // was selected - i.e. at the start of every over, the exact moment
               // a scorer reaches for Undo after a mis-tap ended the last one
               // (penetration review 2026-07-07).
-              _betweenBallRow(inningsId, squad, battingTeam, names, s),
+              _betweenBallRow(inningsId, bpo, squad, battingTeam, names, s),
             ],
           ],
         );
@@ -959,6 +959,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   /// stay live even with no bowler selected and while the pad is disabled.
   Widget _betweenBallRow(
     String inningsId,
+    int bpo,
     List<Map<String, dynamic>> squad,
     String battingTeam,
     Map<String, String> names,
@@ -970,7 +971,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         children: [
           _Btn(
             label: 'Undo',
-            onTap: _undoBusy ? null : () => _undo(inningsId),
+            onTap: _undoBusy ? null : () => _undo(inningsId, bpo),
           ),
           _Btn(
             label: 'Swap strike',
@@ -997,40 +998,37 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   }
 
   /// Undo needs its own in-flight guard: without one a double tap deletes TWO
-  /// deliveries, and the scorer has no way to tell (penetration review
-  /// 2026-07-07). Undoing across an over boundary also has to release the
-  /// selected bowler, otherwise the restored last ball of the previous over is
-  /// attributed to whoever was picked for the new one.
-  Future<void> _undo(String inningsId) async {
+  /// deliveries and the scorer has no way to tell (penetration review
+  /// 2026-07-07).
+  ///
+  /// It also has to put the BOWLER back. When the last ball of an over is
+  /// undone, the over is open again - and it is still the previous bowler's
+  /// over. Leaving _bowlerId null forces the scorer to pick someone, and the
+  /// re-recorded ball is then credited to a bowler who never bowled it. So we
+  /// restore _lastOverBowlerId, which _afterBall already stashed when the over
+  /// completed.
+  Future<void> _undo(String inningsId, int bpo) async {
     if (_undoBusy) return;
     setState(() => _undoBusy = true);
     try {
-      final before = await ref.read(inningsStateProvider(inningsId).future);
-      final legalBefore = (before['legal_balls'] as num?)?.toInt() ?? 0;
       await _repo.undoLastBall(inningsId);
       ref.invalidate(inningsStateProvider(inningsId));
       final after = await ref.read(inningsStateProvider(inningsId).future);
       final legalAfter = (after['legal_balls'] as num?)?.toInt() ?? 0;
-      final bpo = _bpoOf(before);
-      // stepped back across an over boundary -> the over is open again
-      if (legalBefore % bpo == 0 && legalAfter % bpo != 0) {
-        if (mounted) setState(() => _bowlerId = null);
+      // mid-over again: whoever was bowling that over resumes it
+      if (legalAfter % bpo != 0 && _bowlerId == null && _lastOverBowlerId != null) {
+        if (mounted) {
+          setState(() {
+            _bowlerId = _lastOverBowlerId;
+            _lastOverBowlerId = null;
+          });
+        }
       }
     } catch (e) {
       _toast('Could not undo: $e');
     } finally {
       if (mounted) setState(() => _undoBusy = false);
     }
-  }
-
-  static int _bpoOf(Map<String, dynamic> s) {
-    final over = (s['over'] ?? '0.0').toString();
-    final parts = over.split('.');
-    final legal = (s['legal_balls'] as num?)?.toInt() ?? 0;
-    final overs = int.tryParse(parts.first) ?? 0;
-    final balls = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
-    if (overs > 0) return ((legal - balls) / overs).round();
-    return 6;
   }
 
   Future<void> _pickBowler(
