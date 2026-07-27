@@ -315,8 +315,24 @@ void main() {
     await tapScrolled(tester, find.textContaining('Next: toss'),
         label: 'to_toss');
 
-    // toss + openers
+    // toss + openers - a real scorer picks the winner, the decision, and BOTH
+    // openers. (My first pass tapped Start match with none of them chosen, which
+    // is how the hidden-requirements defect above surfaced.)
     await settle(tester, find.text('Toss winner'), label: 'toss_screen');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Bat $run'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Bat'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    // openers appear once the batting side is known
+    await settle(tester, find.text('Striker'), label: 'openers_visible');
+    await tester.tap(find.text('Choose').first);
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Bat1').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Choose').first);
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Bat2').last);
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
     await shot(tester, 'jd3_toss');
     await tapScrolled(tester, find.widgetWithText(FilledButton, 'Start match'),
         label: 'start_match_btn');

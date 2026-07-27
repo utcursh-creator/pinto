@@ -99,9 +99,28 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (battingTeam != null) ...[
-                    Text('Opening pair',
-                        style: Theme.of(context).textTheme.labelLarge),
+                  // The Opening pair section is ALWAYS shown. It used to be
+                  // hidden behind `if (battingTeam != null)`, so a first-time
+                  // scorer saw only Toss winner / Elected to / Start match,
+                  // tapped Start, and was told to "pick two different openers" -
+                  // a requirement they had never been shown. The form now states
+                  // its own requirements instead of revealing them on failure
+                  // (found by driving the toss screen on the simulator).
+                  Text('Opening pair',
+                      style: Theme.of(context).textTheme.labelLarge),
+                  if (battingTeam == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Pick the toss winner and their decision first - then '
+                        'choose who opens the batting.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                      ),
+                    )
+                  else ...[
                     // SCOR-14: mutually exclusive pickers - the chosen striker
                     // disappears from the non-striker list and vice versa.
                     _picker('Striker', _striker, batters, _nonStriker,
