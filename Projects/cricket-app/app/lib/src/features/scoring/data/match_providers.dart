@@ -16,7 +16,11 @@ String memberName(Map<String, dynamic> m) {
 /// name search. This replaces a `from('teams').select(...)` with no limit at
 /// all - the whole teams table, downloaded on every visit to Start-a-match and
 /// poured into a DropdownButton nobody could scroll (fix run 2026-07-07).
-final opponentSearchProvider = FutureProvider.family<
+/// autoDispose: the family is keyed per KEYSTROKE, so without it every
+/// intermediate query ("D", "Da", "Dad"...) is retained for the whole session -
+/// and a search that failed on a dropped connection stays cached as a failure,
+/// so retyping the same name never retries (re-review 2026-07-07).
+final opponentSearchProvider = FutureProvider.autoDispose.family<
     List<Map<String, dynamic>>, ({String query, String? excludeTeamId})>(
   (ref, args) async {
     final c = ref.watch(supabaseClientProvider);

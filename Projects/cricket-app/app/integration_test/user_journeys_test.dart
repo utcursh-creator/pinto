@@ -272,9 +272,16 @@ void main() {
     }
     await tapScrolled(tester, find.widgetWithText(FilledButton, 'Post'),
         label: 'post_submit');
-    await settle(tester, find.text('Discover'), label: 'back_to_feed');
+    // THE POST MUST EXIST. `settle(find.text('Discover'))` was a no-op - the tab
+    // label is on screen the whole time, so it resolved instantly and the
+    // journey asserted nothing about whether the post was created (re-review
+    // 2026-07-07). Wait for the ad itself to appear in the feed.
+    await settle(tester, find.textContaining('Need an opponent $run'),
+        label: 'post_in_feed');
     await shot(tester, 'jb2_feed_after_post');
 
+    expect(find.textContaining('Need an opponent $run'), findsWidgets,
+        reason: 'the ad we just posted must be in the feed we land back on');
     // the feed must show real intent, not a raw error or an empty wall
     expect(find.textContaining('PostgrestException'), findsNothing);
     expect(find.textContaining('row-level security'), findsNothing);
@@ -303,8 +310,16 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Scout $run');
     await tester.pumpAndSettle(const Duration(seconds: 2));
     await shot(tester, 'jc2_search_by_name');
-    expect(find.textContaining('Scout $run'), findsWidgets,
-        reason: 'search must find a player by display name');
+    // NOT `find.textContaining(...)` - that matched the search box this test
+    // had just typed into, so it passed with zero results (re-review
+    // 2026-07-07). Assert on a RESULT ROW.
+    expect(
+      find.descendant(
+          of: find.byType(ListTile), matching: find.textContaining('Scout $run')),
+      findsWidgets,
+      reason: 'search must return the player as a result, not just echo the '
+          'query back in the search field',
+    );
 
     // and by @handle - the MISS-5 payoff
     await tester.enterText(find.byType(TextField).first, '@j$run');
@@ -456,10 +471,27 @@ void main() {
     expect(find.widgetWithText(OutlinedButton, 'Swap strike'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Retire'), findsOneWidget);
 
+    // Existing is not the same as working: the AbsorbPointer regression left
+    // these buttons RENDERED but dead, so findsOneWidget could never have caught
+    // it (re-review 2026-07-07). Prove the tap had an EFFECT - who is on strike
+    // must actually change.
+    String onStrike() {
+      final t = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((w) => w.data ?? '')
+          .firstWhere((d) => d.startsWith('On strike:'), orElse: () => '');
+      return t;
+    }
+
+    final before = onStrike();
+    expect(before, isNotEmpty, reason: 'the console names the striker');
     await tester.tap(find.widgetWithText(OutlinedButton, 'Swap strike'));
     await tester.pumpAndSettle(const Duration(seconds: 1));
     expect(find.textContaining('Could not swap'), findsNothing,
         reason: 'swap strike is a real event row now');
+    expect(onStrike(), isNot(before),
+        reason: 'Swap strike must actually swap the striker - a dead button '
+            'that renders fine would pass a mere findsOneWidget');
     await shot(tester, 'jd7_after_swap');
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Undo'));

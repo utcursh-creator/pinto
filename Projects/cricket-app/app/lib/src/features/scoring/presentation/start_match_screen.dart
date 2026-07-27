@@ -342,8 +342,16 @@ class _OpponentSearchSheetState extends ConsumerState<_OpponentSearchSheet> {
             onChanged: (v) => setState(() => _query = v),
           ),
           const SizedBox(height: 8),
+          // A FIXED 320 plus the title, the field and the keyboard inset does
+          // not fit a 375x667 phone once autofocus raises the keyboard - the
+          // sheet overflowed (re-review 2026-07-07). Take what is actually
+          // left, with a floor so it never collapses to nothing.
           SizedBox(
-            height: 320,
+            height: () {
+              final m = MediaQuery.of(context);
+              final free = m.size.height - m.viewInsets.bottom - 220;
+              return free.clamp(160.0, 320.0);
+            }(),
             child: results.when(
               loading: () => const AppSkeletonList(rows: 5),
               error: (e, _) => Center(child: Text(humanError(e))),

@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(9);
 -- Found while reading the match-setup path (fix run 2026-07-07): the Opponent
 -- picker was fed by `from('teams').select('id,name,city').order('name')` with NO
 -- limit and NO filter - every team in the database, pulled down on every visit
@@ -64,7 +64,20 @@ select cmp_ok(
   (select count(*)::int from public.search_opponent_teams('Bulk Club')),
   '<=', 25, 'the search result set is bounded');
 
--- 7. the default list is bounded too
+-- 7. the default list is bounded too. This needs MORE THAN THE CAP of actual
+-- past opponents - with the single opponent the fixture had, the assertion
+-- passed with no limit at all (re-review 2026-07-07). Play 30 of the bulk clubs.
+reset role;
+insert into public.matches(team_a_id, team_b_id, owner_id, scorer_id, overs_limit)
+  select :'_mine'::uuid, t.id, tests.get_supabase_uid('opp@s.dev'),
+         tests.get_supabase_uid('opp@s.dev'), 20
+    from public.teams t
+   where t.name like 'Bulk Club %'
+   limit 30;
+select tests.authenticate_as('opp@s.dev');
+select cmp_ok(
+  (select count(*)::int from public.search_opponent_teams(null)),
+  '>', 20, 'the fixture really does have more past opponents than a short list');
 select cmp_ok(
   (select count(*)::int from public.search_opponent_teams(null)),
   '<=', 25, 'the default list is bounded');

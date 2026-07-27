@@ -37,6 +37,36 @@ Future<void> _pump(
 }
 
 void main() {
+  // CONFIRMED MEDIUM (re-review 2026-07-07): the opponent sheet had a FIXED
+  // 320px results box on top of a title, a search field and the keyboard inset
+  // that autofocus raises immediately - which does not fit a 375x667 phone
+  // (iPhone SE / 8), the smallest size the app supports.
+  testWidgets('the opponent sheet fits a small phone with the keyboard up',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1.0;
+    // the keyboard autofocus raises
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.reset);
+
+    await _pump(tester, opponents: [
+      {
+        'id': 'b',
+        'name': 'Dadar CC',
+        'city': 'Mumbai',
+        'logo_url': null,
+        'last_played': null,
+      },
+    ]);
+    await tester.tap(find.text('Choose the opponent'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull,
+        reason: 'the sheet must not overflow on the smallest supported phone');
+    expect(find.text('Search teams'), findsOneWidget);
+  });
+
+
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
     testWidgets('the opponent picker searches instead of listing every team '
         'on $platform', (tester) async {
