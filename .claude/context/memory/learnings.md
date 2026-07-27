@@ -388,3 +388,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 
 ## shadcn/ui and Flutter (2026-07-07)
 - shadcn/ui is React + Tailwind (.tsx components, `components.json`, npx CLI). It CANNOT be installed into or rendered by a Flutter app. What ports is the *discipline*: semantic CSS-variable tokens -> Flutter ThemeExtension, and the composition primitives (Skeleton / Empty / Alert / Field+FieldGroup / ToggleGroup) as an app-local widget layer. Say this plainly rather than pretending to "use shadcn" in Dart.
+
+## Fixing what an audit found (2026-07-07 fix run)
+- **When a fix breaks existing tests, suspect the TESTS first.** Every single break during this run was the fix working: 8 pgTAP files used direct table writes as fixture setup (revoked on purpose), `24-matches-rls` asserted a silent no-op that became a hard denial, `61-compute-innings-cards` expected a bowler to be charged 7 legal balls where only 6 were bowled (a retirement counted as a delivery), and `102`'s cap fixture declared no squad at all. Read the failure as evidence before touching the fix.
+- **pgTAP fixture writes that production clients must not have**: wrap in `reset role;` then re-`authenticate_as`. Inside a plpgsql helper that will not work (`reset role` is invalid there and SECURITY DEFINER inherits the CREATING role) - define the privileged helper BEFORE `authenticate_as` so its definer is the session owner.
+- **`throws_ok(sql, errcode, description)` is a trap**: the 3-arg form treats arg 3 as the expected MESSAGE. Use `throws_ok(sql, errcode, NULL, description)` when you only care about the code.
+- **A server-side patch can fix a client bug without shipping a release.** Turning `edit_ball` from full-overwrite into COALESCE-patch semantics made the already-deployed app stop destroying data, because the columns it never sends are now preserved rather than reset. Look for this shape before assuming an app update is required.
+- **Deriving a value from user-supplied data needs a sanity floor.** Deriving `squad_size` from `match_squad` is right, but a squad of 0 or 1 yields `all_out = 0` - an innings over before a ball is bowled. The floor (only trust a declared squad at >= 2) is what made the shared fold helper safe for real data.
+- **A constraint that must hold across N copies of an algorithm needs ONE owner.** Three folds each re-derived the same innings parameters and two drifted. `_innings_fold_params()` removes the possibility, which a comment saying "LOCKSTEP RULE" did not.
+
