@@ -23,7 +23,20 @@ historical running log, newest-first; do not treat older entries as current.
   passed`, jd1..jd8 in `/tmp/pitch_shots`). The scoring frames are
   cricket-correct: a no-ball with byes reads 2/0 at Over 0.0, FREE HIT shows, and
   strike rotates on the odd bye.
-- **IN FLIGHT when this was written**: journey run 16 (`/tmp/journeys_run16.log`,
+- **RUN 16 RESULT**: journeys A/B/C/D/**K** green; **E failed** and the screenshot
+  showed why - the wagon-wheel sheet ("Where did 1 run go?") opens after every
+  scoring shot and SWALLOWED the next tap, so only the first of two balls was
+  recorded and the failure surfaced two steps later as a wrong score. New shared
+  `scoreRuns()` helper taps the run then skips the sheet (`a70b986`). Journey D
+  never hit it because D scores through the Extras sheet, not the run pad.
+- **Found by reading, this turn**: "Manage invites" listed usage + expiry and
+  NEVER the invite code, although the provider had been selecting `invite_token`
+  all along - so once the OS share sheet closed, a captain could not read,
+  re-send or dictate that code, and it undercut the "Have an invite code?" entry
+  added earlier in the run. Code now shows as selectable monospace, tapping the
+  row copies the full link (`963c837`).
+- **IN FLIGHT when this was written**: journey run 17 (`/tmp/journeys_run17.log`,
+  all six journeys with the wagon fix) and journey run 16 (`/tmp/journeys_run16.log`,
   adds journeys E ball-log corrections and K anonymous browsing) and a
   six-dimension adversarial re-review Workflow of everything the fix run changed
   (run id `wf_528f0fb6-945`; dimensions = sql, left_at, providers, navigation,
