@@ -90,7 +90,7 @@ final matchInningsListProvider =
             'id, innings_number, batting_team_id, bowling_team_id, status, target',
           )
           .eq('match_id', matchId)
-          .order('innings_number');
+          .order('innings_number', ascending: true);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 
@@ -143,7 +143,7 @@ final inningsDeliveriesProvider =
             'event_kind',
           )
           .eq('innings_id', inningsId)
-          .order('seq');
+          .order('seq', ascending: true);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 

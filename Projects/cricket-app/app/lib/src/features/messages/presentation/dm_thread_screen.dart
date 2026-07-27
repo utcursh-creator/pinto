@@ -53,7 +53,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
           .from('dm_messages')
           .select('id, sender_id, body, created_at')
           .eq('thread_id', widget.threadId)
-          .order('created_at');
+          .order('created_at', ascending: true); // oldest first: new messages append
       for (final r in (rows as List).cast<Map<String, dynamic>>()) {
         _ids.add(r['id'] as String);
         _messages.add(r);

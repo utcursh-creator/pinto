@@ -103,7 +103,7 @@ final postRepliesProvider =
           .from('post_replies')
           .select('id, body, author_id, created_at, profiles(display_name)')
           .eq('post_id', postId)
-          .order('created_at');
+          .order('created_at', ascending: true);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 
@@ -154,7 +154,7 @@ final dmThreadMessagesProvider =
           .from('dm_messages')
           .select('id, sender_id, body, created_at')
           .eq('thread_id', threadId)
-          .order('created_at');
+          .order('created_at', ascending: true);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 

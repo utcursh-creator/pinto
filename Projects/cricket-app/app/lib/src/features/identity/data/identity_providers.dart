@@ -44,7 +44,7 @@ final claimInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
       )
       .eq('status', 'pending')
       .neq('requested_by', session.user.id)
-      .order('created_at');
+      .order('created_at', ascending: true); // a queue is FIFO
   return List<Map<String, dynamic>>.from(rows as List);
 });
 
@@ -121,6 +121,6 @@ final pendingJoinRequestsProvider =
       .select('id, requester_id, created_at, profiles(display_name, photo_url)')
       .eq('team_id', teamId)
       .eq('status', 'pending')
-      .order('created_at');
+      .order('created_at', ascending: true); // a queue is FIFO
   return List<Map<String, dynamic>>.from(rows as List);
 });
