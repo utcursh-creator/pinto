@@ -133,9 +133,14 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       (_handleFree == true || _checkFailed) &&
       !_busy;
 
-  /// The only way off this screen without a profile. Signing out drops the gate
-  /// back to anonymous, so the router lands them on Discover and they can try
-  /// another account.
+  /// The only way off this screen without a profile.
+  ///
+  /// Signing out drops the gate to anonymous; the router's anonymous branch
+  /// then moves them off create-profile to Discover. That redirect is the
+  /// load-bearing half - until the re-review caught it, the anonymous branch
+  /// only moved people off SPLASH, so this button signed the user out and left
+  /// them on the same form with no way anywhere. Covered by
+  /// test/router_redirect_test.dart.
   Future<void> _signOut() async {
     try {
       await ref.read(supabaseClientProvider).auth.signOut();

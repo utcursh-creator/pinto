@@ -22,6 +22,25 @@ void main() {
       expect(onboardingRedirect(AuthGate.anonymous, Routes.matches), isNull);
     });
 
+    // CONFIRMED HIGH (re-review 2026-07-07). create-profile gained a "Sign out"
+    // escape for a user whose profile insert keeps failing. Signing out flips
+    // the gate to anonymous - but the anonymous branch only moved people off
+    // SPLASH, so it returned null for create-profile and nothing navigated. The
+    // user sat on the Create profile form, signed out, with no back button, no
+    // home affordance and no tab bar (the needsProfile redirect had replaced the
+    // stack). The form stayed live too, so Continue would have written a profile
+    // row keyed to the freshly minted ANONYMOUS user.
+    test('an anonymous visitor is never left on create-profile', () {
+      expect(onboardingRedirect(AuthGate.anonymous, Routes.createProfile),
+          Routes.discover);
+    });
+
+    // ...but the sign-in screen is exactly where an anonymous visitor belongs
+    // when they are trying to sign in, so that one must NOT be redirected away.
+    test('an anonymous visitor may sit on the sign-in screen', () {
+      expect(onboardingRedirect(AuthGate.anonymous, Routes.signIn), isNull);
+    });
+
     test('needsProfile is funnelled to create-profile', () {
       expect(onboardingRedirect(AuthGate.needsProfile, Routes.discover),
           Routes.createProfile);

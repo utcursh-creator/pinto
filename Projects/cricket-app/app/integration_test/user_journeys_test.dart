@@ -550,7 +550,28 @@ void main() {
     await tester.tap(find.byIcon(Icons.edit_note));
     await settle(tester, find.text('Ball log'), label: 'ball_log_e');
     await shot(tester, 'je2_ball_log');
-    await tester.tap(find.byType(ListTile).first);
+
+    // STRUCTURE, not just the total. The log must read oldest-first, because
+    // each row's over label (0.1, 0.2, ...) is computed by walking the list
+    // forward - if the order flips, every label names a different ball than the
+    // row it sits on. postgrest's order() defaults to DESCENDING and this list
+    // was backwards until c06c4c4, and the journey still PASSED because it only
+    // checked the score. Assert the arrangement.
+    final tiles = find.byType(ListTile);
+    expect(tiles, findsNWidgets(2));
+    expect(
+      find.descendant(of: tiles.first, matching: find.text('1')),
+      findsOneWidget,
+      reason: 'the first row must be the FIRST ball - the single',
+    );
+    expect(
+      find.descendant(of: tiles.last, matching: find.text('4')),
+      findsOneWidget,
+      reason: 'the second row must be the SECOND ball - the four',
+    );
+
+    // correct the FOUR (the second ball) down to a two
+    await tester.tap(tiles.last);
     await settle(tester, find.text('Edit this ball'), label: 'ball_actions_e');
     await tester.tap(find.text('Edit this ball'));
     await settle(tester, find.text('Runs off the bat'), label: 'edit_sheet_e');

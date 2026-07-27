@@ -81,7 +81,17 @@ String? onboardingRedirect(AuthGate gate, String loc, {String? next}) {
       // read failed (AUTH-4) - never misroute an onboarded user to create-profile.
       return loc == Routes.splash ? null : Routes.splash;
     case AuthGate.anonymous:
-      return loc == Routes.splash ? Routes.discover : null;
+      // create-profile only exists for a signed-in user who has no profile row.
+      // An anonymous visitor sitting on it is always a dead end: the
+      // needsProfile redirect replaced the stack, so there is no back button,
+      // no tab bar and no home affordance - and the form is still live, so
+      // Continue would write a profile keyed to the anonymous user. This is
+      // reachable from the screen's own "Sign out" escape (re-review
+      // 2026-07-07). The sign-in screen is deliberately NOT included: that is
+      // exactly where an anonymous visitor belongs.
+      return (loc == Routes.splash || loc == Routes.createProfile)
+          ? Routes.discover
+          : null;
     case AuthGate.needsProfile:
       if (loc == Routes.createProfile) return null;
       // Carry the link across profile creation too - a brand-new user is the
