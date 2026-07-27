@@ -155,9 +155,13 @@ flutter drive --driver=test_driver/integration_test.dart \
 - **OAuth could not come back**: `io.supabase.pitch://login-callback` was
   registered on NEITHER platform. CFBundleURLTypes + intent-filter added;
   Runner.entitlements created for Apple sign-in and wired into all three Runner
-  build configs. **URL scheme verified in the built Info.plist; the entitlement is
-  still UNVERIFIED end-to-end** (an incremental simulator build does not re-sign -
-  do a clean `flutter build ios --simulator` and `codesign -d --entitlements`).
+  build configs. URL scheme **verified in the built Info.plist**. The entitlement
+  is wired correctly - `xcodebuild -showBuildSettings` reports
+  `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements` for the Runner target -
+  but a SIMULATOR build is ad-hoc signed and never applies an entitlements file,
+  so `codesign -d --entitlements` returns an empty dict on it no matter what.
+  **This cannot be verified end-to-end without a signed device/archive build**,
+  which needs the user's Apple developer credentials. Do not claim it is proven.
 - Notification dead taps, public-deep-link stranding, sign-in destroying the
   invite (`next=`), "Have an invite code?" entry, named validation on Start-a-match,
   did_not_bat excluding anyone who reached the crease, insert_ball anon revoke,
