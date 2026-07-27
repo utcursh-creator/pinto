@@ -12,9 +12,24 @@ select public.add_guest_member(:'_a'::uuid, 'a2') as _a2 \gset
 select public.add_guest_member(:'_b'::uuid, 'b1') as _b1 \gset
 select public.add_guest_member(:'_b'::uuid, 'b2') as _b2 \gset
 select public.add_guest_member(:'_b'::uuid, 'b3') as _b3 \gset
--- 6-over match, 1 over per bowler (the rule the app stamps at creation)
+select public.add_guest_member(:'_b'::uuid, 'b4') as _b4 \gset
+select public.add_guest_member(:'_b'::uuid, 'b5') as _b5 \gset
+select public.add_guest_member(:'_b'::uuid, 'b6') as _b6 \gset
+-- 6-over match, 1 over per bowler (the rule the app stamps at creation).
+-- The bowling squad must be DECLARED and large enough for that cap to be
+-- feasible: the enforced cap is now max(rule, ceil(overs / bowling squad)), so a
+-- cap that the real squad cannot cover is raised rather than deadlocking the
+-- innings (penetration review 2026-07-07). 6 overs / 6 bowlers keeps it at 1.
 select public.create_match(:'_a'::uuid, :'_b'::uuid, 6, 6,
   '{"max_overs_per_bowler": 1}'::jsonb) as _m \gset
+select public.add_squad_member(:'_m'::uuid, :'_a'::uuid, :'_a1'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_a'::uuid, :'_a2'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_b'::uuid, :'_b1'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_b'::uuid, :'_b2'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_b'::uuid, :'_b3'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_b'::uuid, :'_b4'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_b'::uuid, :'_b5'::uuid);
+select public.add_squad_member(:'_m'::uuid, :'_b'::uuid, :'_b6'::uuid);
 select public.start_innings(:'_m'::uuid, 1, :'_a'::uuid, :'_b'::uuid, :'_a1'::uuid, :'_a2'::uuid) as _i \gset
 
 -- b1 bowls a full over (6 legal balls incl. one that followed a wide)
