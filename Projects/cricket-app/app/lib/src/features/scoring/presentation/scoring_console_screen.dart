@@ -25,6 +25,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   String? _lastOverBowlerId; // who bowled the over that just ended (SCOR-15)
   bool _busy = false;
   bool _breakMarked = false; // SCOR-1: innings-break status written once
+  bool _undoBusy = false; // Undo needs its own guard (a double tap deleted 2)
 
   MatchRepository get _repo => ref.read(matchRepositoryProvider);
 
@@ -302,7 +303,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
               runs: nbKind == 'off_bat' ? runs : 0,
               byes: nbKind == 'byes' ? runs : 0,
               legByes: nbKind == 'leg_byes' ? runs : 0,
-              noballSecondaryKind: runs > 0 ? nbKind : null,
+              noballSecondaryKind: runs > 0 ? _nbKindEnum(nbKind) : null,
               penalty: pen,
               isOverthrow: overthrow,
               lastSeq: lastSeq);
@@ -519,6 +520,12 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                   ),
                 ),
               ),
+              // Between-ball actions live OUTSIDE the AbsorbPointer. They used
+              // to sit inside _pad, which meant Undo was dead whenever no bowler
+              // was selected - i.e. at the start of every over, the exact moment
+              // a scorer reaches for Undo after a mis-tap ended the last one
+              // (penetration review 2026-07-07).
+              _betweenBallRow(inningsId, squad, battingTeam, names, s),
             ],
           ],
         );
@@ -825,37 +832,6 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                 onTap: () => _wicket(
                     inningsId, bpo, squad, battingTeam, bowlingTeam, names, s),
               ),
-              _Btn(
-                label: 'Undo',
-                onTap: () async {
-                  try {
-                    await _repo.undoLastBall(inningsId);
-                  } catch (e) {
-                    _toast('Could not undo: $e');
-                  }
-                  ref.invalidate(inningsStateProvider(inningsId));
-                },
-              ),
-            ],
-          ),
-          // SCOR-16: between-ball actions - manual strike fix + retirement
-          Row(
-            children: [
-              _Btn(
-                label: 'Swap strike',
-                onTap: () async {
-                  try {
-                    await _repo.swapStrike(inningsId);
-                    ref.invalidate(inningsStateProvider(inningsId));
-                  } catch (e) {
-                    _toast('Could not swap: $e');
-                  }
-                },
-              ),
-              _Btn(
-                label: 'Retire',
-                onTap: () => _retire(inningsId, squad, battingTeam, names, s),
-              ),
             ],
           ),
         ],
@@ -979,6 +955,84 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   /// SCOR-15: the bowler picker shows each bowler's live figures and blocks
   /// the two illegal picks - the previous over's bowler and anyone at the
   /// match's per-bowler over quota.
+  /// Undo / swap-strike / retire: actions that apply BETWEEN balls, so they must
+  /// stay live even with no bowler selected and while the pad is disabled.
+  Widget _betweenBallRow(
+    String inningsId,
+    List<Map<String, dynamic>> squad,
+    String battingTeam,
+    Map<String, String> names,
+    Map<String, dynamic> s,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Row(
+        children: [
+          _Btn(
+            label: 'Undo',
+            onTap: _undoBusy ? null : () => _undo(inningsId),
+          ),
+          _Btn(
+            label: 'Swap strike',
+            onTap: _undoBusy
+                ? null
+                : () async {
+                    try {
+                      await _repo.swapStrike(inningsId);
+                      ref.invalidate(inningsStateProvider(inningsId));
+                    } catch (e) {
+                      _toast('Could not swap: $e');
+                    }
+                  },
+          ),
+          _Btn(
+            label: 'Retire',
+            onTap: _undoBusy
+                ? null
+                : () => _retire(inningsId, squad, battingTeam, names, s),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Undo needs its own in-flight guard: without one a double tap deletes TWO
+  /// deliveries, and the scorer has no way to tell (penetration review
+  /// 2026-07-07). Undoing across an over boundary also has to release the
+  /// selected bowler, otherwise the restored last ball of the previous over is
+  /// attributed to whoever was picked for the new one.
+  Future<void> _undo(String inningsId) async {
+    if (_undoBusy) return;
+    setState(() => _undoBusy = true);
+    try {
+      final before = await ref.read(inningsStateProvider(inningsId).future);
+      final legalBefore = (before['legal_balls'] as num?)?.toInt() ?? 0;
+      await _repo.undoLastBall(inningsId);
+      ref.invalidate(inningsStateProvider(inningsId));
+      final after = await ref.read(inningsStateProvider(inningsId).future);
+      final legalAfter = (after['legal_balls'] as num?)?.toInt() ?? 0;
+      final bpo = _bpoOf(before);
+      // stepped back across an over boundary -> the over is open again
+      if (legalBefore % bpo == 0 && legalAfter % bpo != 0) {
+        if (mounted) setState(() => _bowlerId = null);
+      }
+    } catch (e) {
+      _toast('Could not undo: $e');
+    } finally {
+      if (mounted) setState(() => _undoBusy = false);
+    }
+  }
+
+  static int _bpoOf(Map<String, dynamic> s) {
+    final over = (s['over'] ?? '0.0').toString();
+    final parts = over.split('.');
+    final legal = (s['legal_balls'] as num?)?.toInt() ?? 0;
+    final overs = int.tryParse(parts.first) ?? 0;
+    final balls = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    if (overs > 0) return ((legal - balls) / overs).round();
+    return 6;
+  }
+
   Future<void> _pickBowler(
     List<Map<String, dynamic>> squad,
     String bowlingTeam,
@@ -1043,9 +1097,25 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     if (picked != null) setState(() => _bowlerId = picked);
   }
 
+  /// The pad's internal keys are plural ('byes'/'leg_byes') because they double
+  /// as extra-type keys, but public.noball_secondary_kind is
+  /// ('off_bat','bye','leg_bye'). Sending the plural form made every
+  /// no-ball-that-went-for-byes a hard 400 (penetration review 2026-07-07).
+  static String? _nbKindEnum(String uiKey) => switch (uiKey) {
+        'off_bat' => 'off_bat',
+        'byes' => 'bye',
+        'leg_byes' => 'leg_bye',
+        _ => null,
+      };
+
+  // 'retired_out' / 'timed_out' are deliberately ABSENT: a retirement is an
+  // event BETWEEN balls, not a delivery. Recording one here consumed a ball,
+  // advanced the over, charged the bowler, and dismissed the STRIKER rather
+  // than the batter the scorer named. Use the Retire action instead -
+  // record_ball now rejects these types and a CHECK constraint backs it.
   static const _allWicketTypes = [
     'bowled', 'caught', 'lbw', 'run_out', 'stumped', 'hit_wicket',
-    'retired_out', 'obstructing', 'timed_out', 'hit_ball_twice',
+    'obstructing', 'hit_ball_twice',
   ];
   // Only these are legal on a free hit (mirrors record_ball's guard).
   static const _freeHitWicketTypes = ['run_out', 'obstructing', 'hit_ball_twice'];
@@ -1256,7 +1326,10 @@ class _Btn extends StatelessWidget {
   const _Btn({required this.label, required this.onTap, this.color});
 
   final String label;
-  final VoidCallback onTap;
+  /// Nullable so an action can be genuinely DISABLED (greyed, not tappable)
+  /// while its own request is in flight - Undo needs this to stop a double tap
+  /// deleting two deliveries.
+  final VoidCallback? onTap;
   final Color? color;
 
   @override

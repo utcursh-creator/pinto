@@ -19,8 +19,14 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
-  final _email = TextEditingController(text: 'dev@pitch.local');
-  final _password = TextEditingController(text: 'password123');
+  // Prefilled ONLY in debug. These are real credentials for a real account on
+  // the hosted project, and they were shipping inside the release binary -
+  // anyone with the APK could sign in as that identity against production
+  // (penetration review 2026-07-07). Release builds start empty.
+  final _email =
+      TextEditingController(text: kDebugMode ? 'dev@pitch.local' : '');
+  final _password =
+      TextEditingController(text: kDebugMode ? 'password123' : '');
   bool _busy = false;
   String? _message;
 
