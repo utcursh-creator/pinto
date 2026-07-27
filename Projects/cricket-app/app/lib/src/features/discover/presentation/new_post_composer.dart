@@ -356,14 +356,19 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             ),
           ],
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _busy ? null : _post,
-            child: const Text('Post'),
-          ),
+          // The reason a submit failed belongs ABOVE the button that produced
+          // it. It used to render after, and the button is the last thing in a
+          // long scrolling form - so on a phone the message landed off-screen
+          // below the fold and tapping Post simply appeared to do nothing
+          // (found by driving journey B, 2026-07-07).
           if (_error != null) ...[
             const SizedBox(height: 16),
             Text(_error!, style: const TextStyle(color: Colors.red)),
           ],
+          FilledButton(
+            onPressed: _busy ? null : _post,
+            child: const Text('Post'),
+          ),
         ],
       ),
     );

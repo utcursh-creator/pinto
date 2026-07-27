@@ -232,14 +232,19 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
             },
           ),
           const SizedBox(height: 12),
-          FilledButton(
-            onPressed: _busy ? null : _create,
-            child: const Text('Next: squads'),
-          ),
+          // The reason a submit failed belongs ABOVE the button that produced
+          // it. It used to render after, and the button is the last thing in a
+          // long scrolling form - so on a phone the message landed off-screen
+          // below the fold and tapping Post simply appeared to do nothing
+          // (found by driving journey B, 2026-07-07).
           if (_error != null) ...[
             const SizedBox(height: 16),
             Text(_error!, style: const TextStyle(color: Colors.red)),
           ],
+          FilledButton(
+            onPressed: _busy ? null : _create,
+            child: const Text('Next: squads'),
+          ),
         ],
       ),
     );

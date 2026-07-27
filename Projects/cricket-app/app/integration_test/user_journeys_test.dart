@@ -270,6 +270,12 @@ void main() {
       await tester.enterText(title.first, 'Need an opponent $run');
       await tester.pumpAndSettle();
     }
+    // A flair is REQUIRED - without it _post() bails with "Pick a flair." and
+    // the composer never closes. The journey never picked one, so it had never
+    // actually created a post; the old wait on find.text('Discover') matched the
+    // tab label and hid that completely (re-review 2026-07-07).
+    await tapScrolled(tester, find.widgetWithText(ChoiceChip, 'Practice match'),
+        label: 'pick_flair');
     await tapScrolled(tester, find.widgetWithText(FilledButton, 'Post'),
         label: 'post_submit');
     // THE POST MUST EXIST. `settle(find.text('Discover'))` was a no-op - the tab
