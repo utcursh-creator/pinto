@@ -38,7 +38,13 @@ begin
   if new.team_id is distinct from old.team_id then
     raise exception 'a membership cannot be moved to another team' using errcode = 'P0001';
   end if;
-  if new.profile_id is distinct from old.profile_id and old.profile_id is not null then
+  -- Repointing a membership at a DIFFERENT person is the takeover primitive.
+  -- Two transitions are legitimate and must stay open:
+  --   null -> person : the guest-claim flow (approve_guest_claim)
+  --   person -> null : account deletion detaching a player into a guest row, so
+  --                    match history survives without naming anyone
+  if old.profile_id is not null and new.profile_id is not null
+     and new.profile_id <> old.profile_id then
     raise exception 'a membership cannot be reassigned to another player' using errcode = 'P0001';
   end if;
   return new;

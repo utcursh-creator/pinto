@@ -47,9 +47,11 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
 -- seq8: run out of S (the non-striker), fielder Fd, incoming B5 (over also ends here)
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,dismissed_player_id,fielder_id,incoming_batter_id) values
  (:'_in'::uuid,8,:'_bw'::uuid,:'_b4'::uuid,:'_s'::uuid,'run_out',:'_s'::uuid,:'_fd'::uuid,:'_b5'::uuid);
--- seq9: B5 retired_not_out (NOT a dismissal)
-insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type) values
- (:'_in'::uuid,9,:'_bw'::uuid,:'_b5'::uuid,:'_b4'::uuid,'retired_not_out');
+-- seq9: B5 retired_not_out (NOT a dismissal). Since fold v14 a retirement is a
+-- non-ball EVENT row, never a delivery - recording it as a ball consumed a ball
+-- and charged the bowler. A CHECK constraint now enforces that.
+insert into public.deliveries(innings_id,seq,event_kind,striker_id,non_striker_id,wicket_type,dismissed_player_id) values
+ (:'_in'::uuid,9,'retirement',:'_b5'::uuid,:'_b4'::uuid,'retired_not_out',:'_b5'::uuid);
 
 -- ---- batting lines (resolved per-player, dismissal attribution) ----
 select is((select (e->>'runs')::int from jsonb_array_elements(public.compute_innings_cards(:'_in'::uuid)->'batting') e where e->>'member_id'=:'_s'),
@@ -76,8 +78,11 @@ select is((select (e->>'dismissed')::boolean from jsonb_array_elements(public.co
   false, 'B5 retired_not_out is NOT a dismissal');
 
 -- ---- bowling line ----
+-- 6, not 7: seq9 is a RETIREMENT, which is an event between balls. It used to be
+-- stored as a delivery, so the bowler was charged a legal ball for a batter
+-- walking off - the exact corruption fold v14's event rows removed.
 select is((select (e->>'legal_balls')::int from jsonb_array_elements(public.compute_innings_cards(:'_in'::uuid)->'bowling') e where e->>'member_id'=:'_bw'),
-  7, 'Bowl: 7 legal balls (wide + no-ball excluded)');
+  6, 'Bowl: 6 legal balls (wide, no-ball and the retirement event excluded)');
 select is((select (e->>'wickets')::int from jsonb_array_elements(public.compute_innings_cards(:'_in'::uuid)->'bowling') e where e->>'member_id'=:'_bw'),
   2, 'Bowl: 2 wickets (bowled + caught; run_out NOT credited)');
 select is((select (e->>'runs_conceded')::int from jsonb_array_elements(public.compute_innings_cards(:'_in'::uuid)->'bowling') e where e->>'member_id'=:'_bw'),
