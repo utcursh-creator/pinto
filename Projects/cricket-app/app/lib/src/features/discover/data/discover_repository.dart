@@ -35,6 +35,7 @@ class DiscoverRepository {
     required String flair,
     required double lat,
     required double lng,
+    String? title,
     String? description,
     String? teamId,
     String? placeLabel,
@@ -52,6 +53,7 @@ class DiscoverRepository {
       '_lat': lat,
       '_lng': lng,
     };
+    if (title != null && title.isNotEmpty) params['_title'] = title;
     if (description != null && description.isNotEmpty) {
       params['_description'] = description;
     }

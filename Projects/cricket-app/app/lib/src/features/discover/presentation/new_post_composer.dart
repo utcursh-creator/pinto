@@ -32,6 +32,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
   final _link = TextEditingController();
   final _overs = TextEditingController();
   final List<String> _imageUrls = [];
+  final _title = TextEditingController();
   bool _busy = false;
   bool _uploading = false;
   String? _error;
@@ -41,6 +42,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
 
   @override
   void dispose() {
+    _title.dispose();
     _details.dispose();
     _place.dispose();
     _link.dispose();
@@ -125,6 +127,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             lat: anchor.lat,
             lng: anchor.lng,
             teamId: _needsTeam ? _teamId : null,
+            title: _title.text.trim(),
             description: _details.text.trim(),
             placeLabel: _place.text.trim(),
             overs: int.tryParse(_overs.text.trim()),
@@ -301,6 +304,21 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             label: Text(_matchAt == null
                 ? 'Match date & time (optional)'
                 : LfLabels.matchWhen(_matchAt)),
+          ),
+          const SizedBox(height: 12),
+          // looking_for_posts.title, create_looking_for_post's _title and the
+          // feed card's headline all existed - the card even PREFERS the title
+          // over the generic mode label - but nothing could set one, so every
+          // post in the feed was headlined "Need a team" / "Need players"
+          // instead of the poster's own words. On a feed whose whole job is
+          // conveying intent, that is the first thing a reader should see.
+          TextField(
+            controller: _title,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Headline (optional)',
+              hintText: 'Need 2 players, Sat 3pm',
+            ),
           ),
           const SizedBox(height: 12),
           TextField(

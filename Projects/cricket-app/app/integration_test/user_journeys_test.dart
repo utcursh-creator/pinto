@@ -275,11 +275,15 @@ void main() {
     await settle(tester, find.byType(TextField), label: 'composer');
     await shot(tester, 'jb1_composer');
 
-    final title = find.widgetWithText(TextField, 'Title');
-    if (title.evaluate().isNotEmpty) {
-      await tester.enterText(title.first, 'Need an opponent $run');
-      await tester.pumpAndSettle();
-    }
+    // The composer had NO title input at all until this run - the field this
+    // once looked for did not exist, the `if` silently skipped, and the later
+    // assertion could never have passed (found by driving run 22).
+    await tapScrolled(tester, find.widgetWithText(TextField, 'Headline (optional)'),
+        label: 'headline_field');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Headline (optional)'),
+        'Need an opponent $run');
+    await tester.pumpAndSettle();
     // A flair is REQUIRED - without it _post() bails with "Pick a flair." and
     // the composer never closes. The journey never picked one, so it had never
     // actually created a post; the old wait on find.text('Discover') matched the
