@@ -177,6 +177,19 @@ been right every time so far.**
 
 ## 6. HARD-WON GOTCHAS (do not re-learn these)
 
+- **THE STALE-PROVIDER HANDOFF** (found run 12, on the device): screen A watches
+  `fooProvider(id)`, writes to foo, then `pushReplacement`es to B which watches
+  the same provider - B inherits the value A held from BEFORE the write, because
+  the listener count never hits zero between the two frames. This made the app's
+  core flow unusable: squads saved, then the toss screen offered NO openers, so
+  the match could not be started. Fixed in `match_squads_screen` and
+  `toss_openers_screen`. **Any screen that writes X then navigates to a reader of
+  X must `ref.invalidate(X)` first** - check every `pushReplacement`.
+  A widget test that overrides the provider with a constant is blind to this;
+  the fake must return DIFFERENT data on the second fetch.
+- **A DropdownButton holds every item in an IndexedStack inside the button**, so
+  `find.text(option)` matches with the menu shut. Test helpers must wait for the
+  match count to GROW and then assert the button's `value` changed.
 - **THE RIVERPOD INVARIANT**: a **synchronous** provider must never watch an
   **asynchronous** provider. `Provider<int>((ref) => ref.watch(fp).value ...)` and
   `Notifier.build() => ref.watch(fp)` are the same bug. When a widget's first
