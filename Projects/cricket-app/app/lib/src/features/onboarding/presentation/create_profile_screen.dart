@@ -133,6 +133,18 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       (_handleFree == true || _checkFailed) &&
       !_busy;
 
+  /// The only way off this screen without a profile. Signing out drops the gate
+  /// back to anonymous, so the router lands them on Discover and they can try
+  /// another account.
+  Future<void> _signOut() async {
+    try {
+      await ref.read(supabaseClientProvider).auth.signOut();
+      ref.invalidate(myProfileProvider);
+    } catch (e) {
+      if (mounted) setState(() => _error = humanError(e));
+    }
+  }
+
   Future<void> _save() async {
     final client = ref.read(supabaseClientProvider);
     final session = client.auth.currentSession;
@@ -200,6 +212,17 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Create profile',
+      // The onboarding gate pins a signed-in user with no profile row to this
+      // screen and nothing else. If the insert keeps failing - a handle they
+      // cannot get past, a backend that is down, the wrong account entirely -
+      // there was no way off it and no way to try another account: the app was
+      // simply over for them (penetration review 2026-07-07).
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : _signOut,
+          child: const Text('Sign out'),
+        ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

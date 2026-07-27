@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
@@ -15,6 +14,7 @@ import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/share.dart';
 
 class TeamPageScreen extends ConsumerWidget {
   const TeamPageScreen({required this.teamId, super.key});
@@ -486,11 +486,11 @@ class TeamPageScreen extends ConsumerWidget {
     try {
       final token =
           await ref.read(identityRepositoryProvider).createTeamInvite(teamId);
-      await SharePlus.instance.share(
-        ShareParams(
-          text: 'Join my cricket team on Pitch: ${inviteLink(token)}',
-          subject: 'Pitch team invite',
-        ),
+      if (!context.mounted) return;
+      await shareFrom(
+        context,
+        text: 'Join my cricket team on Pitch: ${inviteLink(token)}',
+        subject: 'Pitch team invite',
       );
     } catch (e) {
       messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));

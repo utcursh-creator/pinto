@@ -55,6 +55,23 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- The Supabase OAuth redirect. Google/Apple sign-in sends the browser to
+	     io.supabase.pitch://login-callback; with no scheme registered the callback
+	     had nowhere to land and the user was stranded in Safari, signed in to
+	     nothing (fix run 2026-07-07). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.pitch</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.pitch</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/share.dart';
 
 /// Public, login-free tournament page. One tournament_overview call feeds four
 /// tabs: Table (standings + NRR), Fixtures, Bracket, and Leaders.
@@ -35,10 +35,11 @@ class _TournamentPageScreenState extends ConsumerState<TournamentPageScreen> {
         IconButton(
           icon: const Icon(Icons.ios_share),
           tooltip: 'Share',
-          onPressed: () => SharePlus.instance.share(ShareParams(
+          onPressed: () => shareFrom(
+            context,
             text: 'Follow this tournament on Pitch: '
                 'https://pitch.app/tournament/${widget.tournamentId}',
-          )),
+          ),
         ),
       ],
       body: async.when(

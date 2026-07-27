@@ -35,7 +35,10 @@ final teamMembersProvider =
       final rows = await c
           .from('team_members')
           .select('id, profile_id, guest_name, profiles(display_name)')
-          .eq('team_id', teamId);
+          .eq('team_id', teamId)
+          // Someone who has left cannot be picked for a new squad. Their old
+          // squad rows are untouched, so past scorecards still name them.
+          .isFilter('left_at', null);
       return List<Map<String, dynamic>>.from(rows as List);
     });
 
@@ -184,7 +187,9 @@ final matchScorerCandidatesProvider =
           .from('team_members')
           .select('profile_id, profiles(display_name)')
           .inFilter('team_id', ids)
-          .not('profile_id', 'is', null);
+          .not('profile_id', 'is', null)
+          // scoring cannot be handed to someone who has left the team
+          .isFilter('left_at', null);
       // SCOR-20: you can't hand scoring to yourself.
       final me = ref.watch(currentSessionProvider)?.user.id;
       final seen = <String>{};

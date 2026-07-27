@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The app calls SignInWithApple and Supabase's OAuthProvider.apple, but the
+	     capability was never declared, so Apple sign-in fails on a real device
+	     and App Review rejects the build (Apple requires Sign in with Apple
+	     whenever another third-party sign-in is offered, and Google is).
+	     Found in the 2026-07-07 penetration review. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>

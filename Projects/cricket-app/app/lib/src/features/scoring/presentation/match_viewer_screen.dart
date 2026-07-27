@@ -20,6 +20,7 @@ import '../data/match_providers.dart';
 import 'match_share_card.dart';
 import 'wagon_field.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/share.dart';
 
 const _kInk = Color(0xFF0F2E26);
 const _kTeal = Color(0xFF0F6E56);
@@ -50,7 +51,12 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
   StreamSubscription<AuthState>? _authSub;
   String? _subscribedToken; // the token the current channel was opened with
   List<String> _knownInnings = const [];
-  final GlobalKey _shareKey = GlobalKey();
+  // One key per share sheet. Both sheets used to carry the SAME GlobalKey, so
+  // opening the scorecard sheet before the score sheet had finished animating
+  // out put two widgets with one key in the tree and Flutter threw "Multiple
+  // widgets used the same GlobalKey" (penetration review 2026-07-07).
+  final GlobalKey _scoreShareKey = GlobalKey();
+  final GlobalKey _scorecardShareKey = GlobalKey();
 
   @override
   void initState() {
@@ -134,7 +140,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 RepaintBoundary(
-                  key: _shareKey,
+                  key: _scoreShareKey,
                   child: MatchShareCard(
                     title: '$a v $b',
                     battingTeam: teams[latest['batting_team_id']] ?? 'Batting',
@@ -148,7 +154,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed: () => _captureAndShare('$a v $b'),
+                  onPressed: () => _captureAndShare(_scoreShareKey, '$a v $b'),
                   icon: const Icon(Icons.ios_share),
                   label: const Text('Share image'),
                 ),
@@ -238,7 +244,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 RepaintBoundary(
-                  key: _shareKey,
+                  key: _scorecardShareKey,
                   child: FullScorecardCard(
                     title: '$a v $b',
                     resultLine: result,
@@ -247,7 +253,8 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed: () => _captureAndShare('$a v $b - scorecard'),
+                  onPressed: () =>
+                      _captureAndShare(_scorecardShareKey, '$a v $b - scorecard'),
                   icon: const Icon(Icons.ios_share),
                   label: const Text('Share image'),
                 ),
@@ -264,18 +271,18 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     }
   }
 
-  Future<void> _captureAndShare(String title) async {
+  Future<void> _captureAndShare(GlobalKey key, String title) async {
     final boundary =
-        _shareKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+        key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return;
     final image = await boundary.toImage(pixelRatio: 3);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     if (bytes == null) return;
     final file = await File('${Directory.systemTemp.path}/pitch_${widget.matchId}.png')
         .writeAsBytes(bytes.buffer.asUint8List());
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], text: '$title - live on Pitch'),
-    );
+    if (!mounted) return;
+    await shareFrom(context,
+        files: [XFile(file.path)], text: '$title - live on Pitch');
   }
 
   @override

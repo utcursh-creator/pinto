@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
@@ -11,6 +10,7 @@ import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../data/tournament_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/share.dart';
 
 /// Organizer hub. What's shown follows the tournament status: assign teams to
 /// groups + generate fixtures (setup) -> score group matches + generate playoffs
@@ -372,12 +372,12 @@ class ManageTournamentScreen extends ConsumerWidget {
       final token = await ref
           .read(tournamentRepositoryProvider)
           .createTournamentInvite(tournamentId);
-      await SharePlus.instance.share(
-        ShareParams(
-          text: 'Add your team to my cricket tournament on Pitch: '
-              '${joinTournamentLink(token)}\nOr enter this code in the app: $token',
-          subject: 'Pitch tournament invite',
-        ),
+      if (!context.mounted) return;
+      await shareFrom(
+        context,
+        text: 'Add your team to my cricket tournament on Pitch: '
+            '${joinTournamentLink(token)}\nOr enter this code in the app: $token',
+        subject: 'Pitch tournament invite',
       );
     } catch (e) {
       messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));

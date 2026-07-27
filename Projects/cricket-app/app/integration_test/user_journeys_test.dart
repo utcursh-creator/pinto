@@ -399,7 +399,11 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'No-ball'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await settle(tester, find.text('The runs came from'), label: 'nb_kind');
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Byes'));
+    // TWO chips say "Byes" once No-ball is picked, and both are correct: one in
+    // "This ball was" (the delivery type) and one in "The runs came from" (what
+    // the runs off the no-ball were). The headings tell them apart for a human;
+    // for the finder, the second group renders after the first.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Byes').last);
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await tester.tap(find.byIcon(Icons.add_circle_outline).first); // 1 bye
     await tester.pumpAndSettle(const Duration(milliseconds: 200));

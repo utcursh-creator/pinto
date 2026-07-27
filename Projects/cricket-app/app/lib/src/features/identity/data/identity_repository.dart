@@ -68,10 +68,14 @@ class IdentityRepository {
     return id as String;
   }
 
-  /// TEAM-1: remove a membership row (a captain kicking a member, or a member
-  /// leaving - RLS allows admin-or-self).
+  /// TEAM-1: remove a membership (a captain kicking a member, or a member
+  /// leaving). Goes through the leave_team RPC, NOT a raw delete: nine foreign
+  /// keys point at team_members with NO ACTION, so deleting anyone who has ever
+  /// played raised a raw 23503 and the button was permanently broken for
+  /// exactly the people it mattered to. The RPC deletes when there is no
+  /// history and records the departure when there is.
   Future<void> removeMember(String membershipId) =>
-      _client.from('team_members').delete().eq('id', membershipId);
+      _client.rpc('leave_team', params: {'_membership_id': membershipId});
 
   /// TEAM-1: disband a team entirely (admin-only via RLS; memberships cascade).
   Future<void> deleteTeam(String teamId) =>

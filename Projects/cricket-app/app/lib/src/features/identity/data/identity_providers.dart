@@ -12,7 +12,9 @@ final myTeamsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final rows = await client
       .from('team_members')
       .select('role, teams(*)')
-      .eq('profile_id', session.user.id);
+      .eq('profile_id', session.user.id)
+      // a team you have left is not one of "my teams"
+      .isFilter('left_at', null);
   return List<Map<String, dynamic>>.from(rows as List);
 });
 
@@ -58,6 +60,9 @@ final teamRosterProvider =
           .from('team_members')
           .select('id, role, guest_name, profile_id, profiles(display_name, photo_url)')
           .eq('team_id', teamId)
+          // Rows with left_at set are kept only so old scorecards can still
+          // name them - they are not on the roster.
+          .isFilter('left_at', null)
           .order('role', ascending: true)
           .order('created_at', ascending: true);
       return List<Map<String, dynamic>>.from(rows as List);
