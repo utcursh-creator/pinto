@@ -33,7 +33,14 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
   /// 'setup' with no way forward (penetration review 2026-07-07).
   /// add_squad_member is now idempotent, and the screen also loads what is
   /// already there so the scorer sees their existing XI instead of a blank slate.
-  void _prefillFrom(List<Map<String, dynamic>> squad) {
+  /// [selectable] is every member still ON the two rosters. A player who has
+  /// left the team keeps their match_squad rows (that is the whole point of the
+  /// left_at tombstone - old scorecards must still name them), but
+  /// teamMembersProvider now filters them out, so prefilling them here put an
+  /// id into _selected with no tile to un-tick: invisible, unremovable, and
+  /// re-written to the server on "Next: toss" (re-review 2026-07-07).
+  void _prefillFrom(
+      List<Map<String, dynamic>> squad, Set<String> selectable) {
     if (_prefilled || squad.isEmpty) return;
     _prefilled = true;
     final ordered = [...squad]..sort((x, y) {
@@ -45,6 +52,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
       final memberId = row['team_member_id'] as String?;
       final teamId = row['team_id'] as String?;
       if (memberId == null || teamId == null) continue;
+      if (!selectable.contains(memberId)) continue; // they have left the team
       _selected.add(memberId);
       _teamOf[memberId] = teamId;
       if (row['is_captain'] == true) _captainOf[teamId] = memberId;
@@ -110,9 +118,17 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
           final teamB = m['team_b_id'] as String;
-          // resuming setup: start from the squad already saved, not a blank slate
+          // resuming setup: start from the squad already saved, not a blank
+          // slate - but only from the players who are still on the rosters, so
+          // a departed member cannot be silently carried back into the XI.
           final existing = ref.watch(matchSquadProvider(widget.matchId)).value;
-          if (existing != null) _prefillFrom(existing);
+          final rosterA = ref.watch(teamMembersProvider(teamA)).value;
+          final rosterB = ref.watch(teamMembersProvider(teamB)).value;
+          if (existing != null && rosterA != null && rosterB != null) {
+            _prefillFrom(existing, {
+              for (final r in [...rosterA, ...rosterB]) r['id'] as String,
+            });
+          }
           // M1: show real team names, never "Team A"/"Team B".
           final names = ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
               const <String, String>{};

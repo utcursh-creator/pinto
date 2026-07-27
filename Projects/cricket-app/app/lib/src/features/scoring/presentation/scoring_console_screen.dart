@@ -8,6 +8,8 @@ import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import 'wagon_field.dart';
 import '../../../core/ui/human_error.dart';
+import '../../tournaments/data/tournament_providers.dart';
+import '../../../core/supabase/supabase_providers.dart';
 
 /// The live ball-by-ball scorer console. Reads compute_innings_state for the
 /// score/strike, records deliveries via record_ball, re-folds after each ball.
@@ -658,11 +660,35 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       );
       ref.invalidate(matchProvider(widget.matchId));
       ref.invalidate(myMatchesProvider); // history must show the result
+      // If this was a TOURNAMENT fixture, its result changes the standings and
+      // is what unlocks generating the playoffs. The organizer's manage screen
+      // and the public tournament page both read tournamentOverviewProvider,
+      // and nothing here refreshed it - so the organizer finished the last
+      // group game and the Generate playoffs button stayed disabled forever
+      // (re-review 2026-07-07, the same stale-provider class as the squad
+      // handoff).
+      final tid = await _tournamentIdOf(widget.matchId);
+      if (tid != null) ref.invalidate(tournamentOverviewProvider(tid));
       if (mounted) context.pushReplacement(Routes.viewMatch(widget.matchId));
     } catch (e) {
       _toast('$e');
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// The tournament this match belongs to, or null for a casual game.
+  Future<String?> _tournamentIdOf(String matchId) async {
+    try {
+      final row = await ref
+          .read(supabaseClientProvider)
+          .from('tournament_matches')
+          .select('tournament_id')
+          .eq('match_id', matchId)
+          .maybeSingle();
+      return row?['tournament_id'] as String?;
+    } catch (_) {
+      return null; // never let a refresh lookup break finishing a match
     }
   }
 
