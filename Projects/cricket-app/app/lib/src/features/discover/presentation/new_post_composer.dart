@@ -48,12 +48,20 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
     super.dispose();
   }
 
+  /// The feed refuses to show a match more than six hours in the past
+  /// (discover_posts has a match-date floor), so a date before that produces a
+  /// post that is created successfully and then invisible to everyone - the
+  /// author included. Say so at the moment of choosing rather than letting them
+  /// publish into the void (re-review 2026-07-07).
+  static const _feedFloor = Duration(hours: 6);
+
   Future<void> _pickWhen() async {
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
       initialDate: _matchAt ?? now,
-      firstDate: now.subtract(const Duration(days: 1)),
+      // not yesterday: every time on it is already past the feed's floor
+      firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime(now.year + 1),
     );
     if (date == null || !mounted) return;
@@ -61,8 +69,18 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(_matchAt ?? now),
     );
-    setState(() => _matchAt = DateTime(
-        date.year, date.month, date.day, time?.hour ?? 9, time?.minute ?? 0));
+    final chosen = DateTime(
+        date.year, date.month, date.day, time?.hour ?? 9, time?.minute ?? 0);
+    if (chosen.isBefore(DateTime.now().subtract(_feedFloor))) {
+      setState(() => _error =
+          'That time has already passed, so nobody would see this post. '
+          'Pick a time from the last few hours onwards.');
+      return;
+    }
+    setState(() {
+      _matchAt = chosen;
+      _error = null;
+    });
   }
 
   Future<void> _addPhotos() async {

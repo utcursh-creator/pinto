@@ -117,6 +117,18 @@ historical running log, newest-first; do not treat older entries as current.
     so `_post()` bailed every time - **journey B had never once created a post**
     and reported success for weeks, because its old wait was
     `settle(find.text('Discover'))`, the tab label present on every screen.
+  * **run 21 found the next layer of the same test bug**: my flair tap used
+    `find.widgetWithText(ChoiceChip, ...)` but the flair options are `FlairChip`
+    inside a `GestureDetector` - never a ChoiceChip - AND `tapScrolled` only ever
+    scrolled DOWN, so it walked to the bottom of the composer past chips that sit
+    near the TOP. tapScrolled now searches both directions.
+  * **WRITTEN, NOT YET VERIFIED** (device was busy; needs `supabase db reset &&
+    supabase test db`): `20260707210000_notify_only_present_admins.sql` +
+    `tests/118-notify-present-admins-only.test.sql` (departed admins kept getting
+    their old team's join-request/claim notifications), and an app-side composer
+    fix refusing a match time the feed would hide (the picker offered YESTERDAY
+    while discover_posts floors at now-6h, so the app created invisible posts).
+    **Run the gate before trusting either.**
 - **STILL TO FIX from the confirmed list** (work down
   `2026-07-07-rereview-confirmed.md`): the whole `left_at` cluster (leaving a
   team is irreversible; accept_invite no-ops; request_to_join says "already on

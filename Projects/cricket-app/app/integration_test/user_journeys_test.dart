@@ -42,20 +42,30 @@ void main() {
   }
 
   /// Scrolls the nearest scrollable until [f] is visible, then taps it.
+  ///
+  /// Searches DOWN first and then UP. It used to only scroll down, so anything
+  /// above the current position was unreachable - journey B hunted for the flair
+  /// chips (which sit near the top of the composer), scrolled all the way to the
+  /// bottom, and failed with a screenshot of the end of the form.
   Future<void> tapScrolled(WidgetTester tester, Finder f,
       {String label = 'tap'}) async {
-    for (var i = 0; i < 12; i++) {
-      if (f.evaluate().isNotEmpty) {
-        await tester.ensureVisible(f.first);
-        await tester.pumpAndSettle(const Duration(milliseconds: 250));
-        await tester.tap(f.first);
-        await tester.pumpAndSettle(const Duration(milliseconds: 500));
-        return;
-      }
-      await tester.drag(
-          find.byType(Scrollable).first, const Offset(0, -220));
+    Future<bool> tryTap() async {
+      if (f.evaluate().isEmpty) return false;
+      await tester.ensureVisible(f.first);
       await tester.pumpAndSettle(const Duration(milliseconds: 250));
+      await tester.tap(f.first);
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      return true;
     }
+
+    for (final dy in const [-220.0, 220.0]) {
+      for (var i = 0; i < 14; i++) {
+        if (await tryTap()) return;
+        await tester.drag(find.byType(Scrollable).first, Offset(0, dy));
+        await tester.pumpAndSettle(const Duration(milliseconds: 250));
+      }
+    }
+    if (await tryTap()) return;
     await binding.takeScreenshot('timeout_scroll_$label');
     fail('could not find $f to tap at "$label"');
   }
@@ -274,8 +284,9 @@ void main() {
     // the composer never closes. The journey never picked one, so it had never
     // actually created a post; the old wait on find.text('Discover') matched the
     // tab label and hid that completely (re-review 2026-07-07).
-    await tapScrolled(tester, find.widgetWithText(ChoiceChip, 'Practice match'),
-        label: 'pick_flair');
+    // The flair options are FlairChip widgets inside a GestureDetector, NOT
+    // ChoiceChips - a finder for ChoiceChip could never match them.
+    await tapScrolled(tester, find.text('Practice match'), label: 'pick_flair');
     await tapScrolled(tester, find.widgetWithText(FilledButton, 'Post'),
         label: 'post_submit');
     // THE POST MUST EXIST. `settle(find.text('Discover'))` was a no-op - the tab
