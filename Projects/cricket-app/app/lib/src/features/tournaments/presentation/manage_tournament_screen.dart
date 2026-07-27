@@ -107,10 +107,18 @@ class ManageTournamentScreen extends ConsumerWidget {
         ),
       ),
       if (!canGenerate)
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Text('Add at least 2 teams to each group.',
-              style: TextStyle(fontSize: 12)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            // Naming the REAL requirement. "Add at least 2 teams to each group"
+            // is true but unactionable: the v1 format is 2 groups with the top 2
+            // of each qualifying, so the minimum is FOUR teams - and nothing
+            // told the organizer that until they were already stuck (seen on the
+            // simulator, fix run 2026-07-07). Now it also shows where they are.
+            'You need 4 teams to start: 2 in group A and 2 in group B. '
+            'Right now A has ${byGroup['A'] ?? 0} and B has ${byGroup['B'] ?? 0}.',
+            style: const TextStyle(fontSize: 12),
+          ),
         ),
     ];
   }

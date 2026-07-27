@@ -169,7 +169,7 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
               Icon(Icons.info_outline, size: 16, color: theme.colorScheme.outline),
               const SizedBox(width: 6),
               Expanded(
-                child: Text('2 groups, top 2 of each reach the semifinals.',
+                child: Text('2 groups, top 2 of each reach the semifinals. You will need at least 4 teams.',
                     style: theme.textTheme.bodySmall),
               ),
             ],

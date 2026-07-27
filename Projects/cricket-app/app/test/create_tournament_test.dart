@@ -39,7 +39,12 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextField, 'Overs per match'), '99');
       final createBtn = find.widgetWithText(FilledButton, 'Create tournament');
-      await tester.ensureVisible(createBtn);
+      // The form is a lazily-built ListView, so in the 600px test viewport the
+      // submit button may not be INSTANTIATED yet - ensureVisible then throws
+      // "No element". This test was passing by a one-line margin and broke the
+      // moment a hint above it wrapped. Scroll it into existence first.
+      await tester.scrollUntilVisible(createBtn, 200,
+          scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       await tester.tap(createBtn);
       await tester.pumpAndSettle();
