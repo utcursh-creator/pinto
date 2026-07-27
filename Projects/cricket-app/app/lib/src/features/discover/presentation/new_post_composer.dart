@@ -94,7 +94,8 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
       setState(() => _error = 'Pick which team this post is for.');
       return;
     }
-    final anchor = ref.read(anchorProvider);
+    final anchor = effectiveAnchor(
+      ref.read(anchorProvider), ref.read(homeLocationProvider).value);
     setState(() {
       _busy = true;
       _error = null;

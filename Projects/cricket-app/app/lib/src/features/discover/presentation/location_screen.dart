@@ -30,7 +30,8 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   @override
   void initState() {
     super.initState();
-    final a = ref.read(anchorProvider);
+    final a = effectiveAnchor(
+        ref.read(anchorProvider), ref.read(homeLocationProvider).value);
     _lat = TextEditingController(text: a.lat.toString());
     _lng = TextEditingController(text: a.lng.toString());
     _radiusKm = a.radiusM / 1000;

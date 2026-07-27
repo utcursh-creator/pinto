@@ -38,10 +38,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return const AdaptiveScaffold(title: 'Discover', body: _SignInToDiscover());
     }
 
-    // The anchor derives itself from the saved home base (see AnchorNotifier).
-    // Doing it here with ref.listen + a notifier mutation modified a provider
-    // during build and threw a framework assertion on every Discover open.
-    final anchor = ref.watch(anchorProvider);
+    // Derived purely from two watched values - no provider watches another, so
+    // nothing can invalidate itself mid-build (see discover_providers.dart).
+    final anchor = effectiveAnchor(
+      ref.watch(anchorProvider),
+      ref.watch(homeLocationProvider).value,
+    );
     final query = DiscoverQuery(
       lat: anchor.lat,
       lng: anchor.lng,

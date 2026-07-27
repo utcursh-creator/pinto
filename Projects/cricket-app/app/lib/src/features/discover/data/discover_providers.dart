@@ -5,45 +5,51 @@ import '../../../core/supabase/supabase_providers.dart';
 import 'discover_models.dart';
 import 'discover_repository.dart';
 
-/// The geo anchor (lat/lng + radius) the feed searches around. Derives itself
-/// from the user's saved home base, falling back to a city centre, and stops
-/// deriving once the user picks an anchor this session.
+/// The anchor the discover feed searches around.
 ///
-/// This USED to be driven from DiscoverScreen.build via
-/// `ref.listen(homeLocationProvider, ... adoptHome(...))`. Registering that
-/// listener flushes homeLocationProvider DURING build, whose notification
-/// invalidated a dependent provider, which called setState on the
-/// ProviderScope mid-build - a hard framework assertion every time a signed-in
-/// user opened the Discover tab (found by driving the app on the simulator,
-/// penetration-review fix run 2026-07-07). Deriving it here means no widget
-/// mutates a provider during build.
+/// [anchorProvider] holds ONLY the anchor the user explicitly chose (null until
+/// they do) and has NO dependencies, so it can never invalidate itself. The
+/// anchor the feed should actually use is derived by [effectiveAnchor] as a pure
+/// function of two values the WIDGET watches.
+///
+/// Two earlier shapes both crashed with "setState() called during build" on
+/// every Discover open (found on the simulator, fix run 2026-07-07):
+///   1. DiscoverScreen.build did `ref.listen(homeLocationProvider, ... )` and
+///      mutated this notifier from the callback.
+///   2. This notifier `ref.watch`ed homeLocationProvider directly - a
+///      NotifierProvider watching a FutureProvider invalidates ITSELF when the
+///      future resolves, and when the first watch happens during build that
+///      scheduleRefresh calls setState on the ProviderScope mid-build.
+/// The invariant that actually holds: NO PROVIDER may watch
+/// homeLocationProvider. Widgets may; providers may not.
 typedef Anchor = ({double lat, double lng, double radiusM});
 
-class AnchorNotifier extends Notifier<Anchor> {
-  static const _fallback = (lat: 19.07, lng: 72.87, radiusM: 25000.0);
-  bool _userSet = false;
-  Anchor? _chosen;
+typedef HomeBase = ({double lat, double lng, String? label});
 
+const Anchor kFallbackAnchor = (lat: 19.07, lng: 72.87, radiusM: 25000.0);
+
+class AnchorNotifier extends Notifier<Anchor?> {
   @override
-  Anchor build() {
-    // Once the user picks an anchor it wins over the saved home base, and it
-    // must survive rebuilds triggered by homeLocationProvider resolving.
-    if (_userSet && _chosen != null) return _chosen!;
-    final home = ref.watch(homeLocationProvider).value;
-    if (home == null) return _fallback;
-    return (lat: home.lat, lng: home.lng, radiusM: _fallback.radiusM);
-  }
+  Anchor? build() => null; // no dependencies, by design
 
-  void set(Anchor anchor) {
-    _userSet = true;
-    _chosen = anchor;
-    state = anchor;
-  }
+  void set(Anchor anchor) => state = anchor;
+
+  /// Drop back to deriving from the saved home base.
+  void clear() => state = null;
 }
 
-final anchorProvider = NotifierProvider<AnchorNotifier, Anchor>(
-  AnchorNotifier.new,
-);
+final anchorProvider =
+    NotifierProvider<AnchorNotifier, Anchor?>(AnchorNotifier.new);
+
+/// The user's choice wins; otherwise their saved home base; otherwise a city
+/// centre. Pure, so it cannot participate in an invalidation cascade.
+Anchor effectiveAnchor(Anchor? chosen, HomeBase? home) {
+  if (chosen != null) return chosen;
+  if (home != null) {
+    return (lat: home.lat, lng: home.lng, radiusM: kFallbackAnchor.radiusM);
+  }
+  return kFallbackAnchor;
+}
 
 /// The signed-in user's saved home base (null if unset or anonymous). Drives the
 /// default discover anchor so the feed centres on the user's real area, not a
