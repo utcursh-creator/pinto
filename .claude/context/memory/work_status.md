@@ -129,7 +129,20 @@ historical running log, newest-first; do not treat older entries as current.
     fix refusing a match time the feed would hide (the picker offered YESTERDAY
     while discover_posts floors at now-6h, so the app created invisible posts).
     **Run the gate before trusting either.**
-- **STILL TO FIX from the confirmed list** (work down
+  * **ALL 19 CONFIRMED FINDINGS ARE NOW CLOSED** (`e626518` closed the last one:
+    departed admins receiving their old team's join-request/claim notifications,
+    test 118, verified - pgTAP now **678 / 111 files**).
+  * **`e626518` also shipped a FEATURE the frames revealed**: every layer
+    supported a post title except the one that creates it. `looking_for_posts
+    .title` exists, `create_looking_for_post` takes `_title`, `discover_posts`
+    returns it, and the feed card PREFERS it over the mode label - there was no
+    input. So every ad was headlined "Need a team" instead of the poster's own
+    words, on a feed whose whole job is conveying intent. Found by LOOKING at
+    run 22's frame, which showed the created post as a generic card.
+- **NEXT (all confirmed findings done)**: re-run the FULL 12-front review and
+  repeat until zero; journeys F-J (§7 - G is the only real end-to-end proof for
+  the tournamentOverviewProvider fix, which still has no test); the SHADOW PUSH.
+- **(historical) STILL TO FIX from the confirmed list** (work down
   `2026-07-07-rereview-confirmed.md`): the whole `left_at` cluster (leaving a
   team is irreversible; accept_invite no-ops; request_to_join says "already on
   this team"; a departed guest's NAME is burned; transfer_scorer can hand
