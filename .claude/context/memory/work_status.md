@@ -88,6 +88,24 @@ historical running log, newest-first; do not treat older entries as current.
     fix. Recorded as such.)
 - **RUN 19: all six journeys green** with journey E now asserting the ball-log
   ARRANGEMENT, not just the total.
+  * **2 HIGH `cff5d14`** - (a) a DEPARTED player haunted a resumed squad:
+    invisible (off the roster), unremovable, counted in "N picked", and
+    re-written on save. Prefill now only takes still-selectable players; proven
+    RED (counter read 4 where 3 were pickable). (b) finishing a tournament
+    fixture never invalidated tournamentOverviewProvider, so the organizer
+    finished the last group game and Generate playoffs stayed disabled forever -
+    the SAME stale-provider class, in a third place.
+  * **2 MEDIUM + 5 dud assertions `9b1317b`** - the opponent sheet overflowed a
+    375x667 phone by 93px with the keyboard up (fixed height + autofocus);
+    opponentSearchProvider was a non-autoDispose family keyed per keystroke, so
+    a FAILED search stayed cached for the session. And five of MY OWN assertions
+    could not fail: journey D asserted the Undo/Swap/Retire buttons EXIST (the
+    AbsorbPointer bug left them rendered but dead - it now asserts the striker
+    actually changes), journey B waited on the always-present 'Discover' tab
+    label and never checked the post was created, journey C's finder matched the
+    SEARCH BOX it had typed into, pgTAP 112's post was excluded for being
+    EXPIRED rather than by the match-date floor it names, and pgTAP 114 checked
+    a bound with one row in the fixture.
 - **STILL TO FIX from the confirmed list** (work down
   `2026-07-07-rereview-confirmed.md`): the whole `left_at` cluster (leaving a
   team is irreversible; accept_invite no-ops; request_to_join says "already on
