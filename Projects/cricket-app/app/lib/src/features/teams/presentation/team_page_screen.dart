@@ -26,6 +26,7 @@ class TeamPageScreen extends ConsumerWidget {
     final teamAsync = ref.watch(teamProvider(teamId));
     final rosterAsync = ref.watch(teamRosterProvider(teamId));
     final uid = ref.watch(currentSessionProvider)?.user.id;
+    final isAnon = ref.watch(isAnonymousProvider);
     final team = teamAsync.value;
 
     // TEAM-1: leave/delete/edit live in the app-bar overflow, gated by the
@@ -109,8 +110,12 @@ class TeamPageScreen extends ConsumerWidget {
                   ),
                   // TEAM-13: the career line - the team is no longer a shell.
                   _TeamRecordLine(teamId: teamId),
-                  // TEAM-11: a signed-in stranger can ask to join.
-                  if (uid != null && myRow == null)
+                  // TEAM-11: a signed-in stranger can ask to join. An ANONYMOUS
+                  // session also has a uid, so gating on `uid != null` alone
+                  // showed this to guests, who then hit a raw foreign-key error
+                  // because they have no profiles row (penetration review
+                  // 2026-07-07). Require a real identity.
+                  if (uid != null && !isAnon && myRow == null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                       child: FilledButton.icon(
@@ -137,7 +142,7 @@ class TeamPageScreen extends ConsumerWidget {
                       adminMenu: isAdmin && member['profile_id'] != uid,
                       onMemberAction: (v) =>
                           _memberAction(context, ref, v, member),
-                      onClaim: (uid != null && member['profile_id'] == null)
+                      onClaim: (uid != null && !isAnon && member['profile_id'] == null)
                           ? () => _claim(context, ref, member['id'] as String)
                           : null,
                       // STAT-2: everyone has a career page now - registered

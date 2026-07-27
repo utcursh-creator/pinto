@@ -99,7 +99,8 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
               await repo.getOrCreateDmThread(widget.proposeToAuthorId!);
           await repo.sendDm(threadId,
               'I proposed a match against your team ($overs overs). '
-              "Let's set it up - watch it live once we start: ${Routes.viewMatch(id)}");
+              "Let's set it up - watch it live once we start: "
+              "${Routes.publicMatchUrl(id)}");
         } catch (_) {/* non-fatal: the match is created regardless */}
       }
       // the Matches list is cached; a new match must appear on return

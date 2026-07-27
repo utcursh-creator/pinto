@@ -60,6 +60,14 @@ class Routes {
   // Public, login-free, shareable live view. Top-level (NOT under the shell)
   // so it cold-starts correctly from a deep/share link, unlike a branch route.
   static String viewMatch(String matchId) => '/watch/$matchId';
+
+  /// The shareable form. A bare in-app route path is not tappable in a chat
+  /// client, and the "Propose a match" DM was pasting one, so the poster received
+  /// a dead string (penetration review 2026-07-07). Deep-link domain registration
+  /// is still outstanding, but the message must at least carry a real URL the
+  /// recipient can open.
+  static const String publicHost = 'https://pitch.app';
+  static String publicMatchUrl(String matchId) => '$publicHost/watch/$matchId';
   static String transferScorer(String matchId) => '/matches/$matchId/transfer';
 
   // Public, login-free, shareable player career stats (top-level, like /watch).

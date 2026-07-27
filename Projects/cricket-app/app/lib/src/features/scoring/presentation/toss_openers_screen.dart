@@ -176,7 +176,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
         squadRows.where((r) => r['team_id'] == bowlingTeam).length;
     if (bowlers < 2) {
       setState(() => _error =
-          'The bowling side needs at least 2 squad members - go back and add them.');
+          'The bowling side needs at least 2 squad members. Tap Edit squads below to add them.');
       return;
     }
     setState(() {

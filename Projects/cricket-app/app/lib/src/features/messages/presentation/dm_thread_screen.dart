@@ -9,6 +9,7 @@ import '../../discover/data/discover_providers.dart';
 import '../data/dm_realtime.dart';
 import '../../discover/data/discover_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// A 1:1 DM thread. Loads history once, then subscribes to the private
 /// `dm:<threadId>` broadcast channel and appends new messages live. The header
@@ -31,6 +32,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   final Set<String> _ids = {};
   void Function()? _detach;
   bool _loading = true;
+  String? _loadError;
   bool _sending = false;
 
   SupabaseClient get _c => ref.read(supabaseClientProvider);
@@ -42,20 +44,43 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     _init();
   }
 
+  /// A throw here used to leave a PERMANENT spinner: no error, no retry, and
+  /// _subscribe() never ran, so the thread was not even live once it recovered
+  /// (penetration review 2026-07-07).
   Future<void> _init() async {
-    final rows = await _c
-        .from('dm_messages')
-        .select('id, sender_id, body, created_at')
-        .eq('thread_id', widget.threadId)
-        .order('created_at');
-    for (final r in (rows as List).cast<Map<String, dynamic>>()) {
-      _ids.add(r['id'] as String);
-      _messages.add(r);
+    try {
+      final rows = await _c
+          .from('dm_messages')
+          .select('id, sender_id, body, created_at')
+          .eq('thread_id', widget.threadId)
+          .order('created_at');
+      for (final r in (rows as List).cast<Map<String, dynamic>>()) {
+        _ids.add(r['id'] as String);
+        _messages.add(r);
+      }
+      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadError = humanError(e, fallback: 'Could not load this conversation.');
+        });
+      }
+      return; // do not subscribe/mark-read against a failed load
     }
-    if (mounted) setState(() => _loading = false);
     _subscribe();
     _jump();
     _markRead();
+  }
+
+  void _retryLoad() {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+      _messages.clear();
+      _ids.clear();
+    });
+    _init();
   }
 
   /// DM-4: opening the thread clears the unread state (secured RPC) and
@@ -225,7 +250,9 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _loading
+            child: _loadError != null
+                ? ErrorRetry(message: _loadError!, onRetry: _retryLoad)
+                : _loading
                 ? const Center(child: CircularProgressIndicator.adaptive())
                 : ListView.builder(
                     controller: _scroll,
