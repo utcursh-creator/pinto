@@ -52,13 +52,18 @@ android {
 
     buildTypes {
         release {
-            // Use the real release key when key.properties is present; otherwise
-            // fall back to the debug key so the build still works without it.
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            // NEVER silently fall back to the debug key: a debug-signed release
+            // cannot be updated over a real install and is rejected by Play, and
+            // the fallback made that failure invisible until upload
+            // (penetration review 2026-07-07). Fail the build instead.
+            if (!keystorePropertiesFile.exists()) {
+                throw GradleException(
+                    "android/key.properties is missing - refusing to build an " +
+                    "unsigned/debug-signed release. Create it from the release " +
+                    "keystore before building."
+                )
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

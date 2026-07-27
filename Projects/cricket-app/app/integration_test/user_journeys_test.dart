@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:pitch_app/main.dart' as app;
 
 /// THE THREE USER JOURNEYS the user asked to be driven and verified on a real
@@ -58,8 +60,26 @@ void main() {
     fail('could not find $f to tap at "$label"');
   }
 
+  /// integration_test runs every testWidgets in ONE app process, and
+  /// supabase_flutter persists the session - so journeys after the first start
+  /// already signed in and never see the anon "Sign in" call to action. Reset to
+  /// a genuinely signed-out device first; that is test setup, not the journey.
+  Future<void> ensureSignedOut(WidgetTester tester) async {
+    final c = Supabase.instance.client;
+    if (c.auth.currentSession != null) {
+      await c.auth.signOut();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+    }
+    // the auth listener re-anons and the router gate returns us to Discover
+    for (var i = 0; i < 30; i++) {
+      await tester.pumpAndSettle(const Duration(milliseconds: 400));
+      if (find.text('Sign in').evaluate().isNotEmpty) return;
+    }
+  }
+
   /// Signs up a brand-new account through the UI and completes onboarding.
   Future<void> signUpFresh(WidgetTester tester, int run, String name) async {
+    await ensureSignedOut(tester);
     await settle(tester, find.text('Sign in'), label: 'anon_signin_cta');
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in').first);
     await settle(tester, find.text('Create test account (dev)'),

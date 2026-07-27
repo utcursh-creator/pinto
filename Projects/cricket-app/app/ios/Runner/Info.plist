@@ -12,8 +12,10 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Pitch saves scorecard and match images you choose to share to your photo library.</string>
 	<key>CFBundleDisplayName</key>
-	<string>Pitch App</string>
+	<string>Pitch</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

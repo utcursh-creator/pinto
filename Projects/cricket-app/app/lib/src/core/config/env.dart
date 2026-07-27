@@ -32,6 +32,24 @@ class SupabaseEnv {
   /// Android uses the registered Android OAuth client (package + SHA) plus the
   /// web client as `serverClientId`, so it only needs the web id. iOS also needs
   /// its own iOS client id (and the reversed-client-id in Info.plist).
+  /// True when the build is still pointed at the LOCAL dev stack.
+  static bool get isLocal =>
+      url.contains('127.0.0.1') || url.contains('localhost') || url.contains('10.0.2.2');
+
+  /// A release binary pointed at localhost cannot reach anything: every screen
+  /// fails with a connection error and it looks like the app is broken. The
+  /// hosted config is supplied by --dart-define-from-file, which is easy to
+  /// forget - so refuse to run rather than ship a dead build
+  /// (penetration review 2026-07-07).
+  static void assertReleaseConfigured() {
+    if (kReleaseMode && isLocal) {
+      throw StateError(
+        'Release build is pointed at the local Supabase stack ($url). '
+        'Rebuild with --dart-define-from-file=hosted_defines.json.',
+      );
+    }
+  }
+
   static bool get googleConfigured {
     if (googleWebClientId.isEmpty) return false;
     if (defaultTargetPlatform == TargetPlatform.iOS) {
