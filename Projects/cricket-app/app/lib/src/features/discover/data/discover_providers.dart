@@ -212,15 +212,25 @@ final dmInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return rows;
 });
 
-/// Total unread DM count (for the Discover mail badge). Derived off the inbox.
-final dmUnreadCountProvider = Provider<int>((ref) {
-  final inbox = ref.watch(dmInboxProvider).value ?? const [];
+/// Total unread DM count, as a PURE function of inbox rows.
+///
+/// This used to be a synchronous `Provider<int>` doing
+/// `ref.watch(dmInboxProvider).value`. A sync provider that watches an ASYNC one
+/// invalidates ITSELF the moment the async value arrives; when the widget's first
+/// watch happens during build, the ancestor is flushed inside that watch,
+/// produces a new value, notifies this provider, and invalidateSelf ->
+/// scheduleRefresh -> setState on the ProviderScope MID-BUILD. That crashed
+/// Discover on every open (three separate shapes of the same bug - fix run
+/// 2026-07-07). Widgets may watch async providers; an intermediate SYNC provider
+/// may not. So there is no intermediate provider any more: the widget watches
+/// dmInboxProvider and calls this.
+int unreadDmCount(List<Map<String, dynamic>>? inbox) {
   var n = 0;
-  for (final t in inbox) {
+  for (final t in inbox ?? const []) {
     n += (t['unread'] as int?) ?? 0;
   }
   return n;
-});
+}
 
 /// DM-1: the other participant of a thread (name + photo) for the header.
 final threadOtherProvider =
@@ -251,8 +261,7 @@ final notificationsProvider =
   return List<Map<String, dynamic>>.from(rows as List);
 });
 
-/// Unread notification count (for the bell badge).
-final unreadNotificationsCountProvider = Provider<int>((ref) {
-  final rows = ref.watch(notificationsProvider).value ?? const [];
-  return rows.where((n) => n['read_at'] == null).length;
-});
+/// Unread notification count, as a PURE function of notification rows (see
+/// unreadDmCount for why this is not a provider).
+int unreadNotificationCount(List<Map<String, dynamic>>? rows) =>
+    (rows ?? const []).where((n) => n['read_at'] == null).length;

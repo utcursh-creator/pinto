@@ -67,7 +67,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
         IconButton(
           icon: _Badged(
-            count: ref.watch(unreadNotificationsCountProvider),
+            count: unreadNotificationCount(
+                ref.watch(notificationsProvider).value),
             child: const Icon(Icons.notifications_none),
           ),
           tooltip: 'Notifications',
@@ -75,7 +76,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
         IconButton(
           icon: _Badged(
-            count: ref.watch(dmUnreadCountProvider),
+            count: unreadDmCount(ref.watch(dmInboxProvider).value),
             child: const Icon(Icons.mail_outline),
           ),
           onPressed: () => context.push(Routes.messages),

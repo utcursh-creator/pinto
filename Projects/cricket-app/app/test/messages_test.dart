@@ -96,12 +96,14 @@ void main() {
           ]),
     ]);
     addTearDown(container.dispose);
-    // resolve the futures first
+    // The counts are PURE functions of the rows now, not intermediate sync
+    // providers - a sync provider watching an async one invalidated itself
+    // mid-build and crashed Discover on every open (fix run 2026-07-07).
     return Future(() async {
-      await container.read(dmInboxProvider.future);
-      await container.read(notificationsProvider.future);
-      expect(container.read(dmUnreadCountProvider), 3);
-      expect(container.read(unreadNotificationsCountProvider), 1);
+      final inbox = await container.read(dmInboxProvider.future);
+      final notes = await container.read(notificationsProvider.future);
+      expect(unreadDmCount(inbox), 3);
+      expect(unreadNotificationCount(notes), 1);
     });
   });
 }
