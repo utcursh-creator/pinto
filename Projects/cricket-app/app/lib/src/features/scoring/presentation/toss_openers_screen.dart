@@ -6,6 +6,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 class TossOpenersScreen extends ConsumerStatefulWidget {
   const TossOpenersScreen({required this.matchId, super.key});
@@ -33,7 +34,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
       title: 'Toss & openers',
       body: match.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => Center(child: Text(humanError(e))),
         data: (m) {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
@@ -50,7 +51,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
           return squad.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator.adaptive()),
-            error: (e, _) => Center(child: Text('$e')),
+            error: (e, _) => Center(child: Text(humanError(e))),
             data: (rows) {
               final batters = [
                 for (final r in rows)
@@ -200,7 +201,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
       if (mounted) context.pushReplacement(Routes.scoreMatch(widget.matchId));
     } catch (e) {
       // golden-path audit: a silent failure here strands the user at the toss
-      if (mounted) setState(() => _error = 'Could not start the match: $e');
+      if (mounted) setState(() => _error = humanError(e, fallback: 'Could not start the match.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

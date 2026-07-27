@@ -6,6 +6,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 class MatchSquadsScreen extends ConsumerStatefulWidget {
   const MatchSquadsScreen({required this.matchId, super.key});
@@ -83,7 +84,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
       if (mounted) context.pushReplacement(Routes.matchToss(widget.matchId));
     } catch (e) {
       // golden-path audit: an aborted squad save must not fail silently
-      if (mounted) setState(() => _error = 'Could not save the squads: $e');
+      if (mounted) setState(() => _error = humanError(e, fallback: 'Could not save the squads.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -96,7 +97,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
       title: 'Squads',
       body: match.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => Center(child: Text(humanError(e))),
         data: (m) {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
@@ -216,7 +217,7 @@ class _TeamPicker extends ConsumerWidget {
           );
       ref.invalidate(teamMembersProvider(teamId));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not add guest: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not add guest.'))));
     }
   }
 
@@ -228,7 +229,7 @@ class _TeamPicker extends ConsumerWidget {
       title: Text(label),
       children: members.when(
         loading: () => const [LinearProgressIndicator()],
-        error: (e, _) => [ListTile(title: Text('$e'))],
+        error: (e, _) => [ListTile(title: Text(humanError(e)))],
         data: (rows) {
           // SCOR-13: batting slot = pick order within this team
           final teamOrder = [

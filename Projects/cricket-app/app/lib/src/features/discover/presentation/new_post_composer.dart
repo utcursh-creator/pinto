@@ -11,6 +11,7 @@ import '../data/discover_models.dart';
 import '../data/discover_providers.dart';
 import '../data/discover_repository.dart';
 import 'flair_chip.dart';
+import '../../../core/ui/human_error.dart';
 
 class NewPostComposer extends ConsumerStatefulWidget {
   const NewPostComposer({super.key});
@@ -79,7 +80,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
         if (mounted) setState(() => _imageUrls.add(url));
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'Photo upload failed: $e');
+      if (mounted) setState(() => _error = humanError(e, fallback: 'Photo upload failed.'));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -184,7 +185,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
             const SizedBox(height: 8),
             myTeams.when(
               loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Could not load teams.\n$e'),
+              error: (e, _) => Text(humanError(e, fallback: 'Could not load teams.')),
               data: (rows) {
                 final admin = [
                   for (final r in rows)

@@ -8,6 +8,7 @@ import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import '../../../core/ui/human_error.dart';
 
 /// PROF-2 / MISS-4: account management + store-compliance surface - password
 /// reset, email change, ACCOUNT DELETION (Apple/Google reject apps without it),
@@ -35,7 +36,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       messenger?.showSnackBar(
           SnackBar(content: Text('Password reset link sent to $email')));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not send: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not send.'))));
     }
   }
 
@@ -70,7 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       messenger?.showSnackBar(SnackBar(
           content: Text('Confirmation sent to $email - open it to finish.')));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not update: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not update.'))));
     }
   }
 
@@ -107,7 +108,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // the auth listener re-anons + the router gate takes over
       if (mounted) context.go(Routes.discover);
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not delete.'))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../ui/app_primitives.dart';
 import 'brand_tokens.dart';
 
 /// One MaterialApp drives both platforms; Cupertino widgets harmonize inside
@@ -13,6 +14,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(seedColor: BrandTokens.teal),
+      // semantic roles for the AppSkeleton/AppEmpty/AppAlert/AppField layer
+      extensions: const [AppSemanticColors.light],
     );
   }
 
@@ -23,6 +26,7 @@ class AppTheme {
       cupertinoOverrideTheme: const CupertinoThemeData(
         primaryColor: BrandTokens.teal,
       ),
+      extensions: const [AppSemanticColors.light],
     );
   }
 }

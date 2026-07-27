@@ -14,6 +14,7 @@ import '../../identity/data/identity_labels.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
+import '../../../core/ui/human_error.dart';
 
 class TeamPageScreen extends ConsumerWidget {
   const TeamPageScreen({required this.teamId, super.key});
@@ -54,14 +55,14 @@ class TeamPageScreen extends ConsumerWidget {
       ],
       body: teamAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load team.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load team.'))),
         data: (team) {
           if (team == null) return const Center(child: Text('Team not found.'));
           final city = team['city'] as String?;
           return rosterAsync.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator.adaptive()),
-            error: (e, _) => Center(child: Text('Could not load roster.\n$e')),
+            error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load roster.'))),
             data: (roster) {
               Map<String, dynamic>? myRow;
               for (final r in roster) {
@@ -221,7 +222,7 @@ class TeamPageScreen extends ConsumerWidget {
                 child: Center(child: CircularProgressIndicator.adaptive())),
             error: (e, _) => Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not load invites.\n$e')),
+                child: Text(humanError(e, fallback: 'Could not load invites.'))),
             data: (rows) => rows.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.all(24),
@@ -252,7 +253,7 @@ class TeamPageScreen extends ConsumerWidget {
                                 // fresh-eyes audit: a failed revoke left the
                                 // invite alive with zero feedback
                                 messenger?.showSnackBar(SnackBar(
-                                    content: Text('Could not revoke: $e')));
+                                    content: Text(humanError(e, fallback: 'Could not revoke.'))));
                               }
                             },
                             child: const Text('Revoke',
@@ -285,7 +286,7 @@ class TeamPageScreen extends ConsumerWidget {
               ?.showSnackBar(const SnackBar(content: Text('You left the team')));
           if (context.mounted) context.pop();
         } catch (e) {
-          messenger?.showSnackBar(SnackBar(content: Text('Could not leave: $e')));
+          messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not leave.'))));
         }
       case 'delete':
         final ok = await _confirm(context, 'Delete this team?',
@@ -354,7 +355,7 @@ class TeamPageScreen extends ConsumerWidget {
       ref.invalidate(teamProvider(teamId));
       ref.invalidate(myTeamsProvider);
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not save.'))));
     }
   }
 
@@ -391,7 +392,7 @@ class TeamPageScreen extends ConsumerWidget {
       }
       ref.invalidate(teamRosterProvider(teamId));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not update: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not update.'))));
     }
   }
 
@@ -453,7 +454,7 @@ class TeamPageScreen extends ConsumerWidget {
       // guest) - surface them instead of throwing an unhandled exception.
       if (context.mounted) {
         ScaffoldMessenger.maybeOf(context)
-            ?.showSnackBar(SnackBar(content: Text('Could not add guest: $e')));
+            ?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not add guest.'))));
       }
     }
   }
@@ -471,7 +472,7 @@ class TeamPageScreen extends ConsumerWidget {
       ref.invalidate(teamProvider(teamId));
       messenger?.showSnackBar(const SnackBar(content: Text('Logo updated')));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 
@@ -487,7 +488,7 @@ class TeamPageScreen extends ConsumerWidget {
         ),
       );
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 
@@ -505,7 +506,7 @@ class TeamPageScreen extends ConsumerWidget {
         const SnackBar(content: Text('Claim request sent to the captain')),
       );
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 }
@@ -648,7 +649,7 @@ class _HomeGround extends ConsumerWidget {
     } on LocationException catch (e) {
       messenger?.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 }

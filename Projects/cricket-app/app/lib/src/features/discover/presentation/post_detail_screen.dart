@@ -10,6 +10,7 @@ import '../data/discover_models.dart';
 import '../data/discover_providers.dart';
 import '../data/discover_repository.dart';
 import 'flair_chip.dart';
+import '../../../core/ui/human_error.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   const PostDetailScreen({required this.postId, super.key});
@@ -42,7 +43,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     } catch (e) {
       // golden-path audit: keep the text + tell them (was a silent drop)
       messenger
-          ?.showSnackBar(SnackBar(content: Text('Could not send reply: $e')));
+          ?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not send reply.'))));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -80,7 +81,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       title: 'Post',
       body: post.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load post.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load post.'))),
         data: (p) {
           if (p == null) return const Center(child: Text('Post not found.'));
           final authorName = p['author_name'] as String?;
@@ -216,7 +217,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         padding: EdgeInsets.all(8),
                         child: Center(child: CircularProgressIndicator.adaptive()),
                       ),
-                      error: (e, _) => Text('Could not load replies.\n$e'),
+                      error: (e, _) => Text(humanError(e, fallback: 'Could not load replies.')),
                       data: (rows) => rows.isEmpty
                           ? const Text('No replies yet. Be the first.')
                           : Column(

@@ -10,6 +10,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../identity/data/identity_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
+import '../../../core/ui/human_error.dart';
 
 /// First-run gate: a real (non-anonymous) user with no profile row lands here.
 /// Collects the essentials (name + a unique handle, plus optional city/style/
@@ -80,7 +81,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
           await ref.read(identityRepositoryProvider).uploadAvatar(bytes, ext);
       if (mounted) setState(() => _photoUrl = url);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not upload the photo: $e');
+      if (mounted) setState(() => _error = humanError(e, fallback: 'Could not upload the photo.'));
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }

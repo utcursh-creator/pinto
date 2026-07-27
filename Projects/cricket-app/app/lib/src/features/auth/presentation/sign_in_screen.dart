@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../data/oauth_sign_in.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Sign-in. The Google/Apple buttons call the native OAuth flow
 /// (oAuthServiceProvider); they surface a friendly error until the OAuth client
@@ -48,7 +49,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       setState(() => _message = e.message);
     } catch (e) {
       // OAuth plugins throw their own exception types (cancellation, etc.).
-      setState(() => _message = 'Sign-in failed: $e');
+      setState(() => _message = humanError(e, fallback: 'Sign-in failed.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

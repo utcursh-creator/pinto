@@ -7,6 +7,7 @@ import '../../../core/routing/routes.dart';
 import '../../identity/data/identity_labels.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/presentation/initials_avatar.dart';
+import '../../../core/ui/human_error.dart';
 
 class MyTeamsScreen extends ConsumerWidget {
   const MyTeamsScreen({super.key});
@@ -25,7 +26,7 @@ class MyTeamsScreen extends ConsumerWidget {
       ],
       body: teamsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load teams.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load teams.'))),
         data: (rows) {
           return RefreshIndicator.adaptive(
             // TEAM-12: pull-to-refresh (stale after invite-accept/leave).

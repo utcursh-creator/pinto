@@ -8,6 +8,7 @@ import '../../../core/platform/platform.dart';
 import '../../../core/routing/routes.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
+import '../../../core/ui/human_error.dart';
 
 /// All tournaments. Tapping a card opens the public page; the organizer of a
 /// tournament also gets a Manage shortcut.
@@ -43,7 +44,7 @@ class TournamentsListScreen extends ConsumerWidget {
             ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load tournaments.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load tournaments.'))),
         data: (rows) => rows.isEmpty
             ? const Center(child: Text('No tournaments yet. Create one.'))
             : ListView.separated(

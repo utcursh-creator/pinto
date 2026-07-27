@@ -19,6 +19,7 @@ import '../../tournaments/data/tournament_providers.dart';
 import '../data/match_providers.dart';
 import 'match_share_card.dart';
 import 'wagon_field.dart';
+import '../../../core/ui/human_error.dart';
 
 const _kInk = Color(0xFF0F2E26);
 const _kTeal = Color(0xFF0F6E56);
@@ -169,7 +170,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
       // button - say why instead.
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(content: Text('Could not build the share card: $e')));
+            SnackBar(content: Text(humanError(e, fallback: 'Could not build the share card.'))));
       }
     }
   }
@@ -258,7 +259,7 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(content: Text('Could not build the scorecard: $e')));
+            SnackBar(content: Text(humanError(e, fallback: 'Could not build the scorecard.'))));
       }
     }
   }
@@ -480,7 +481,7 @@ class _LiveTab extends ConsumerWidget {
     final state = ref.watch(inningsStateProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text('Could not load score.\n$e')),
+      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load score.'))),
       data: (s) => _content(s),
     );
   }
@@ -743,7 +744,7 @@ class _ScorecardTab extends ConsumerWidget {
     final state = ref.watch(inningsStateProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text('Could not load scorecard.\n$e')),
+      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load scorecard.'))),
       data: (s) => _content(s),
     );
   }
@@ -902,7 +903,7 @@ class _ChartsTab extends ConsumerWidget {
     final wagon = ref.watch(inningsWagonProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text('Could not load charts.\n$e')),
+      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load charts.'))),
       data: (s) => _content(s, wagon.value ?? const []),
     );
   }

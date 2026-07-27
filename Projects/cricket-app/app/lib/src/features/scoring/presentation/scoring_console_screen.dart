@@ -7,6 +7,7 @@ import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import 'wagon_field.dart';
+import '../../../core/ui/human_error.dart';
 
 /// The live ball-by-ball scorer console. Reads compute_innings_state for the
 /// score/strike, records deliveries via record_ball, re-folds after each ball.
@@ -157,7 +158,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                         zone: zone,
                       );
                     } catch (e) {
-                      _toast('Shot not saved: $e');
+                      _toast(humanError(e, fallback: 'Shot not saved.'));
                     }
                     if (sheetCtx.mounted) Navigator.pop(sheetCtx);
                   },
@@ -379,7 +380,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
 
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text('Could not load score.\n$e')),
+      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load score.'))),
       data: (s) {
         final runs = (s['runs'] as num?)?.toInt() ?? 0;
         final wkts = (s['wickets'] as num?)?.toInt() ?? 0;
@@ -982,7 +983,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                       await _repo.swapStrike(inningsId);
                       ref.invalidate(inningsStateProvider(inningsId));
                     } catch (e) {
-                      _toast('Could not swap: $e');
+                      _toast(humanError(e, fallback: 'Could not swap.'));
                     }
                   },
           ),
@@ -1025,7 +1026,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         }
       }
     } catch (e) {
-      _toast('Could not undo: $e');
+      _toast(humanError(e, fallback: 'Could not undo.'));
     } finally {
       if (mounted) setState(() => _undoBusy = false);
     }

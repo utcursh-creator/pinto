@@ -7,6 +7,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Public, login-free tournament page. One tournament_overview call feeds four
 /// tabs: Table (standings + NRR), Fixtures, Bracket, and Leaders.
@@ -39,7 +40,7 @@ class _TournamentPageScreenState extends ConsumerState<TournamentPageScreen> {
       ],
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load tournament.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load tournament.'))),
         data: (o) => Column(
           children: [
             if (o.info.isComplete && o.championTeamId != null)

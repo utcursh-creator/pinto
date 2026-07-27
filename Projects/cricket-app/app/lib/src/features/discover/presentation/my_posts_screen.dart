@@ -6,6 +6,7 @@ import '../data/discover_models.dart';
 import '../data/discover_providers.dart';
 import '../data/discover_repository.dart';
 import 'flair_chip.dart';
+import '../../../core/ui/human_error.dart';
 
 class MyPostsScreen extends ConsumerWidget {
   const MyPostsScreen({super.key});
@@ -24,7 +25,7 @@ class MyPostsScreen extends ConsumerWidget {
       title: 'My posts',
       body: posts.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load your posts.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load your posts.'))),
         data: (rows) => rows.isEmpty
             ? const Center(child: Text("You haven't posted anything yet."))
             : ListView.separated(

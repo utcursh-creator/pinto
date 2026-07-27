@@ -9,6 +9,7 @@ import '../../discover/data/discover_repository.dart';
 import '../../identity/data/identity_providers.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 class StartMatchScreen extends ConsumerStatefulWidget {
   const StartMatchScreen({
@@ -123,7 +124,7 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
           Text('Your team', style: Theme.of(context).textTheme.labelLarge),
           myTeams.when(
             loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('$e'),
+            error: (e, _) => Text(humanError(e)),
             data: (rows) => DropdownButton<String>(
               isExpanded: true,
               value: _teamA,
@@ -142,7 +143,7 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
           Text('Opponent', style: Theme.of(context).textTheme.labelLarge),
           allTeams.when(
             loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('$e'),
+            error: (e, _) => Text(humanError(e)),
             data: (rows) => DropdownButton<String>(
               isExpanded: true,
               value: _teamB,

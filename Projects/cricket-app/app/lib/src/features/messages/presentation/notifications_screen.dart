@@ -6,6 +6,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../../discover/data/discover_providers.dart';
 import '../../discover/data/discover_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 /// MISS-2: the in-app notifications inbox. Rows are written by backend triggers
 /// (reply / dm / claim / invite-accepted / match-live); tapping routes to the
@@ -74,7 +75,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       title: 'Notifications',
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load notifications.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load notifications.'))),
         data: (rows) => RefreshIndicator.adaptive(
           onRefresh: () async => ref.invalidate(notificationsProvider),
           child: rows.isEmpty

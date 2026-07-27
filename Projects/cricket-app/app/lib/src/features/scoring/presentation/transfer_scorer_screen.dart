@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Hand scoring to another registered member of either team. After a successful
 /// transfer the caller is no longer the scorer, so we pop back out of the
@@ -55,7 +56,7 @@ class _TransferScorerScreenState extends ConsumerState<TransferScorerScreen> {
       body: candidates.when(
         loading: () =>
             const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load members.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load members.'))),
         data: (rows) {
           if (rows.isEmpty) {
             return const Center(

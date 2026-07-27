@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Public "Watch live" list: matches currently live or between innings, open to
 /// anyone (login-free). Tapping opens the read-only viewer.
@@ -25,7 +26,7 @@ class LiveMatchesScreen extends ConsumerWidget {
           loading: () =>
               const Center(child: CircularProgressIndicator.adaptive()),
           error: (e, _) => ListView(
-            children: [Center(child: Text('Could not load live matches.\n$e'))],
+            children: [Center(child: Text(humanError(e, fallback: 'Could not load live matches.')))],
           ),
           data: (rows) => rows.isEmpty
               ? ListView(

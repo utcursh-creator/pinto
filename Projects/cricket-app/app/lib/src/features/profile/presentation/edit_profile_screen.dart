@@ -8,6 +8,7 @@ import '../../../core/auth/profile_provider.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../identity/data/identity_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
+import '../../../core/ui/human_error.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -62,7 +63,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ref.invalidate(myProfileProvider);
       if (mounted) setState(() => _photoUrl = url);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not upload photo: $e');
+      if (mounted) setState(() => _error = humanError(e, fallback: 'Could not upload photo.'));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }

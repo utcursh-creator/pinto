@@ -7,6 +7,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../data/tournament_providers.dart';
 import '../data/tournament_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Create a tournament. v1 fixes the shape at 2 groups, top 2 of each qualify.
 class CreateTournamentScreen extends ConsumerStatefulWidget {
@@ -67,7 +68,7 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
       ref.invalidate(tournamentsListProvider);
       if (mounted) context.pushReplacement(Routes.manageTournament(id));
     } catch (e) {
-      setState(() => _error = 'Could not create: $e');
+      setState(() => _error = humanError(e, fallback: 'Could not create.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

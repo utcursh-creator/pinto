@@ -8,6 +8,7 @@ import '../../../core/supabase/supabase_providers.dart';
 import '../../discover/data/discover_providers.dart';
 import '../data/dm_realtime.dart';
 import '../../discover/data/discover_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 /// A 1:1 DM thread. Loads history once, then subscribes to the private
 /// `dm:<threadId>` broadcast channel and appends new messages live. The header
@@ -198,7 +199,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       messenger?.showSnackBar(SnackBar(content: Text('$name blocked')));
       if (mounted && context.canPop()) context.pop();
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not block: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not block.'))));
     }
   }
 

@@ -10,6 +10,7 @@ import '../../scoring/data/match_repository.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../data/tournament_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Organizer hub. What's shown follows the tournament status: assign teams to
 /// groups + generate fixtures (setup) -> score group matches + generate playoffs
@@ -33,7 +34,7 @@ class ManageTournamentScreen extends ConsumerWidget {
       ],
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load.'))),
         data: (o) => ListView(
           padding: const EdgeInsets.only(bottom: 28),
           children: [
@@ -292,7 +293,7 @@ class ManageTournamentScreen extends ConsumerWidget {
       ref.invalidate(tournamentOverviewProvider(tournamentId));
     } catch (e) {
       messenger?.showSnackBar(
-          SnackBar(content: Text('Could not save the schedule: $e')));
+          SnackBar(content: Text(humanError(e, fallback: 'Could not save the schedule.'))));
     }
   }
 
@@ -371,7 +372,7 @@ class ManageTournamentScreen extends ConsumerWidget {
         ),
       );
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 
@@ -382,7 +383,7 @@ class ManageTournamentScreen extends ConsumerWidget {
       await action(ref.read(tournamentRepositoryProvider));
       ref.invalidate(tournamentOverviewProvider(tournamentId));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 }

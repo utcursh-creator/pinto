@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 /// Corrections screen: the ball-by-ball log of the current innings. Each ball
 /// can be edited, deleted, or have a missed ball inserted after it - wired to
@@ -55,7 +56,7 @@ class BallLogScreen extends ConsumerWidget {
 
     return deliveries.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text('Could not load deliveries.\n$e')),
+      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load deliveries.'))),
       data: (rows) {
         if (rows.isEmpty) {
           return const Center(child: Text('No balls bowled yet.'));
@@ -259,7 +260,7 @@ class BallLogScreen extends ConsumerWidget {
         }
       }
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('$e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e))));
     }
   }
 }

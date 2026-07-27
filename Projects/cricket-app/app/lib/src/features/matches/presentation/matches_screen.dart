@@ -8,6 +8,7 @@ import '../../../core/platform/platform.dart';
 import '../../../core/routing/routes.dart';
 import '../../scoring/data/match_providers.dart';
 import '../../scoring/data/match_repository.dart';
+import '../../../core/ui/human_error.dart';
 
 class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({super.key});
@@ -45,7 +46,7 @@ class MatchesScreen extends ConsumerWidget {
             ),
       body: matches.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('Could not load matches.\n$e')),
+        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load matches.'))),
         data: (rows) {
           if (rows.isEmpty) {
             return const Center(child: Text('No matches yet. Start one.'));
@@ -233,7 +234,7 @@ class _MatchTile extends ConsumerWidget {
       ref.invalidate(myMatchesProvider);
       messenger?.showSnackBar(SnackBar(content: Text('$action done.')));
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text('Could not $action: $e')));
+      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not $action.'))));
     }
   }
 }
