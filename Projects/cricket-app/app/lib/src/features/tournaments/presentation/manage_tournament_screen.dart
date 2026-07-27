@@ -72,7 +72,7 @@ class ManageTournamentScreen extends ConsumerWidget {
               ChoiceChip(
                 label: Text(g),
                 selected: t.groupLabel == g,
-                onSelected: (_) => _setGroup(ref, t.teamId, g),
+                onSelected: (_) => _setGroup(context, ref, t.teamId, g),
               ),
           ]),
         ),
@@ -304,9 +304,24 @@ class ManageTournamentScreen extends ConsumerWidget {
           ? Routes.matchSquads(f.matchId)
           : Routes.scoreMatch(f.matchId);
 
-  Future<void> _setGroup(WidgetRef ref, String teamId, String group) async {
-    await ref.read(tournamentRepositoryProvider).addTournamentTeam(tournamentId, teamId, group);
-    ref.invalidate(tournamentOverviewProvider(tournamentId));
+  /// Moves a team between groups. Uses set_tournament_team_group, NOT
+  /// add_tournament_team: the latter's SEC-8 consent gate (is_team_admin of the
+  /// team) is unsatisfiable for the organizer when the team joined by invite, so
+  /// every chip tap raised 'you must be an admin of this team to enter it' - and
+  /// this method used to swallow it, leaving invite-built tournaments unable to
+  /// ever reach two populated groups (penetration review 2026-07-07).
+  Future<void> _setGroup(
+      BuildContext context, WidgetRef ref, String teamId, String group) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await ref
+          .read(tournamentRepositoryProvider)
+          .setTournamentTeamGroup(tournamentId, teamId, group);
+      ref.invalidate(tournamentOverviewProvider(tournamentId));
+    } catch (e) {
+      messenger?.showSnackBar(
+          SnackBar(content: Text('Could not move the team to group $group.')));
+    }
   }
 
   Future<void> _addTeam(BuildContext context, WidgetRef ref, TournamentOverview o) async {

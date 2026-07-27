@@ -41,6 +41,21 @@ class TournamentRepository {
         '_group_label': group,
       });
 
+  /// Moves a team ALREADY in the tournament between groups. Separate from
+  /// addTournamentTeam because that one carries the SEC-8 consent gate
+  /// (is_team_admin of the team being entered), which the organizer cannot
+  /// satisfy for an invite-joined club - so every group chip silently failed and
+  /// invite-built tournaments were stuck with all teams in group A
+  /// (penetration review 2026-07-07). Placement is the organizer's call;
+  /// consent was already given by redeeming the invite.
+  Future<void> setTournamentTeamGroup(
+          String tournamentId, String teamId, String group) =>
+      _c.rpc('set_tournament_team_group', params: {
+        '_tournament_id': tournamentId,
+        '_team_id': teamId,
+        '_group_label': group,
+      });
+
   /// Mints a shareable tournament join token (organizer only, in setup). A team
   /// admin redeems it to enter THEIR team - their redemption is the consent
   /// (SEC-8, mirroring CricHeroes' invite link / PIN).

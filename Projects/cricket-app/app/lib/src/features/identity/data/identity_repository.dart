@@ -77,9 +77,16 @@ class IdentityRepository {
   Future<void> deleteTeam(String teamId) =>
       _client.from('teams').delete().eq('id', teamId);
 
-  /// TEAM-5: change a member's role (admin-only via RLS).
+  /// TEAM-5: change a member's role. Goes through an admin-gated RPC, NOT a
+  /// direct table UPDATE: client UPDATE on team_members is no longer granted
+  /// (the self-branch of the old policy was a total-team-takeover primitive -
+  /// penetration review 2026-07-07). The RPC also enforces the last-captain
+  /// guard server-side, where it cannot be bypassed.
   Future<void> setMemberRole(String membershipId, String role) =>
-      _client.from('team_members').update({'role': role}).eq('id', membershipId);
+      _client.rpc('set_team_member_role', params: {
+        '_membership_id': membershipId,
+        '_role': role,
+      });
 
   /// TEAM-13: edit the team's name/city (admin-only via RLS).
   Future<void> updateTeam(String teamId, {String? name, String? city}) {
