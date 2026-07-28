@@ -770,14 +770,27 @@ void main() {
     }
     await shot(tester, 'jg2_groups_split');
 
-    // The split must have LANDED - the screen counts the groups back to us, so
-    // read it rather than trusting the taps.
-    await settle(tester, find.textContaining('A has 2 and B has 2'),
-        label: 'groups_are_even');
-
-    // THE STEP NO DEVICE RUN HAS EVER TAKEN. It is only reachable now.
-    expect(tester.widget<FilledButton>(genFixtures).onPressed, isNotNull,
-        reason: 'with 2 teams in each group, fixtures must be generatable');
+    // The split must have LANDED. Read the app's own verdict, not my taps -
+    // but read the RIGHT one: the "You need 4 teams... A has N and B has N"
+    // line only renders while the requirement is UNMET, so waiting for
+    // "A has 2 and B has 2" waits for a string that by definition never
+    // appears once the split is correct. The met-state signal is the warning
+    // disappearing and the button coming alive.
+    var enabled = false;
+    for (var i = 0; i < 30; i++) {
+      await tester.pumpAndSettle(const Duration(milliseconds: 400));
+      if (tester.widget<FilledButton>(genFixtures).onPressed != null) {
+        enabled = true;
+        break;
+      }
+    }
+    if (!enabled) {
+      await binding.takeScreenshot('timeout_groups_not_split');
+      fail('after moving two teams to group B, Generate group fixtures never '
+          'became enabled - the split did not take effect');
+    }
+    expect(find.textContaining('You need 4 teams'), findsNothing,
+        reason: 'the entry requirement is met, so its warning must go away');
     await tapScrolled(tester, genFixtures, label: 'generate_fixtures');
     await tester.pumpAndSettle(const Duration(seconds: 2));
     await shot(tester, 'jg3_fixtures');
