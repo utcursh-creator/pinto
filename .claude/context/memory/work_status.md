@@ -139,7 +139,25 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
-- **RUN 24: ALL SEVEN JOURNEYS GREEN in 6:41, 0 failures** - so run 23's six
+- **STABILITY ESTABLISHED: runs 24 AND 25 both all-seven-green** (6:41 and 6:39,
+  no timeout frames). Run 23's mass failure is confirmed transient.
+- **JOURNEY G ADDED (`4344210`)**: journey A only ever added TWO teams, so
+  `Generate group fixtures` - the step that makes a tournament playable at all -
+  had NEVER been driven on a device, nor had the "You need 4 teams" gating copy.
+  G creates four teams, splits both groups, generates fixtures, and pins both
+  gates honestly (disabled with no teams; playoffs disabled with group games
+  unplayed). That playoffs assertion is the closest thing to a test the
+  tournamentOverviewProvider fix has. **Still uncovered: completing all four group
+  games through the console, and a TIED semi via resolve_tied_fixture (that one
+  belongs in pgTAP, not a device journey).** Run 26 is verifying G now.
+- **FULL 12-FRONT WHOLE-SYSTEM REVIEW #2 RUNNING**: `wf_f990aa01-feb`. Fronts =
+  sql, rls, cricket, state, nav, errors, realtime, lifecycle, scale, platform,
+  tests, privacy. Each finding faces TWO skeptics with different lenses (claim
+  accuracy vs reachability) and survives only if NEITHER can refute it, plus a
+  completeness critic at the end. The prompt lists all previously-fixed defects so
+  agents hunt what two reviews MISSED. **Read its confirmed/refuted split before
+  acting on anything.**
+- **(superseded) RUN 24: ALL SEVEN JOURNEYS GREEN in 6:41, 0 failures** - so run 23's six
   failures WERE transient, not a regression. The likely trigger: run 23 was
   launched immediately after `supabase db reset && supabase test db`, and
   `supabase test db` hammers the stack, so the app's first queries hung and every
