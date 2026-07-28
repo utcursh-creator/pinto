@@ -139,6 +139,24 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
+- **RUN 23 WAS A FALSE ALARM - 6 failures, ~67 min, and NOT a code regression.**
+  Row counts after it: **1 user, 2 teams** - so journey A created its teams and
+  then failed at "Add my team", and journeys B/C/D/E/K never signed up at all,
+  hanging with `pumpAndSettle timed out` (which is what a spinner that never
+  stops looks like). The local stack was later confirmed HEALTHY (all six
+  containers up, `/rest/v1/teams` in 66ms), so the backend was not the cause.
+  **I initially mis-called it as "docker is hung" because `supabase status -o
+  json` was slow and my `docker ps` probes queued behind it - docker was fine.**
+  Run 24 is the single-purpose diagnostic. DO NOT record run 23's failures as
+  product defects until a clean run reproduces them.
+  Prime suspect to check first: the `skipLoadingOnReload: true` change interacts
+  with the sign-OUT window, where `session == null` is neither anonymous nor
+  ready - the gate may now hold a stale `ready` (or flip to `needsProfile`) and
+  strand the app instead of showing splash. `ensureSignedOut` polls for 'Sign in'
+  and RETURNS WITHOUT FAILING after 12s, which would hide exactly that.
+- **`5fef590`**: the composer feed-floor rule is now a top-level pure function
+  with 5 tests (5h ago accepted, yesterday refused, constant pinned to the SQL) -
+  it shipped untestable last turn and I said so; now it is covered.
 - **NEXT (all confirmed findings done)**: re-run the FULL 12-front review and
   repeat until zero; journeys F-J (§7 - G is the only real end-to-end proof for
   the tournamentOverviewProvider fix, which still has no test); the SHADOW PUSH.
