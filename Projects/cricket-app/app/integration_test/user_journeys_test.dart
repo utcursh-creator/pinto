@@ -751,19 +751,33 @@ void main() {
     }
     await shot(tester, 'jg1_four_teams');
 
-    // two of them into group B, so both groups have two
+    // Two of them into group B, so both groups have two.
+    //
+    // The chips live in each team's ListTile.trailing WRAP, not a Row - my first
+    // attempt looked for a Row ancestor, found nothing, and an
+    // `if (chip.isNotEmpty)` guard swallowed it. All four teams stayed in group A,
+    // Generate group fixtures stayed correctly disabled, and the only assertion
+    // afterwards was "no PostgrestException" - which passed because NOTHING
+    // HAPPENED. No conditional taps here: if a chip is missing this must fail.
     for (final t in [teams[2], teams[3]]) {
-      final row = find.ancestor(of: find.text(t), matching: find.byType(Row));
+      final tile = find.ancestor(of: find.text(t), matching: find.byType(ListTile));
       final bChip = find.descendant(
-          of: row, matching: find.widgetWithText(ChoiceChip, 'B'));
-      if (bChip.evaluate().isNotEmpty) {
-        await tester.tap(bChip.first);
-        await tester.pumpAndSettle(const Duration(seconds: 1));
-      }
+          of: tile, matching: find.widgetWithText(ChoiceChip, 'B'));
+      await tester.ensureVisible(bChip.first);
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      await tester.tap(bChip.first);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
     }
     await shot(tester, 'jg2_groups_split');
 
-    // THE STEP NO DEVICE RUN HAS EVER TAKEN
+    // The split must have LANDED - the screen counts the groups back to us, so
+    // read it rather than trusting the taps.
+    await settle(tester, find.textContaining('A has 2 and B has 2'),
+        label: 'groups_are_even');
+
+    // THE STEP NO DEVICE RUN HAS EVER TAKEN. It is only reachable now.
+    expect(tester.widget<FilledButton>(genFixtures).onPressed, isNotNull,
+        reason: 'with 2 teams in each group, fixtures must be generatable');
     await tapScrolled(tester, genFixtures, label: 'generate_fixtures');
     await tester.pumpAndSettle(const Duration(seconds: 2));
     await shot(tester, 'jg3_fixtures');
@@ -771,6 +785,12 @@ void main() {
     expect(find.textContaining('PostgrestException'), findsNothing,
         reason: 'generating fixtures must not surface a raw Postgres error');
     expect(find.textContaining('row-level security'), findsNothing);
+
+    // POSITIVE assertion: the fixtures actually exist now. Each group of two
+    // produces one game, so the two group winners can meet in a semifinal.
+    // (The section heading is "Group fixtures" - verified in
+    // manage_tournament_screen._groupStage, not guessed.)
+    await settle(tester, find.text('Group fixtures'), label: 'fixtures_shown');
 
     // The playoffs gate must be honest: the group games have not been played.
     await tapScrolled(tester, find.textContaining('Finish every group match'),
