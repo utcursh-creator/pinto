@@ -80,11 +80,24 @@ void main() {
       await c.auth.signOut();
       await tester.pumpAndSettle(const Duration(seconds: 2));
     }
-    // the auth listener re-anons and the router gate returns us to Discover
-    for (var i = 0; i < 30; i++) {
+    // The auth listener re-anons and the router gate returns us to Discover.
+    //
+    // This used to give up SILENTLY after ~12s, so a sign-out that stranded the
+    // app somewhere else (create-profile, or a splash that never resolves) was
+    // invisible here and surfaced as a confusing failure several steps later in
+    // whatever the journey did next - which is how run 23 reported six failures
+    // in five different places. Fail HERE, with a frame, so the next reader sees
+    // the actual state.
+    for (var i = 0; i < 50; i++) {
       await tester.pumpAndSettle(const Duration(milliseconds: 400));
       if (find.text('Sign in').evaluate().isNotEmpty) return;
     }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await binding.convertFlutterSurfaceToImage();
+    }
+    await binding.takeScreenshot('timeout_signed_out_state');
+    fail('after signing out, the app never showed the anonymous "Sign in" call '
+        'to action - it is stranded somewhere else');
   }
 
   /// Signs up a brand-new account through the UI and completes onboarding.
