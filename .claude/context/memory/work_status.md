@@ -139,6 +139,14 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
+- **RUN 27: the group split WORKS** (frame: G1/G2 in A, G3/G4 in B, Generate group
+  fixtures enabled and green). My assertion was wrong again - I waited for the
+  tally "A has 2 and B has 2", but that line belongs to the "You need 4 teams"
+  WARNING, which only renders while the requirement is UNMET. Waiting for it was
+  waiting for a string that by definition disappears when you succeed. Journey G
+  now polls until the button is ENABLED and asserts the warning is GONE (`4b6386b`
+  then the follow-up). **Three iterations on journey G, three mistakes of MINE,
+  zero product defects found by it so far.** Run 28 verifying.
 - **RUN 26 (journey G's first run) CAUGHT ME REPEATING MY OWN LESSON.** The frame
   showed all four teams still in group A ("A has 4 and B has 0") and Generate
   group fixtures correctly DISABLED - no fixtures were ever generated. Three of
