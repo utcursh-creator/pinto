@@ -139,6 +139,25 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
+- **RUN 26 (journey G's first run) CAUGHT ME REPEATING MY OWN LESSON.** The frame
+  showed all four teams still in group A ("A has 4 and B has 0") and Generate
+  group fixtures correctly DISABLED - no fixtures were ever generated. Three of
+  my mistakes, all the family I have been fixing elsewhere all session:
+    1. the group chips are in each team's `ListTile.trailing` **Wrap**, not a Row
+       - I inferred the widget type from a SCREENSHOT instead of reading the
+       source, the second time this session (flair chips were FlairChip, not
+       ChoiceChip);
+    2. the tap was wrapped in `if (bChip.evaluate().isNotEmpty)`, so finding
+       nothing was indistinguishable from success - **I wrote a learnings entry
+       about exactly this guard two turns earlier and then used it again**;
+    3. the only post-generate assertion was `expect(PostgrestException,
+       findsNothing)` - absence of an error, not presence of an outcome, so it
+       passed because nothing happened.
+  Fixed in `4b6386b`: chips found via the ListTile, unconditional tap, the
+  journey reads the screen's own tally back ("A has 2 and B has 2"), asserts the
+  button became ENABLED, then asserts the "Group fixtures" section appears -
+  a heading VERIFIED in the source (my first guess, "Fixtures", exists nowhere).
+  Run 27 is verifying.
 - **STABILITY ESTABLISHED: runs 24 AND 25 both all-seven-green** (6:41 and 6:39,
   no timeout frames). Run 23's mass failure is confirmed transient.
 - **JOURNEY G ADDED (`4344210`)**: journey A only ever added TWO teams, so
