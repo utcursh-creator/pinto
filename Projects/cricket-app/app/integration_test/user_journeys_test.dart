@@ -687,4 +687,96 @@ void main() {
       await shot(tester, 'jk2_anon_$tab');
     }
   });
+
+  // JOURNEY G: a tournament with a REAL bracket.
+  //
+  // Journey A only ever added TWO teams, so `Generate group fixtures` - the step
+  // that turns a tournament from a list of names into something anyone can play -
+  // had never once been exercised on a device. A tournament needs FOUR (two per
+  // group), which is also the point where the organiser's own gating copy ("You
+  // need 4 teams to start: 2 in group A and 2 in group B") either tells the truth
+  // or lies.
+  //
+  // It also pins the gate on the NEXT step: with the group games unplayed,
+  // `Generate playoffs` must be DISABLED and must say why. That button being
+  // wrongly stuck disabled is exactly the failure the tournamentOverviewProvider
+  // invalidation fix addressed, and it still has no other test.
+  testWidgets('JOURNEY G: four teams, groups, and a real fixture list',
+      (tester) async {
+    app.main();
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+
+    await signUpFresh(tester, run, 'Organiser $run');
+
+    // four teams, each with two guests so the fixtures are actually playable
+    final teams = ['G1 $run', 'G2 $run', 'G3 $run', 'G4 $run'];
+    for (var i = 0; i < teams.length; i++) {
+      await createTeamWithGuests(tester, teams[i], ['p${i}a', 'p${i}b']);
+      await tester.pageBack();
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    }
+
+    await tester.tap(find.text('Matches').last);
+    await settle(tester, find.byIcon(Icons.emoji_events_outlined),
+        label: 'matches_tab_g');
+    await tester.tap(find.byIcon(Icons.emoji_events_outlined).first);
+    await settle(tester, find.textContaining('ournament'), label: 'tourneys_g');
+    await tapScrolled(tester, find.byIcon(Icons.add), label: 'new_tournament_g');
+    await settle(tester, find.widgetWithText(TextField, 'Tournament name'),
+        label: 'create_tournament_g');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Tournament name'), 'Bracket $run');
+    await tester.pumpAndSettle();
+    await tapScrolled(
+        tester, find.widgetWithText(FilledButton, 'Create tournament'),
+        label: 'create_tournament_submit_g');
+    await settle(tester, find.text('Manage tournament'), label: 'manage_g');
+
+    // With no teams yet, the organiser must be TOLD what is missing and the
+    // button must be disabled - not enabled-then-failing.
+    expect(find.textContaining('You need 4 teams'), findsOneWidget,
+        reason: 'the entry requirement is stated up front');
+    final genFixtures =
+        find.widgetWithText(FilledButton, 'Generate group fixtures');
+    expect(tester.widget<FilledButton>(genFixtures).onPressed, isNull,
+        reason: 'fixtures cannot be generated with no teams');
+
+    for (final t in teams) {
+      await tapScrolled(tester, find.textContaining('Add my team'),
+          label: 'add_my_team_g');
+      await settle(tester, find.text(t), label: 'pick_team_g_$t');
+      await tester.tap(find.text(t).last);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+    }
+    await shot(tester, 'jg1_four_teams');
+
+    // two of them into group B, so both groups have two
+    for (final t in [teams[2], teams[3]]) {
+      final row = find.ancestor(of: find.text(t), matching: find.byType(Row));
+      final bChip = find.descendant(
+          of: row, matching: find.widgetWithText(ChoiceChip, 'B'));
+      if (bChip.evaluate().isNotEmpty) {
+        await tester.tap(bChip.first);
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+      }
+    }
+    await shot(tester, 'jg2_groups_split');
+
+    // THE STEP NO DEVICE RUN HAS EVER TAKEN
+    await tapScrolled(tester, genFixtures, label: 'generate_fixtures');
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await shot(tester, 'jg3_fixtures');
+
+    expect(find.textContaining('PostgrestException'), findsNothing,
+        reason: 'generating fixtures must not surface a raw Postgres error');
+    expect(find.textContaining('row-level security'), findsNothing);
+
+    // The playoffs gate must be honest: the group games have not been played.
+    await tapScrolled(tester, find.textContaining('Finish every group match'),
+        label: 'playoffs_gate_copy');
+    final genPlayoffs = find.widgetWithText(FilledButton, 'Generate playoffs');
+    expect(tester.widget<FilledButton>(genPlayoffs).onPressed, isNull,
+        reason: 'playoffs cannot be seeded before the group games are played');
+  });
 }
