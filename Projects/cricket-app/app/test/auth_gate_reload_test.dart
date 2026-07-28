@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -59,6 +60,8 @@ _Gate _gateFrom(AsyncValue<Map<String, dynamic>?> profile,
     );
 
 void main() {
+  _sourceGuard();
+
   Future<List<_Gate>> observe({required bool skipLoadingOnReload}) async {
     final gate = Provider<_Gate>((ref) => _gateFrom(
           ref.watch(_profileProvider),
@@ -101,5 +104,29 @@ void main() {
     expect(seen, contains(_Gate.loading),
         reason: 'when() defaults skipLoadingOnReload to false; that default is '
             'what caused the bug');
+  });
+}
+
+/// The tests above model the gate's SHAPE with a local copy, which means they
+/// pass whether or not the real provider carries the fix - I removed
+/// `skipLoadingOnReload: true` from auth_gate.dart to check, and they stayed
+/// green. A test that cannot see its own fix being deleted is exactly the class
+/// of dud assertion this project keeps finding.
+///
+/// This one reads the real source. It is blunt, but it is the only thing here
+/// that actually fails when the CRITICAL fix is removed.
+void _sourceGuard() {
+  test('authGateProvider still passes skipLoadingOnReload: true', () {
+    final src = File('lib/src/core/auth/auth_gate.dart').readAsStringSync();
+    expect(
+      src.contains('skipLoadingOnReload: true'),
+      isTrue,
+      reason: 'Without it, every JWT auto-refresh (~hourly, and on every resume '
+          'from background) flips the gate ready -> loading, the router re-runs '
+          'its redirect, and the loading branch replaces the whole stack with '
+          '/splash - a top-level route outside the tab shell. A scorer mid-innings '
+          'is dumped on Discover. Verified against riverpod 3.3.2 source: when() '
+          'defaults skipLoadingOnReload to FALSE.',
+    );
   });
 }
