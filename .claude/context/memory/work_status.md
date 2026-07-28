@@ -139,7 +139,20 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
-- **RUN 23 WAS A FALSE ALARM - 6 failures, ~67 min, and NOT a code regression.**
+- **RUN 24: ALL SEVEN JOURNEYS GREEN in 6:41, 0 failures** - so run 23's six
+  failures WERE transient, not a regression. The likely trigger: run 23 was
+  launched immediately after `supabase db reset && supabase test db`, and
+  `supabase test db` hammers the stack, so the app's first queries hung and every
+  spinner outlived pumpAndSettle. **Operational rule: let the stack settle after
+  a reset+test before launching a device run.** Run 25 is the second consecutive
+  confirmation (do not declare stability on one green run).
+- **VERIFIED ON DEVICE (run 24 frame)**: the feed card now reads "Need an
+  opponent <run>" as its headline with the flair and mode label beside it - the
+  Headline field works end to end.
+- **`ensureSignedOut` now FAILS with a frame** instead of giving up silently
+  after 12s; that silence is precisely why run 23 reported six failures in five
+  unrelated places rather than one at the sign-out.
+- **(superseded) RUN 23 WAS A FALSE ALARM - 6 failures, ~67 min, and NOT a code regression.**
   Row counts after it: **1 user, 2 teams** - so journey A created its teams and
   then failed at "Add my team", and journeys B/C/D/E/K never signed up at all,
   hanging with `pumpAndSettle timed out` (which is what a spinner that never
