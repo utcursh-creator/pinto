@@ -139,6 +139,20 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
+- **RUN 28: ALL JOURNEYS GREEN INCLUDING G** - `jg3_fixtures` captured, so group
+  fixtures now generate on a device for the first time. Journey G took FOUR
+  iterations and every failure was mine (wrong widget type, a silent if-guard,
+  an absence-of-error assertion, then asserting a string that only exists in the
+  UNMET state). The tournament flow behaved correctly every single time.
+- **MY AUTH-GATE TEST COULD NOT SEE ITS OWN FIX BEING DELETED** (`e00aa48`).
+  `auth_gate_reload_test.dart` models the gate's SHAPE with a local copy of the
+  `.when()` call instead of pinning the real provider, so it passes whether or
+  not authGateProvider carries `skipLoadingOnReload: true` - verified by removing
+  the line and watching it stay green. That is the dud-assertion class, written
+  by me, guarding the run's only CRITICAL. Added a source guard (same shape as
+  query_ordering_test) that fails if the line ever leaves the file.
+  **NOTE: I briefly reported the line as REMOVED - it was not. I read the file in
+  a transiently-modified state; it matches HEAD and git diff is empty.**
 - **RUN 27: the group split WORKS** (frame: G1/G2 in A, G3/G4 in B, Generate group
   fixtures enabled and green). My assertion was wrong again - I waited for the
   tally "A has 2 and B has 2", but that line belongs to the "You need 4 teams"
