@@ -12,6 +12,17 @@ import '../data/discover_repository.dart';
 import 'flair_chip.dart';
 import '../../../core/ui/human_error.dart';
 
+/// `discover_posts` hides any post whose match_at is more than this far in the
+/// past (see 20260707160000_posts_expire.sql), so the composer must not let a
+/// user pick a time the feed will silently swallow.
+const postFeedFloor = Duration(hours: 6);
+
+/// True when [chosen] is so far past that the resulting post would be invisible
+/// to everyone, its author included. Top-level and pure so the rule can be
+/// tested without driving two platform date pickers.
+bool isPastFeedFloor(DateTime chosen, DateTime now) =>
+    chosen.isBefore(now.subtract(postFeedFloor));
+
 class NewPostComposer extends ConsumerStatefulWidget {
   const NewPostComposer({super.key});
 
@@ -55,7 +66,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
   /// post that is created successfully and then invisible to everyone - the
   /// author included. Say so at the moment of choosing rather than letting them
   /// publish into the void (re-review 2026-07-07).
-  static const _feedFloor = Duration(hours: 6);
+
 
   Future<void> _pickWhen() async {
     final now = DateTime.now();
@@ -73,7 +84,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
     );
     final chosen = DateTime(
         date.year, date.month, date.day, time?.hour ?? 9, time?.minute ?? 0);
-    if (chosen.isBefore(DateTime.now().subtract(_feedFloor))) {
+    if (isPastFeedFloor(chosen, DateTime.now())) {
       setState(() => _error =
           'That time has already passed, so nobody would see this post. '
           'Pick a time from the last few hours onwards.');
