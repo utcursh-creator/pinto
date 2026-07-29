@@ -384,6 +384,14 @@ last_updated: 2026-05-28
 - **SEQUENCE (user directive)**: (1) memory updated [DONE this turn]; (2) user runs /compress next; (3) THEN I organize Obsidian - archive stale tasks (TaskNotes/Tasks has many stale ones), fresh board with OTT + self data points, consolidate files to designated places. "Don't read everything, just consolidate/archive the stale piles."
 - **NEXT AFTER COMPACT**: Obsidian cleanup/org, then build the 3 OTT packages (Positioning first), then execute the send (The UGC Agency).
 
+## GIT/MEMORY DIVERGENCE FOUND (2026-06-15) - IMPORTANT, do not clobber
+- This session runs in worktree `great-proskuriakova-943388`; the USER'S LIVE Obsidian vault = the MAIN checkout `/Users/utkarsh/pinto/pinto`.
+- MAIN has NEWER UNCOMMITTED memory from later OTT sessions (dated 2026-07-09/10) that this worktree LACKS:
+  - `learnings.md`: OTT technical learnings (caption-inpaint silent CPU fallback + watchdog/fail-fast; stale-tests-pin-the-bug; review-fix convergence + ships_wrong_output stopping rule; chrome provisioning post-condition; ASR/onnxruntime livelock + thread-cap-at-entrypoint).
+  - `user_preferences.md`: "status-update style during long autonomous runs" (user sends "???" at jargon/scary-❌ updates; report per finished batch, lead with is-anything-broken, plain language) + "Strategic Conversation Style" (co-founder not generalist).
+- My OTT-pivot GTM memory (ott-strategy.md + MEMORY/user_projects/learnings edits) is committed on the worktree branch (`0209b26`) + PUSHED to origin/claude/great-proskuriakova-943388. MAIN untouched (did NOT force-merge - would risk his July work).
+- **RECONCILE PLAN (union, lose nothing)**: merge both memory states so the live vault has BOTH the July OTT-technical learnings/prefs AND the OTT-pivot GTM memory. Do this carefully as the FIRST step of the Obsidian org (in the main vault). Compact is safe (summarizes conversation, does not alter vault files).
+
 ## Previous Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
 - **Focus**: Continued Offer/ICP/GTM brainstorm + environment logistics
 - **Brainstorm progress this session**:
