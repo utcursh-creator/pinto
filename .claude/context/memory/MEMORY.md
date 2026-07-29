@@ -3,21 +3,30 @@
 ## User: Anand Utkarsh
 - Communication: context-dependent (concise for direct, detailed with reasoning when needed)
 - Full positioning doc at `.claude/context/memory/CLAUDE.md`
-- Memory system files at `.claude/context/memory/` (user_preferences, user_projects, work_status, learnings)
+- Memory system files at `.claude/context/memory/` (user_preferences, user_projects, work_status, learnings, **ott-strategy** [current primary])
 - Detailed ICP, offer, micro-offer, perception, and thinking patterns in `user_preferences.md`
 
+## CURRENT PRIMARY (2026-06-15): OTT video-editing pivot
+Utkarsh is pivoting from AI-automation services to a PRODUCT in the video-editing niche: **OTT (One Take Tall)**, a calibrated SOP-compliance video-editing service for high-volume creator/UGC/product reels (~1-week calibration per client, then executes at volume with QC; runs for PulpKey). Product built; now building sales + marketing pipeline. Core problem: WEAK POSITIONING (perceived as employee not partner -> prospects demand free tests). Framework = 3 packages: ICP, OFFER, POSITIONING.
+- **Full OTT brain: `.claude/context/memory/ott-strategy.md`** (read this for OTT work).
+- **Assets: `Projects/ott-outbound/`** (campaign-brief.md = 5-account cold email; lead-list.md = 23 qualified leads, 4 Tier-1). System code at `/Users/utkarsh/ott`.
+
 ## Key People
-- **Yosef** — Primary client. Utkarsh builds automations for him and his clients.
-- **Ben Van Sprundel** — Runs BenAI (benai.co). AI Accelerator community. Audience = Utkarsh's ICP. Also in ICP Segment B.
+- **Yosef** — Primary client (automation-services era). Utkarsh builds automations for him and his clients.
+- **Sanchit** — brings word-of-mouth OTT prospects (the ones who demanded a free test = the positioning-problem trigger).
+- **PulpKey** — OTT proof/reference client (product-reel editing runs for them in production).
+- **Ben Van Sprundel** — Runs BenAI (benai.co). AI Accelerator community. Audience = Utkarsh's ICP.
 
 ## Active Projects
-1. Yosef Client Work (revenue, delivery)
-2. Content Engine (YouTube primary + LinkedIn + Ben's community)
-3. GTM Strategy — 90-day playbook: cold email + Skool + LinkedIn + YouTube → $10-20K MRR
+1. **OTT (One Take Tall) — PRIMARY, the pivot.** Video-editing product/service. GTM build: ICP/Offer/Positioning + sales + marketing pipeline. See `ott-strategy.md` + `Projects/ott-outbound/`.
+2. Content Engine (BUILT this session) — Twitter-first, contrarian/frontier/security AI + primary research papers translated. Skill `content-engine` + `Projects/content-engine/` (spec, stage-playbook, voice-samples, proof-bank, copywriting-framework, braindump). Kanban board pending Obsidian verify.
+--- prior-era (automation services), lower priority now ---
+3. Yosef Client Work (revenue, delivery)
 4. Internal Tools (own process automation)
-5. Vibelife Website — MAJOR REPOSITIONING: "fulfillment partner for AI automation businesses"
+5. Vibelife Website — repositioning: "fulfillment partner for AI automation businesses"
 6. n8n Workflow Reviewer (built, needs deploy)
-7. **Paperclip Agent Orchestration** — installed at `Tools/paperclip/`, server on port 3100
+7. Paperclip Agent Orchestration — `Tools/paperclip/`, server on port 3100
+(SCRAPPED: outbound prospect-scraper / job-board lead-gen — proven wrong channel, deleted, in git history.)
 
 ## Vibelife Website Status (2026-04-02)
 - Approved hero: "We cleared 5 projects for one business in 21 days and they never touched fulfillment again"

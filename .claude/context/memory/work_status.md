@@ -368,6 +368,22 @@ last_updated: 2026-05-28
 - **48h ball in HIS court**: render Confluencr + Sociowash proof-reels (via OTT), verify 5 emails, set tracking board, SEND T1 to Confluencr + Sociowash. Cadence T1/+3/+4/+4, stop on reply, own Gmail.
 - **THE TEST (session-long theme)**: machine is 100% built; only his rendering 2 reels + hitting send remains. Does he execute, or does the avoidance pattern win? Posed this directly.
 
+## OTT LEAD RESEARCH DONE (2026-06-15) - user wanted broader/better leads after Sociowash bad reviews
+- **32-agent workflow, 41 discovered, 23 qualified**. Saved `Projects/ott-outbound/2026-06-15-lead-list.md`, pushed `b526fe7`.
+- **4 NEW TIER-1** (better-fit than original 5): The UGC Agency (Kolkata, tightest PulpKey-shape, technical co-founder Krishnendu, verified contact@theugcagency.com, live editor req = cleanest first target), Schbang (15-editor in-house line, live req, Glassdoor 3.1 = pain signal, longest cycle), The Souled Store (D2C merch, live Sr Editor req, fav reviews), Cocoma Digital (60-person studio hiring for exact 16:9/9:16/1:1 reformatting).
+- **Reputation dual-read WORKED** (the Sociowash lesson, now permanent): churn/chaos = MORE pain = good prospect (Schbang/Foxtale/Bombay Shaving) vs healthy = pitch-capacity-not-rescue (Cocoma/Souled Store) vs client-risk (CAN, listed-co slow procurement).
+- **Tooling rec**: Hunter (verify emails) NOW; Clay/Apollo job-board-watch for "video editor" reqs = the warm-door trigger as a live feed. Keep buyer-test + reputation judgment human.
+- **CO-FOUNDER LINE drawn**: funnel is now FULL (4 ready Tier-1 + original campaign + 8-deep pipeline). Leads were NEVER the bottleneck - SENDING is. Drafted The UGC Agency T1 opener (proven cadence) so copy is not a blocker. Next = render ONE proof-reel + send ONE email. No third research pass.
+- **AWAITING**: does he render a reel + send (The UGC Agency = the one move), or keep researching (the avoidance).
+- **He asked for Krishnendu's email = moving toward the send (good sign).** Gave: contact@theugcagency.com (VERIFIED inbox, address "Krishnendu"); krishnendu@theugcagency.com (pattern guess, verify via Hunter or it bounces); recommended send-to-contact@ + LinkedIn DM in parallel. Copy + contact now both in hand -> only the OTT proof-reel render + hitting send remain.
+
+## MEMORY CONSOLIDATION for the OTT pivot (2026-06-15, pre-compact)
+- User reframed: OTT is a PIVOT from automation-services to a video-editing PRODUCT; wants max context retained before /compress, then Obsidian cleanup.
+- **CREATED `.claude/context/memory/ott-strategy.md`** = the durable OTT brain (product, pivot, positioning problem, 3 packages ICP/Offer/Positioning, assets, people, next steps). Updated MEMORY.md (OTT = current primary + Sanchit/PulpKey key people + Active Projects reordered), user_projects.md (OTT primary entry), learnings.md (partner-not-employee positioning lesson).
+- **NEW context captured**: positioning problem (free-test-demands = perceived-as-employee = weak positioning; fix = fulfillment-partner + proactive proof-reel). The 3 packages framework. Sanchit (word-of-mouth prospects). OTT currently word-of-mouth only; goal = online + sales + marketing pipeline.
+- **SEQUENCE (user directive)**: (1) memory updated [DONE this turn]; (2) user runs /compress next; (3) THEN I organize Obsidian - archive stale tasks (TaskNotes/Tasks has many stale ones), fresh board with OTT + self data points, consolidate files to designated places. "Don't read everything, just consolidate/archive the stale piles."
+- **NEXT AFTER COMPACT**: Obsidian cleanup/org, then build the 3 OTT packages (Positioning first), then execute the send (The UGC Agency).
+
 ## Previous Session (2026-04-28, Offer/ICP/GTM brainstorm cont. + Mac migration prep)
 - **Focus**: Continued Offer/ICP/GTM brainstorm + environment logistics
 - **Brainstorm progress this session**:

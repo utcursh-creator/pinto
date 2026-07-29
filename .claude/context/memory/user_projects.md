@@ -6,7 +6,12 @@ last_updated: 2026-02-26
 
 # Active Projects
 
-## AI Video Editing SERVICE - "OTT / One Take Tall" (NEW, 2026-06-15)
+## OTT (One Take Tall) - PRIMARY PROJECT / THE PIVOT (2026-06-15)
+> Full brain: `.claude/context/memory/ott-strategy.md`. Assets: `Projects/ott-outbound/`. Code: `/Users/utkarsh/ott`.
+> **The pivot**: from AI-automation services -> a PRODUCT in the video-editing niche. Product built; now building sales + marketing pipeline + growing OTT revenue.
+> **Core problem (urgent)**: WEAK POSITIONING. Sanchit's prospects demanded a free TEST before deciding = OTT perceived as an EMPLOYEE (editor-for-hire you audition), not a PARTNER for volumetric UGC fulfillment. Fix = reposition as fulfillment partner; proof offered on our terms (proactive proof-reel), never a free audition.
+> **Three packages to build (Utkarsh's framework for OTT revenue)**: ICP (largely done - 23-lead list), OFFER (productize + pricing, package as partnership not audition), POSITIONING (partner not employee - MOST URGENT, root cause of stalled deals).
+
 - **What it ACTUALLY is** (read the system at /Users/utkarsh/ott): a calibrated SOP-COMPLIANCE FACTORY for high-volume creator/product reel editing. Input = a creator's IG reel + product sheet; output = polished 1080x1920 reel with brand/product/USP typography supers, license-free audio, creator-graphic masking, dense QC. The SOP is GENERAL-PURPOSE; the engine is reusable.
 - **Model = SERVICE, not a tool**: each client onboards with a defined high-volume editing job -> map their process -> calibrate the system (~1 WEEK) -> it executes that job end-to-end at volume with QC. 1-week onboarding = scalable service, not bespoke consulting.
 - **Differentiator (real, defensible)**: encodes a client's exact edit guidelines as ENFORCED rules + vision product-mapping + QC discipline. NOT generic "AI editing" (red ocean). Calibration is the whole pitch.
