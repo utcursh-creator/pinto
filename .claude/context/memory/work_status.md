@@ -139,6 +139,34 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
+- **WHOLE-SYSTEM REVIEW #2 COMPLETE**: 12 fronts, 187 agents, 18.3M tokens, ~78
+  min. **35 confirmed / 52 refuted.** All 87 RAW findings are preserved in
+  `Projects/cricket-app/2026-07-28-review2-findings.md` (`7d8c6a1`).
+  **CAVEAT AT THE TOP OF THAT FILE: the task output was cleaned up before I could
+  persist the per-finding confirmed/refuted split, so ~60% of what is in there was
+  REFUTED. Re-verify each entry against the code before acting.** Seven agents
+  died on a session limit (5 nav verifies, 1 errors verify, the completeness
+  critic), so the nav front is under-verified and the "what did we miss" pass
+  never ran - worth re-running just those.
+- **CRITICAL FIXED (`7f96525`)**: `matches` granted INSERT under a policy checking
+  only `owner_id = auth.uid()`, so create_match's SEC-5 team-admin gate was one
+  PostgREST call from irrelevant. An attacker inserts a match between two victim
+  clubs naming herself owner+scorer; every downstream guard then passes because
+  each only asks "are you the scorer?" - squads accept the victims' REAL players,
+  innings go live and notify them, the result completes. The fake game lands in
+  both clubs' public team_career_stats and in real players' career records, and
+  NEITHER VICTIM CAN REMOVE IT (delete requires ownership; transfer_scorer refuses
+  once complete). Its skeptic reproduced it live against the DB; I re-verified the
+  policy and grants independently. Test 119 proven RED on assertions 3/4/7.
+  **This is the same shape 20260707130100_revoke_direct_writes.sql was written to
+  close - that migration fixed a different table and left this one, saying so in
+  a comment.**
+- **SWEPT the whole schema for the same shape (`27ab9e8`): NO second instance.**
+  Every other write-granted table either expresses its rule or has no
+  insert/update policy and fails closed. Test 120 makes it standing: RLS on every
+  public table, no anon write grant anywhere, and no INSERT policy authorizing
+  purely on the caller's own id (self-scoped tables excluded by name). Assertion 3
+  proven discriminating by recreating the vulnerable policy in a transaction.
 - **RUN 28: ALL JOURNEYS GREEN INCLUDING G** - `jg3_fixtures` captured, so group
   fixtures now generate on a device for the first time. Journey G took FOUR
   iterations and every failure was mine (wrong widget type, a silent if-guard,
