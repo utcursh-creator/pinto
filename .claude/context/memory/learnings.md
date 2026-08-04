@@ -697,3 +697,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **Read the analyze VERDICT line, not the tail.** Committed "analyze clean"
   while it said "2 issues found" - the same class of slip as reading the tail of
   flutter test. Grep for `No issues found|issues found` explicitly.
+- **When one function treats a value two ways, the bug is inside it.** Each fold
+  read `wicket_type in ('run_out','obstructing')` for WHO is out and
+  `= 'run_out'` for WHICH END they stand at, twenty lines apart. That internal
+  disagreement is a stronger signal than any cross-file grep - when a predicate
+  appears twice in one body with different membership, one of them is wrong.
+- **A UI that collects a field the backend ignores is a silent-corruption
+  shape.** The scorer answered "did they cross?" correctly, it was stored, and
+  the derivation discarded it. Worth grepping for: fields the client sends that
+  no fold or RPC branch reads.

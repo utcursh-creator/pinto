@@ -193,7 +193,18 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   matches nothing. Two parsers for one job, only one right -> now one shared
   `pastedToken(input, marker:)`.
 
-Gates: **pgTAP 776 / 126 files**, analyze clean, **321 widget tests**, **8/8
+- `4b0fb14` **"batters had crossed" was thrown away for obstructing**
+  (finding 80). The console collects and sends `crossed` for obstructing, but
+  all three folds gated the swap on `run_out` alone - while their OWN
+  who-is-out line already read `in ('run_out','obstructing')`. The
+  inconsistency was INSIDE each function. Result: wrong ends, and since strike
+  is cumulative, every later ball credited to the wrong batter, then restamped
+  onto every stored delivery. All THREE folds changed together (pgTAP 107 pins
+  their agreement).
+- LOW findings **74, 78, 83, 84, 86 were already closed** by earlier units in
+  this run - checked, not assumed.
+
+Gates: **pgTAP 782 / 127 files**, analyze clean, **321 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
