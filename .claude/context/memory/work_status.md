@@ -204,7 +204,18 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
 - LOW findings **74, 78, 83, 84, 86 were already closed** by earlier units in
   this run - checked, not assumed.
 
-Gates: **pgTAP 782 / 127 files**, analyze clean, **321 widget tests**, **8/8
+- `61aff0c` **a hurt batter at the last pair stayed on strike after walking
+  off** (finding 85, both halves). retire_batter's guard was copied from
+  record_ball, where the last-wicket relaxation is safe BECAUSE the wicket ends
+  the innings - a retired hurt counts no wicket, so nothing ended and the folds
+  left the pair untouched; every later ball was credited to someone who had
+  left the field. Rule is now: somebody must come in unless the retirement IS
+  the last wicket, which only a retired OUT can be. CLIENT mirror: the Retire
+  button was dead whenever the dropdown was empty, so a genuine last-pair
+  retirement was unrecordable. Test 101 pinned the OLD message; behaviour
+  unchanged, copy corrected.
+
+Gates: **pgTAP 788 / 128 files**, analyze clean, **325 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

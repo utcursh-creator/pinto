@@ -706,3 +706,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   shape.** The scorer answered "did they cross?" correctly, it was stored, and
   the derivation discarded it. Worth grepping for: fields the client sends that
   no fold or RPC branch reads.
+- **A guard copied between RPCs carries assumptions that may not hold there.**
+  retire_batter's "last wicket needs no incoming batter" came from record_ball,
+  where it is safe because the wicket ends the innings. A retirement counts no
+  wicket, so the same relaxation produced a state the folds cannot represent.
+  When lifting a condition, re-derive WHY it was safe in its original home.
+- **A validation hole and a dead control are often the same bug from two
+  sides.** The server accepted a last-pair retired-hurt it could not represent,
+  while the client disabled Retire entirely whenever the incoming dropdown was
+  empty - so the invalid case was reachable and the VALID one was not. Fix both
+  ends or the scorer just meets a different wall.
+- **When an error message changes, a test that pins its text will fail while the
+  behaviour is fine.** Read the diff before "fixing" anything: here the old
+  wording ("this is not the last wicket") was itself the misleading part, so the
+  test was updated, not the code.
