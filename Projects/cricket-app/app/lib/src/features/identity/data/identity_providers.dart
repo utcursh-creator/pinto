@@ -6,16 +6,8 @@ import 'identity_repository.dart';
 
 /// Teams the current user belongs to: each row is {role, teams: {...}}.
 final myTeamsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final session = ref.watch(currentSessionProvider);
-  if (session == null) return [];
-  final client = ref.watch(supabaseClientProvider);
-  final rows = await client
-      .from('team_members')
-      .select('role, teams(*)')
-      .eq('profile_id', session.user.id)
-      // a team you have left is not one of "my teams"
-      .isFilter('left_at', null);
-  return List<Map<String, dynamic>>.from(rows as List);
+  if (ref.watch(currentSessionProvider) == null) return [];
+  return ref.watch(identityRepositoryProvider).myTeams();
 });
 
 /// A single team row by id.

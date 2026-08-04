@@ -29,6 +29,21 @@ final authGateProvider = Provider<AuthGate>((ref) {
     // The FIRST load has no previous value, so it still reports loading and the
     // splash gate still works.
     skipLoadingOnReload: true,
+    // HIGH (review #2, finding 11): the ERROR branch was the other half of the
+    // same bug. skipError also defaults to FALSE, so a re-read that failed -
+    // the JWT refresh at a ground with bad signal, or Edit profile's invalidate
+    // on save - reported error even though the gate was still holding a
+    // perfectly good profile. The router's error branch shares the loading
+    // branch's `return loc == Routes.splash ? null : Routes.splash`, so the
+    // whole stack was replaced with a top-level route outside the tab shell:
+    // console gone, half-entered wicket dialog gone, and Retry lands on
+    // Discover rather than back in the match.
+    //
+    // `skipError` only applies when a previous value EXISTS (riverpod 3.3.2:
+    // `hasError && (!hasValue || !skipError)`), so a first read that fails still
+    // reports error and still holds on the splash with a retry - which is right,
+    // because there we genuinely do not know whether this user has onboarded.
+    skipError: true,
     data: (row) => row == null ? AuthGate.needsProfile : AuthGate.ready,
     loading: () => AuthGate.loading,
     // AUTH-4: a transient profile-read failure must NOT dump an onboarded user

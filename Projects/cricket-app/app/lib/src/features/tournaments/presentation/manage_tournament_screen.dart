@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
-import '../../identity/data/identity_providers.dart';
+import '../../identity/data/identity_repository.dart';
 import '../../scoring/data/match_repository.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
@@ -333,12 +333,36 @@ class ManageTournamentScreen extends ConsumerWidget {
     }
   }
 
+  /// HIGH (review #2, finding 9): every await in here used to be unguarded.
+  ///
+  /// The list came from myTeamsProvider, which returns every team the organiser
+  /// BELONGS to with no role filter, while add_tournament_team raises 'you must
+  /// be an admin of this team to enter it'. That throw landed in a tap callback
+  /// with no try/catch, so there was no SnackBar, no team added and no
+  /// invalidate - the organiser taps the same club repeatedly and concludes the
+  /// app is broken. Offline, the team-list read threw first and the button
+  /// simply did nothing at all.
   Future<void> _addTeam(BuildContext context, WidgetRef ref, TournamentOverview o) async {
-    final myTeams = await ref.read(myTeamsProvider.future);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final List<Map<String, dynamic>> myTeams;
+    try {
+      // The REPOSITORY, not `ref.read(myTeamsProvider.future)`: this screen
+      // does not watch that provider, and the list is wanted as of the tap
+      // anyway (a club joined on another device should show up).
+      myTeams = await ref.read(identityRepositoryProvider).myTeams();
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(
+          content: Text(humanError(e, fallback: 'Could not load your teams.'))));
+      return;
+    }
     final existing = o.teams.map((t) => t.teamId).toSet();
     final options = [
       for (final r in myTeams)
-        if (r['teams'] != null && !existing.contains((r['teams'] as Map)['id']))
+        // Only teams this organiser can actually enter. Offering the rest can
+        // only ever end in a refusal from the server.
+        if (r['teams'] != null &&
+            (r['role'] == 'captain' || r['role'] == 'admin') &&
+            !existing.contains((r['teams'] as Map)['id']))
           r['teams'] as Map<String, dynamic>,
     ];
     if (!context.mounted) return;
@@ -358,8 +382,16 @@ class ManageTournamentScreen extends ConsumerWidget {
       ),
     );
     if (picked != null) {
-      await ref.read(tournamentRepositoryProvider).addTournamentTeam(tournamentId, picked, 'A');
-      ref.invalidate(tournamentOverviewProvider(tournamentId));
+      try {
+        await ref
+            .read(tournamentRepositoryProvider)
+            .addTournamentTeam(tournamentId, picked, 'A');
+        ref.invalidate(tournamentOverviewProvider(tournamentId));
+      } catch (e) {
+        messenger?.showSnackBar(SnackBar(
+            content:
+                Text(humanError(e, fallback: 'Could not add that team.'))));
+      }
     }
   }
 

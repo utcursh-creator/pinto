@@ -30,21 +30,23 @@ class MatchRepository {
     return id as String;
   }
 
-  Future<void> addSquadMember({
+  /// States the WHOLE squad of a match in one call: whoever is not in
+  /// [members] is not in the squad.
+  ///
+  /// This replaced a per-member `add_squad_member` loop. That RPC is additive
+  /// and idempotent and nothing in the app could ever delete a row, so
+  /// un-ticking a saved player was cosmetic, and a squad half-written by a
+  /// failed loop could not be repaired (review #2 findings 10 and 25).
+  /// Each member is `{team_id, team_member_id, is_captain, is_keeper}`;
+  /// batting order is the position within its own side's list, so two players
+  /// cannot end up sharing a slot.
+  Future<void> setMatchSquad({
     required String matchId,
-    required String teamId,
-    required String teamMemberId,
-    int? battingOrder,
-    bool isCaptain = false,
-    bool isKeeper = false,
+    required List<Map<String, dynamic>> members,
   }) =>
-      _c.rpc('add_squad_member', params: {
+      _c.rpc('set_match_squad', params: {
         '_match_id': matchId,
-        '_team_id': teamId,
-        '_team_member_id': teamMemberId,
-        '_batting_order': ?battingOrder,
-        '_is_captain': isCaptain,
-        '_is_keeper': isKeeper,
+        '_members': members,
       });
 
   /// Adds a guest player to a participating team during setup (scorer-gated).

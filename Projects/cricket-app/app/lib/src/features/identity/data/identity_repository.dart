@@ -20,6 +20,21 @@ class IdentityRepository {
     return id;
   }
 
+  /// The caller's team memberships, each `{role, teams: {...}}`.
+  ///
+  /// myTeamsProvider reads through this; imperative callers (the tournament
+  /// organiser's 'Add my team', which needs the list at the moment of the tap)
+  /// call it directly rather than awaiting a provider future they do not watch.
+  Future<List<Map<String, dynamic>>> myTeams() async {
+    final rows = await _client
+        .from('team_members')
+        .select('role, teams(*)')
+        .eq('profile_id', _uid)
+        // a team you have left is not one of "my teams"
+        .isFilter('left_at', null);
+    return List<Map<String, dynamic>>.from(rows as List);
+  }
+
   Future<void> updateMyProfile(Map<String, dynamic> fields) async {
     // `phone` is PII and lives in the self-only profile_private table, not on the
     // public profiles row (SEC-1). Route it there; write the rest to profiles.

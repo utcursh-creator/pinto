@@ -82,21 +82,24 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
       _error = null;
     });
     try {
-      final repo = ref.read(matchRepositoryProvider);
-      final orderWithin = <String, int>{}; // team id -> next batting slot
-      for (final memberId in _selected) {
-        final teamId = _teamOf[memberId]!;
-        final order = (orderWithin[teamId] ?? 0) + 1;
-        orderWithin[teamId] = order;
-        await repo.addSquadMember(
-          matchId: widget.matchId,
-          teamId: teamId,
-          teamMemberId: memberId,
-          battingOrder: order,
-          isCaptain: _captainOf[teamId] == memberId,
-          isKeeper: _keeperOf[teamId] == memberId,
-        );
-      }
+      // ONE call stating the whole squad, because the two things this screen
+      // could not do were REMOVE anybody and fail cleanly (review #2 findings
+      // 10 and 25). Writing member-by-member meant un-ticking a saved player
+      // changed nothing on the server - he kept turning up in the opening pair,
+      // the fielder picker and the public scorecard - and a failure part-way
+      // through the loop left rows committed under "Could not save the squads".
+      await ref.read(matchRepositoryProvider).setMatchSquad(
+            matchId: widget.matchId,
+            members: [
+              for (final memberId in _selected)
+                {
+                  'team_id': _teamOf[memberId]!,
+                  'team_member_id': memberId,
+                  'is_captain': _captainOf[_teamOf[memberId]!] == memberId,
+                  'is_keeper': _keeperOf[_teamOf[memberId]!] == memberId,
+                },
+            ],
+          );
       // The squad we just wrote is what the toss screen reads to offer the
       // opening pair. This screen has been watching matchSquadProvider since it
       // opened, so the provider is alive and still holding the value it had

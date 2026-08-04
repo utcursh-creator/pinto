@@ -16,7 +16,7 @@ REFUTED = re-verified against the code and found not to hold.
 USER = blocked on a credential or action only the user can take.
 OPEN = still to do.
 
-## CLOSED (41)
+## CLOSED (45)
 1 CRITICAL deleted account claimable ......... pgTAP 121 (earlier run)
 2 CRITICAL gradle configuration-time guard ... build.gradle.kts (earlier run)
 3 CRITICAL console innings-state no retry .... 3c27925
@@ -84,8 +84,12 @@ OPEN = still to do.
 62 MED image URLs were arbitrary client strings aff06c9
 61 MED status stuck at innings_break ......... 6223e6e
 54 MED a departed guest could never be re-added .. 24022fb
-15 HIGH DM inbox downloaded every message body ... (this commit)
-41 MED DM thread never re-synced after a socket gap (this commit)
+15 HIGH DM inbox downloaded every message body ... 38f24ea
+41 MED DM thread never re-synced after a socket gap 38f24ea
+10 HIGH un-ticking a squad member never removed him (this commit)
+25 HIGH the same, on a resumed setup ............ (this commit)
+9  HIGH 'Add my team' offered teams it could not add (this commit)
+11 HIGH AuthGate.error tore down the whole nav stack (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -108,10 +112,6 @@ OPEN = still to do.
 
 ## OPEN - still to do
 8  HIGH  reset-password link cannot re-enter the app
-9  HIGH  'Add my team' awaits an RPC with no try/catch
-10 HIGH  partially-failed squad save cannot be undone
-11 HIGH  AuthGate.error tears down the navigation stack
-25 HIGH  un-ticking a saved squad member is silently discarded
 34 MED   abandoning a match refreshes only myMatchesProvider
 39 MED   async error branches offer no retry while providers cache
 43 MED   expired posts still read 'open' to their author

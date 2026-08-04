@@ -35,16 +35,17 @@ Map<String, dynamic> _member(String id, String team, String name, int order) => 
 class _FakeMatchRepo implements MatchRepository {
   final List<String> added = [];
 
+  /// The screen now states the whole squad in ONE call (review #2 findings 10
+  /// and 25) - anyone absent from it is deleted server-side, which is what made
+  /// un-ticking a player mean anything.
   @override
-  Future<void> addSquadMember({
+  Future<void> setMatchSquad({
     required String matchId,
-    required String teamId,
-    required String teamMemberId,
-    int? battingOrder,
-    bool isCaptain = false,
-    bool isKeeper = false,
+    required List<Map<String, dynamic>> members,
   }) async {
-    added.add(teamMemberId);
+    added
+      ..clear()
+      ..addAll([for (final m in members) m['team_member_id'] as String]);
   }
 
   @override
