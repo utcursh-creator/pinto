@@ -141,6 +141,27 @@ historical running log, newest-first; do not treat older entries as current.
     run 22's frame, which showed the created post as a generic card.
 ## 2026-07-28 - review #2 fixes in progress
 
+- **`3c27925` CRITICAL - the scoring console could not recover from a dropped
+  packet.** Its error branch was a bare message, and a Riverpod provider CACHES
+  its failure, so "Could not load score." stayed forever - no retry, and
+  reopening the screen showed the same cached error. Force-quitting the app
+  mid-match was the only way out. Now offers "Try again" and says nothing already
+  recorded is lost (true - record_ball persists every ball server-side).
+- **THREE STRAY PROBE FILES from review agents were in `test/`, and I committed
+  them in `7d8c6a1` by using `git add -A` without reading what I staged.** They
+  took the widget suite from 8 SECONDS to 30 MINUTES with 6 failures.
+  * `zz_probe_card_size_test.dart` - ZERO assertions, rasterised the share card
+    at pixelRatio 3 and printed sizes. Deleted; replaced with
+    `share_card_bounds_test.dart` (normal XI / 16-a-side / four-innings, asserts
+    no overflow, 1 second).
+  * `zzz_probe_console_error_test.dart` - self-labelled "TEMPORARY PROBE".
+    Deleted; the CRITICAL it probed is fixed above.
+  * `zz_probe_signin_push_test.dart` - **had 11 REAL assertions**, so KEPT and
+    renamed `signin_push_gate_test.dart`; its last case only printed, and now
+    asserts a pushed /sign-in stays poppable.
+  **LESSON: never `git add -A` a directory you have not just inspected.**
+
+
 - **4 findings closed this turn (3 CRITICAL), ~30 confirmed still open.**
   * **`1c28904` CRITICAL - EVERY Android build was broken.** The release-signing
     guard sat INSIDE `buildTypes.release { }`, which Gradle evaluates at
