@@ -94,7 +94,18 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   including that guard - which is what proves the deleted code's behaviour is
   actually carried by the new mechanism.
 
-Gates: **pgTAP 732 / 120 files**, analyze clean, **298 widget tests**.
+- `5b683c3` **the hottest queries had no index that could serve them** (review
+  #2 findings 20/21/29/60 + 21/74/83). pg_trgm GIN on the three ILIKE search
+  columns; partial index on matches(created_at) where status is live - the
+  public Watch-live list is ANON-reachable and seq-scanned every match ever
+  played; matches(team_a_id/team_b_id); match_squad(team_member_id) (the only
+  index naming it had it SECOND in a composite). pgTAP 128 asserts the PLANNER
+  USES each index for the real predicate - "an index exists on display_name"
+  would pass while ILIKE still scanned. Also capped 4 unbounded reads, with the
+  guard testing BOTH directions (capping a match squad is a correctness bug).
+  KNOWN GAP: the DM thread is capped at 200, not paginated.
+
+Gates: **pgTAP 738 / 121 files**, analyze clean, **303 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device

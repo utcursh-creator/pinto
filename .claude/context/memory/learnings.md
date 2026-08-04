@@ -563,3 +563,21 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   override cannot express "the fold said 6, then said 5 again". A small
   `Notifier<int>` the override watches, plus a fake repo that moves it, models
   ball-then-correction faithfully - and the same harness then covers undo.
+- **Assert the PLANNER USES an index, never that the index exists.** "There is
+  an index on display_name" passes happily while every keystroke seq-scans,
+  because no btree can serve `ilike '%q%'`. Run `explain (costs off)` with
+  `set local enable_seqscan = off` and match the index NAME in the plan. Turning
+  seqscan off does not force an index scan - where none applies Postgres still
+  seq-scans - which is exactly what makes the assertion discriminating.
+- **"Add a LIMIT everywhere" is its own bug.** A match squad is eleven rows and
+  an innings a few hundred deliveries; capping those silently drops players off
+  a scorecard. Only cap sets bounded by nothing the user can see. Guard BOTH
+  directions so the next person cannot over-correct.
+- **A source-scanning guard must be proven to still be looking at something.**
+  Mine truncated a builder chain on a `;` inside my own comment, and anchored on
+  a bare `from('innings')` that matched a single-row `.limit(1).maybeSingle()`
+  lookup rather than the list query. Strip comments before scanning, anchor on
+  something unique to the statement, and assert the anchor was found.
+- **Capping is not paginating.** Say so in the commit and the code when the fix
+  trades unbounded download for lost reach, instead of letting a LIMIT read as
+  a solved problem.
