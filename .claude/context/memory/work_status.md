@@ -141,6 +141,28 @@ historical running log, newest-first; do not treat older entries as current.
     run 22's frame, which showed the created post as a generic card.
 ## 2026-07-28 - review #2 fixes in progress
 
+- **`565b557` HIGH - a mis-tapped wicket could never be taken back.** edit_ball
+  is COALESCE-patch shaped, so `wicketType: null` KEEPS the dismissal; the RPC's
+  `_clear_wicket` flag existed and the client never sent it. Turning "Wicket" off
+  was a silent no-op and the batter stayed out forever. Both halves pinned now:
+  pgTAP 123 (incl. an assertion that an omitted wicket is KEPT - which is WHY a
+  flag is needed) and a widget test proven RED by deleting the client line.
+- **`0ed439d` HIGH - one missed broadcast froze a live score permanently.**
+  `_refold()` was called from exactly ONE place: the broadcast callback. A
+  tunnel, a locked phone, a dropped socket = the viewer stops updating forever
+  with no indication. Three recoveries added: on (re)subscribe, on app resume,
+  and pull-to-refresh. Also folded in the LOW that `_refold()` omitted
+  `inningsWagonProvider`, so the wagon wheel never updated.
+- **`553d6d3` HIGH - "Block user" only closed DMs.** The blocked person kept
+  replying on the victim's public posts. Now gated by the (already symmetric)
+  `is_blocked_between`. **Cost a round trip: `looking_for_posts` is
+  OWN-ROWS-ONLY for direct SELECT, so a policy subquery evaluated as the
+  INSERTING user returned NULL for someone else's post and the guard never
+  fired.** Needed a SECURITY DEFINER `post_author()` + `coalesce(..., false)`.
+  **THIRD time this session a NULL silently disabled a guard.**
+- **GATES: pgTAP 708 / 117 files, analyze clean, 261 widget tests.**
+
+
 - **`3c27925` CRITICAL - the scoring console could not recover from a dropped
   packet.** Its error branch was a bare message, and a Riverpod provider CACHES
   its failure, so "Could not load score." stayed forever - no retry, and
