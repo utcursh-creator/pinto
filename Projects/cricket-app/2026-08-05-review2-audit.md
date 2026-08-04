@@ -70,7 +70,10 @@ OPEN = still to do.
 83 LOW tournaments list unbounded ............ 5b683c3
 84 LOW viewer wagon never updates ............ 0ed439d
 85 LOW last-pair retirement strands batter ... 61aff0c
+67 MED NRR ignored balls_per_over ........... (this commit)
 86 LOW (duplicate of 64) .................... 68575f4
+
+67 MED tournament_standings NRR hardcoded /6.0 .. CLOSED, see below
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -107,7 +110,6 @@ OPEN = still to do.
 62 MED   photo_url / image_urls / logo_url unvalidated client strings
 65 MED   tournament_leaderboard materialises a big join
 66 MED   tournament_overview folds every innings three times
-67 MED   tournament_standings NRR hardcodes /6.0, ignoring balls_per_over
 68 LOW   'Share image' can fail with no message
 69 LOW   weak assertion on penalty/overthrow/expectedLastSeq (test integrity)
 73 LOW   claim inbox evaluates is_team_admin per row
