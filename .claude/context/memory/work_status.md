@@ -176,7 +176,15 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
 - Finding **57 is a DUPLICATE** of the CRITICAL closed earlier (pgTAP 121
   assertion 3 pins it) - no work needed.
 
-Gates: **pgTAP 770 / 125 files**, analyze clean, **315 widget tests**, **8/8
+- `526fcb4` **the discover feed returned every open ad in a 50km radius**
+  (finding 58). The radius clamp bounds DISTANCE, not rows - 50km around a city
+  is thousands of ads on every open and pull-to-refresh. Now a clamped page
+  (default 100, floor 1, ceiling 200). DROPped before recreating (new arity =
+  OVERLOAD = PostgREST 300); verified one definition and both client call
+  shapes over real HTTP. Controls keep it NEAREST-first - bounding without
+  preserving order turns "games near you" into "an arbitrary hundred".
+
+Gates: **pgTAP 776 / 126 files**, analyze clean, **315 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

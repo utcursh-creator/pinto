@@ -674,3 +674,14 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   `sharedpref` still ships the Supabase session while the config looks
   deliberate. The guard asserts each domain in each channel rather than that the
   file merely exists.
+- **A radius clamp is not a row bound.** discover_posts clamped distance to
+  50 km and returned every matching row inside it. Whenever a query is
+  "bounded" by a filter, ask what the worst-case ROW COUNT is at that bound.
+- **`geog_coarse` is not generated and has no trigger.** create_looking_for_post
+  sets it via `_snap_geog(lat, lng)`, and discover_posts filters on it - so a
+  fixture that writes only `geog` returns an empty feed, which looks exactly
+  like the thing under test failing. Seed both columns.
+- **When a bound is added to a list, the ORDERING control is the real test.**
+  Capping a feed without preserving nearest-first turns "games near you" into
+  "an arbitrary hundred" - a worse bug than the unbounded read. Assert the order
+  survives, and check that assertion passes both with and without the cap.
