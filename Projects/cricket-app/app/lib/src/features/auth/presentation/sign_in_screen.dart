@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/config/env.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../data/oauth_sign_in.dart';
@@ -103,14 +104,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
               const Divider(height: 32),
             ],
-            OutlinedButton(
-              onPressed: _busy
-                  ? null
-                  : () => _run(
-                      () => ref.read(oAuthServiceProvider).nativeGoogleSignIn(),
-                    ),
-              child: const Text('Continue with Google'),
-            ),
+            // SupabaseEnv.googleConfigured has existed since the OAuth wiring
+            // and was never consulted, so this button was always shown - and on
+            // iOS without GOOGLE_IOS_CLIENT_ID (plus its reversed-client-id URL
+            // scheme in Info.plist) it opens a flow that cannot come back. An
+            // offer the app cannot honour is worse than no offer: the user
+            // assumes their account is broken (whole-system review #2).
+            if (SupabaseEnv.googleConfigured)
+              OutlinedButton(
+                onPressed: _busy
+                    ? null
+                    : () => _run(
+                        () => ref.read(oAuthServiceProvider).nativeGoogleSignIn(),
+                      ),
+                child: const Text('Continue with Google'),
+              ),
             // Sign in with Apple is native on iOS; gated there for v1 (Android
             // users sign in with Google).
             if (defaultTargetPlatform == TargetPlatform.iOS) ...[
