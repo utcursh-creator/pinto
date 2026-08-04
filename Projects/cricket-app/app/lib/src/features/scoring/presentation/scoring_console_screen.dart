@@ -429,6 +429,19 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     final bpo = (match?['balls_per_over'] as num?)?.toInt() ?? 6;
     final bowlingTeam = innings['bowling_team_id'] as String;
     final battingTeam = innings['batting_team_id'] as String;
+    // NOT rules.max_overs_per_bowler. The server enforces
+    // greatest(rule, ceil(overs / bowling_squad_size)) so that a side with
+    // fewer than five bowlers can still bowl the innings out. Reading the raw
+    // rule made the CLIENT stricter than the server: in a 10-over match with
+    // three bowlers the rule says 2 while the server allows 4, so after six
+    // overs every row read "At over limit", _bowlerId stayed null, the pad
+    // stayed behind its AbsorbPointer, and the match could not be scored to
+    // the end (whole-system review #2, finding 13).
+    //
+    // WATCHED, not read: the picker opens on demand, and a bare read of a
+    // provider nobody has subscribed to returns null while it loads - which
+    // would silently mean "no quota" on the first open.
+    final capOvers = ref.watch(bowlerOverCapProvider(inningsId)).value;
     final names = _names(squad);
     final state = ref.watch(inningsStateProvider(inningsId));
 
@@ -561,7 +574,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                 ),
                 trailing: TextButton(
                   onPressed: () =>
-                      _pickBowler(squad, bowlingTeam, names, s, bpo),
+                      _pickBowler(squad, bowlingTeam, names, s, bpo, capOvers),
                   child: Text(_bowlerId == null ? 'Pick' : 'Change'),
                 ),
               ),
@@ -578,7 +591,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                   onTap: (_bowlerId == null && !_busy)
                       ? () {
                           _toast('Pick a bowler to start the over');
-                          _pickBowler(squad, bowlingTeam, names, s, bpo);
+                          _pickBowler(squad, bowlingTeam, names, s, bpo, capOvers);
                         }
                       : null,
                   child: AbsorbPointer(
@@ -1132,6 +1145,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     Map<String, String> names,
     Map<String, dynamic> s,
     int bpo,
+    int? capOvers,
   ) async {
     final bowlers = [
       for (final m in squad)
@@ -1141,9 +1155,6 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       for (final b in (s['bowling'] as List? ?? const []))
         (b as Map)['bowler_id'] as String: b.cast<String, dynamic>(),
     };
-    final rules =
-        ref.read(matchProvider(widget.matchId)).value?['rules'] as Map?;
-    final capOvers = (rules?['max_overs_per_bowler'] as num?)?.toInt();
 
     final picked = await showModalBottomSheet<String>(
       context: context,

@@ -14,9 +14,14 @@ void main() {
   Widget console({
     Map<String, dynamic> state = const {},
     Map<String, dynamic> match = const {'balls_per_over': 6, 'status': 'live'},
+    // The picker no longer reads rules.max_overs_per_bowler - it asks the
+    // server for the EFFECTIVE cap, which is looser for small bowling squads
+    // (review #2 finding 13). Tests must seed that, not the raw rule.
+    int? effectiveCap,
   }) {
     return ProviderScope(
       overrides: [
+        bowlerOverCapProvider.overrideWith((ref, id) async => effectiveCap),
         matchProvider.overrideWith((ref, id) async => match),
         currentInningsProvider.overrideWith(
           (ref, id) async => {
@@ -130,6 +135,7 @@ void main() {
       debugDefaultTargetPlatformOverride = platform;
       try {
         await tester.pumpWidget(console(
+          effectiveCap: 1,
           match: {
             'balls_per_over': 6,
             'status': 'live',

@@ -124,6 +124,24 @@ final inningsStateProvider =
       return Map<String, dynamic>.from(res as Map);
     });
 
+/// The over quota actually in force for an innings - server-computed.
+///
+/// NOT `rules.max_overs_per_bowler`. The server enforces
+/// `greatest(rule, ceil(overs / bowling_squad_size))` so a side with fewer than
+/// five bowlers can still bowl the innings out (20260707130700_bowler_cap_
+/// feasible.sql). Reading the raw rule made the client stricter than the server
+/// and dead-ended short matches, so ask the server for its number rather than
+/// re-deriving the formula here: two copies of one rule is what caused the bug.
+///
+/// Null means the match carries no quota at all.
+final bowlerOverCapProvider =
+    FutureProvider.family<int?, String>((ref, inningsId) async {
+      final c = ref.watch(supabaseClientProvider);
+      final res =
+          await c.rpc('_bowler_over_cap', params: {'_innings_id': inningsId});
+      return (res as num?)?.toInt();
+    });
+
 /// Every delivery of an innings, in scoring order - the source for the ball-log
 /// / corrections screen. Includes the raw scoring columns so a ball can be
 /// re-specified by edit_ball/insert_ball.
