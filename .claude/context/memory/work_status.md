@@ -225,7 +225,16 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   the fold and its test encoded the same misunderstanding. **NEEDS A CRICKETER'S
   SECOND OPINION** - it rests on a Laws reading, and is a two-line revert.
 
-Gates: **pgTAP 796 / 129 files**, analyze clean, **325 widget tests**, **8/8
+- `c9bd9c3` **viewers kept seeing "Live now" through the whole innings break**
+  (finding 77). `_breakMarked = true` was set BEFORE the await and the call
+  ended in an EMPTY `.catchError`, so one blip at the interval (when phones
+  come out - the likeliest moment) left the public status wrong for the whole
+  break, unretried, with the scorer never told. Now visible + retryable, and
+  deliberately NOT auto-retried: un-latching in the handler would re-fire on
+  every rebuild, trading silence for a storm. CONTROL pins that a successful
+  write still happens exactly once.
+
+Gates: **pgTAP 796 / 129 files**, analyze clean, **331 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

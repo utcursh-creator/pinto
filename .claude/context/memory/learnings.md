@@ -734,3 +734,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   was right the whole time - only the bowler's figures and the extras breakdown
   were wrong, so nobody saw it. Where a quantity is split across buckets, test
   the buckets, not just the sum.
+- **A latch set BEFORE the await turns one failure into a permanent one.**
+  `_breakMarked = true; repo.write().catchError((_) {})` never retries and never
+  speaks. Set the latch AFTER success, or reset it on failure - and if resetting
+  would let a rebuild re-fire the call, surface a retry the user drives instead.
+  Silence and a request storm are both wrong; a visible one-tap retry is not.
+- **"Purely presentational" is worth checking against what reads it.** The
+  innings-break write was dismissed in a comment as cosmetic while being the
+  only thing three public surfaces use to decide between "Live now" and
+  "Innings break". Grep for readers before believing a write does not matter.
