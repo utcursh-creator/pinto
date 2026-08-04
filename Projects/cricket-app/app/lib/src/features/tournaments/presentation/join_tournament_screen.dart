@@ -8,6 +8,7 @@ import '../../../core/routing/routes.dart';
 import '../../identity/data/identity_providers.dart';
 import '../data/tournament_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// Opens from a tournament join link (`/join-tournament/:token`). A team admin
 /// picks one of THEIR teams and enters it into the tournament - their act of
@@ -117,7 +118,10 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
         const SizedBox(height: 20),
         teams.when(
           loading: () => const CircularProgressIndicator.adaptive(),
-          error: (e, _) => Text(humanError(e, fallback: 'Could not load your teams.')),
+          error: (e, _) => ErrorRetry(
+            message: humanError(e, fallback: 'Could not load your teams.'),
+            onRetry: () => ref.invalidate(myTeamsProvider),
+          ),
           data: (rows) {
             final myTeams = [
               for (final r in rows)

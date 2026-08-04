@@ -10,6 +10,7 @@ import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../data/tournament_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/platform/share.dart';
 
 /// Organizer hub. What's shown follows the tournament status: assign teams to
@@ -34,7 +35,10 @@ class ManageTournamentScreen extends ConsumerWidget {
       ],
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load this tournament.'),
+          onRetry: () => ref.invalidate(tournamentOverviewProvider(tournamentId)),
+        ),
         data: (o) => ListView(
           padding: const EdgeInsets.only(bottom: 28),
           children: [

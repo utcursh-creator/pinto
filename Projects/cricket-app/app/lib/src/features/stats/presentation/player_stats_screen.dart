@@ -7,6 +7,7 @@ import '../../identity/presentation/initials_avatar.dart';
 import '../data/stats_models.dart';
 import '../data/stats_providers.dart';
 import '../../../core/routing/routes.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// Public, login-free career stats for one player (keyed by profile id, or -
 /// STAT-2 - by team_members.id for an unclaimed guest via [isGuest]):
@@ -32,11 +33,12 @@ class PlayerStatsScreen extends ConsumerWidget {
       title: async.value?.identity.displayName ?? 'Player',
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text('Could not load stats.\n$e', textAlign: TextAlign.center),
-          ),
+        error: (e, _) => ErrorRetry(
+          message: 'Could not load stats.',
+          detail: e,
+          onRetry: () => ref.invalidate(isGuest
+              ? guestPlayerStatsProvider(profileId)
+              : playerStatsProvider(profileId)),
         ),
         data: (stats) => RefreshIndicator.adaptive(
           onRefresh: () async => ref.invalidate(isGuest

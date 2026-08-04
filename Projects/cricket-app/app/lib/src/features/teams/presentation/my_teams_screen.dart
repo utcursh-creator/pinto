@@ -9,6 +9,7 @@ import '../../identity/data/identity_providers.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../../../core/routing/pasted_token.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// Pulls the token out of whatever the user pasted. Delegates to the shared
 /// parser so the tournament flow cannot drift away from this one again
@@ -76,7 +77,10 @@ class MyTeamsScreen extends ConsumerWidget {
       ],
       body: teamsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load teams.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load teams.'),
+          onRetry: () => ref.invalidate(myTeamsProvider),
+        ),
         data: (rows) {
           return RefreshIndicator.adaptive(
             // TEAM-12: pull-to-refresh (stale after invite-accept/leave).

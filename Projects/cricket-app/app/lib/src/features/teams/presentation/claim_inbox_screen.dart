@@ -6,6 +6,7 @@ import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// Captain inbox: pending requests from registered players to take over a guest
 /// roster spot. Approving transfers that guest membership (and its history) to
@@ -55,7 +56,10 @@ class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
       title: 'Claim requests',
       body: inbox.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load requests.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load requests.'),
+          onRetry: () => ref.invalidate(claimInboxProvider),
+        ),
         data: (rows) {
           if (rows.isEmpty) {
             return const Center(

@@ -13,6 +13,7 @@ import '../data/discover_providers.dart';
 import '../data/discover_repository.dart';
 import 'flair_chip.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   const PostDetailScreen({required this.postId, super.key});
@@ -83,7 +84,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       title: 'Post',
       body: post.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load post.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load post.'),
+          onRetry: () => ref.invalidate(postProvider(widget.postId)),
+        ),
         data: (p) {
           if (p == null) return const Center(child: Text('Post not found.'));
           final authorName = p['author_name'] as String?;

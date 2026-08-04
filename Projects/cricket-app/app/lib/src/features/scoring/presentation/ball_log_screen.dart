@@ -6,6 +6,7 @@ import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import '../../../core/ui/app_primitives.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// Corrections screen: the ball-by-ball log of the current innings. Each ball
 /// can be edited, deleted, or have a missed ball inserted after it - wired to
@@ -86,7 +87,10 @@ class BallLogScreen extends ConsumerWidget {
 
     return deliveries.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load deliveries.'))),
+      error: (e, _) => ErrorRetry(
+        message: humanError(e, fallback: 'Could not load deliveries.'),
+        onRetry: () => ref.invalidate(inningsDeliveriesProvider(inningsId)),
+      ),
       data: (rows) {
         if (rows.isEmpty) {
           return const Center(child: Text('No balls bowled yet.'));

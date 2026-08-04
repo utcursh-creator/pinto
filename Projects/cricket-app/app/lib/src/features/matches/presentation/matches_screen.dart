@@ -10,6 +10,7 @@ import '../../identity/data/identity_providers.dart';
 import '../../scoring/data/match_providers.dart';
 import '../../scoring/data/match_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({super.key});
@@ -47,7 +48,10 @@ class MatchesScreen extends ConsumerWidget {
             ),
       body: matches.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load matches.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load matches.'),
+          onRetry: () => ref.invalidate(myMatchesProvider),
+        ),
         data: (rows) {
           if (rows.isEmpty) {
             return const Center(child: Text('No matches yet. Start one.'));

@@ -15,6 +15,7 @@ import '../../identity/data/identity_providers.dart';
 import '../../identity/data/identity_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/platform/share.dart';
 
 class TeamPageScreen extends ConsumerWidget {
@@ -57,14 +58,20 @@ class TeamPageScreen extends ConsumerWidget {
       ],
       body: teamAsync.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load team.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load team.'),
+          onRetry: () => ref.invalidate(teamProvider(teamId)),
+        ),
         data: (team) {
           if (team == null) return const Center(child: Text('Team not found.'));
           final city = team['city'] as String?;
           return rosterAsync.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator.adaptive()),
-            error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load roster.'))),
+            error: (e, _) => ErrorRetry(
+              message: humanError(e, fallback: 'Could not load roster.'),
+              onRetry: () => ref.invalidate(teamRosterProvider(teamId)),
+            ),
             data: (roster) {
               Map<String, dynamic>? myRow;
               for (final r in roster) {

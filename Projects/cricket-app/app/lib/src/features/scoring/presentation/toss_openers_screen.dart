@@ -7,6 +7,7 @@ import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 class TossOpenersScreen extends ConsumerStatefulWidget {
   const TossOpenersScreen({required this.matchId, super.key});
@@ -34,7 +35,10 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
       title: 'Toss & openers',
       body: match.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load this match.'),
+          onRetry: () => ref.invalidate(matchProvider(widget.matchId)),
+        ),
         data: (m) {
           if (m == null) return const Center(child: Text('Match not found.'));
           final teamA = m['team_a_id'] as String;
@@ -51,7 +55,10 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
           return squad.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator.adaptive()),
-            error: (e, _) => Center(child: Text(humanError(e))),
+            error: (e, _) => ErrorRetry(
+              message: humanError(e, fallback: 'Could not load the squad.'),
+              onRetry: () => ref.invalidate(matchSquadProvider(widget.matchId)),
+            ),
             data: (rows) {
               final batters = [
                 for (final r in rows)

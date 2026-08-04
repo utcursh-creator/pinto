@@ -16,7 +16,7 @@ REFUTED = re-verified against the code and found not to hold.
 USER = blocked on a credential or action only the user can take.
 OPEN = still to do.
 
-## CLOSED (48)
+## CLOSED (49)
 1 CRITICAL deleted account claimable ......... pgTAP 121 (earlier run)
 2 CRITICAL gradle configuration-time guard ... build.gradle.kts (earlier run)
 3 CRITICAL console innings-state no retry .... 3c27925
@@ -90,9 +90,10 @@ OPEN = still to do.
 25 HIGH the same, on a resumed setup ............ 495a08f
 9  HIGH 'Add my team' offered teams it could not add 495a08f
 11 HIGH AuthGate.error tore down the whole nav stack 495a08f
-34 MED  abandon refreshed only the Matches list . (this commit)
-55 MED  the discover anchor outlived its owner .. (this commit)
-87 MED  tournaments list never re-read .......... (this commit)
+34 MED  abandon refreshed only the Matches list . a040051
+55 MED  the discover anchor outlived its owner .. a040051
+87 MED  tournaments list never re-read .......... a040051
+39 MED  a screen that failed once stayed dead ... (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -115,7 +116,6 @@ OPEN = still to do.
 
 ## OPEN - still to do
 8  HIGH  reset-password link cannot re-enter the app
-39 MED   async error branches offer no retry while providers cache
 43 MED   expired posts still read 'open' to their author
 44 MED   GPS lookup has no time limit
 49 MED   'Propose a match' bridge silently drops the notification DM

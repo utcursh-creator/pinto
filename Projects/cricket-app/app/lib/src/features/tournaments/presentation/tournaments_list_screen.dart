@@ -10,6 +10,7 @@ import '../../../core/routing/routes.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// All tournaments. Tapping a card opens the public page; the organizer of a
 /// tournament also gets a Manage shortcut.
@@ -73,8 +74,9 @@ class _TournamentsListScreenState extends ConsumerState<TournamentsListScreen> {
         child: async.when(
           loading: () =>
               const Center(child: CircularProgressIndicator.adaptive()),
-          error: (e, _) => Center(
-            child: Text(humanError(e, fallback: 'Could not load tournaments.')),
+          error: (e, _) => ErrorRetry(
+            message: humanError(e, fallback: 'Could not load tournaments.'),
+            onRetry: () => ref.invalidate(tournamentsListProvider),
           ),
           data: (rows) => rows.isEmpty
               ? ListView(

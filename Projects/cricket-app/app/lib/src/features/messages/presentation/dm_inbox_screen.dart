@@ -10,6 +10,7 @@ import '../data/dm_realtime.dart';
 import '../../discover/data/discover_repository.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// The DM inbox: conversations newest-first with unread badges (DM-4), last
 /// message time (DM-6), pull-to-refresh AND live updates (DM-5 - the inbox
@@ -110,7 +111,10 @@ class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
       ],
       body: inbox.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load messages.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load messages.'),
+          onRetry: () => ref.invalidate(dmInboxProvider),
+        ),
         data: (threads) => RefreshIndicator.adaptive(
           onRefresh: () async => ref.invalidate(dmInboxProvider),
           child: threads.isEmpty

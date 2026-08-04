@@ -7,6 +7,7 @@ import '../../../core/routing/routes.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/platform/share.dart';
 
 /// Public, login-free tournament page. One tournament_overview call feeds four
@@ -44,7 +45,10 @@ class _TournamentPageScreenState extends ConsumerState<TournamentPageScreen> {
       ],
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load tournament.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load tournament.'),
+          onRetry: () => ref.invalidate(tournamentOverviewProvider(widget.tournamentId)),
+        ),
         data: (o) => Column(
           children: [
             if (o.info.isComplete && o.championTeamId != null)
