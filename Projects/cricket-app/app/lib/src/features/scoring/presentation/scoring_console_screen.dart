@@ -29,6 +29,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   String? _lastOverBowlerId; // who bowled the over that just ended (SCOR-15)
   bool _busy = false;
   bool _breakMarked = false; // SCOR-1: innings-break status written once
+  bool _breakWriteFailed = false; // and said out loud when that write fails
   bool _undoBusy = false; // Undo needs its own guard (a double tap deleted 2)
 
   MatchRepository get _repo => ref.read(matchRepositoryProvider);
@@ -682,16 +683,46 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       // 1st innings done -> break, then start the chase.
       // SCOR-1: the break is real match state, not just a console panel -
       // write it once so viewers/lists show 'innings break' instead of 'live'.
+      // This write is the ONLY thing that keeps the public status honest: the
+      // viewer, the Watch-live list and the Matches list all read
+      // matches.status. The failure it swallowed - a connection blip - is most
+      // likely at exactly this moment, when the phones come out at the
+      // interval. The latch was set BEFORE the await and never reset, so one
+      // blip left every viewer reading "Live now" for the whole break while
+      // the console privately showed "Innings break", and the scorer was never
+      // told (whole-system review #2, finding 77).
+      //
+      // Deliberately NOT auto-retried: un-latching here would re-fire the RPC
+      // on every rebuild. The scorer is shown what happened and given the
+      // retry, which is one tap and cannot storm.
       if (!_breakMarked) {
         _breakMarked = true;
         _repo.markInningsBreak(widget.matchId).then((_) {
-          if (mounted) ref.invalidate(matchProvider(widget.matchId));
-        }).catchError((_) {/* non-fatal: purely presentational state */});
+          if (mounted) {
+            if (_breakWriteFailed) setState(() => _breakWriteFailed = false);
+            ref.invalidate(matchProvider(widget.matchId));
+          }
+        }).catchError((_) {
+          if (mounted) setState(() => _breakWriteFailed = true);
+        });
       }
       final chaseTarget = runs + 1;
       return wrap([
         const Text('Innings break',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        if (_breakWriteFailed) ...[
+          const SizedBox(height: 8),
+          Text('Anyone watching still sees this match as live - we could not '
+              'tell them the innings has ended.',
+              style: TextStyle(color: Colors.orange.shade900)),
+          TextButton(
+            onPressed: () => setState(() {
+              _breakMarked = false;
+              _breakWriteFailed = false;
+            }),
+            child: const Text('Try again'),
+          ),
+        ],
         const SizedBox(height: 8),
         Text('$battingName finished on $runs/$wkts.'),
         const SizedBox(height: 4),
