@@ -825,3 +825,13 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **A user-supplied URL rendered in a list is a beacon, not a cosmetic field.**
   Every render is an outbound request carrying the VIEWER's IP and user agent.
   Worth checking any column that ends up in Image.network / NetworkImage.
+- **A one-way status write needs the way back.** matches.status went
+  live -> innings_break with no path home except start_innings, so any
+  correction that reopened the innings stranded it. When adding a state
+  transition, ask what reverses it and who notices - here the client latch made
+  the one-way trip permanent as well.
+- **A status-repair RPC must consult the source of truth, not just set the
+  value.** resume_from_innings_break asks the fold whether the innings is
+  actually in progress; a blind `set status = 'live'` would let a scorer drag a
+  finished match back. The control asserting a COMPLETED innings stays at the
+  break is what separates the two.

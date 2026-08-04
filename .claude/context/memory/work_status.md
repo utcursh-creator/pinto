@@ -326,8 +326,16 @@ mental subset. A systematic pass over all 87 is now on disk at
   storage too. 58-post-attachments seeded `https://x/a.jpg` - the exact shape
   now refused - and was made honest.
 
-Highest-value still OPEN: 61 (status stuck at innings_break after a correction),
-54 (add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
+- `6223e6e` **correcting the last wicket left the match saying "innings break"
+  forever** (finding 61). Break written once; a ball-log delete reopens the
+  innings but nothing wrote the status back (mark_innings_break only fires on
+  'live', and innings_break -> live happens only in start_innings), and
+  `_breakMarked` stayed latched. Viewers saw no LIVE badge while balls were
+  being recorded. New `resume_from_innings_break` asks the FOLD rather than
+  blindly setting live - control 6 pins that a genuinely completed innings
+  STAYS at the break, which a blind update would fail.
+
+Highest-value still OPEN: 54 (add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
 
 **THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
