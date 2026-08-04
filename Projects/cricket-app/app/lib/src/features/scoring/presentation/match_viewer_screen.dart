@@ -43,7 +43,8 @@ class MatchViewerScreen extends ConsumerStatefulWidget {
   ConsumerState<MatchViewerScreen> createState() => _MatchViewerScreenState();
 }
 
-class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
+class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen>
+    with WidgetsBindingObserver {
   int _tab = 0;
   String? _scorecardInnings; // selected innings id for the scorecard
   RealtimeChannel? _channel;
@@ -61,6 +62,13 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
   @override
   void initState() {
     super.initState();
+    // HIGH (whole-system review #2): _refold() was ONLY ever called from a
+    // broadcast callback, so a single missed message - a tunnel, a locked phone,
+    // a dropped socket - froze the score permanently with no way to recover. A
+    // viewer watching a live match would simply stop seeing runs and have no
+    // idea the feed had died. Three recoveries now exist: on (re)subscribe, on
+    // return to the foreground, and pull-to-refresh.
+    WidgetsBinding.instance.addObserver(this);
     if (widget.enableRealtime) {
       final c = ref.read(supabaseClientProvider);
       _client = c;
@@ -93,9 +101,19 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     for (final op in const ['INSERT', 'UPDATE', 'DELETE']) {
       channel.onBroadcast(event: op, callback: (_) => _refold());
     }
-    channel.subscribe();
+    // Re-fold on every (re)subscribe, not just on new broadcasts: whatever was
+    // missed while the socket was down is exactly what the viewer is missing.
+    channel.subscribe((status, _) {
+      if (status == RealtimeSubscribeStatus.subscribed) _refold();
+    });
     _channel = channel;
     _subscribedToken = token;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // A phone that slept through three overs must catch up when it wakes.
+    if (state == AppLifecycleState.resumed) _refold();
   }
 
   void _refold() {
@@ -104,11 +122,15 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
     ref.invalidate(matchInningsListProvider(widget.matchId));
     for (final id in _knownInnings) {
       ref.invalidate(inningsStateProvider(id));
+      // the wagon wheel was omitted here, so it never updated after the first
+      // load however long you watched (review #2, LOW)
+      ref.invalidate(inningsWagonProvider(id));
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authSub?.cancel();
     final ch = _channel;
     if (ch != null) _client?.removeChannel(ch);
@@ -351,7 +373,18 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen> {
             onPressed: _share,
           ),
       ],
-      body: body,
+      // Pull-to-refresh is the recovery a human reaches for without being told.
+      // Realtime should make it unnecessary; when realtime is what broke, it is
+      // the only thing that works (review #2).
+      body: RefreshIndicator.adaptive(
+        onRefresh: () async {
+          _refold();
+          ref.invalidate(matchSquadProvider(widget.matchId));
+          ref.invalidate(matchTeamNamesProvider(widget.matchId));
+          await ref.read(matchProvider(widget.matchId).future);
+        },
+        child: body,
+      ),
     );
   }
 
