@@ -1,7 +1,7 @@
 ---
 type: memory
 category: status
-last_updated: 2026-07-07
+last_updated: 2026-08-04
 ---
 
 # Work Status
@@ -11,6 +11,38 @@ last_updated: 2026-07-07
 **The authoritative current state is `Projects/cricket-app/2026-07-07-fix-run-handoff.md`.**
 Read that, then `Projects/cricket-app/CLAUDE.md`. Everything below this block is a
 historical running log, newest-first; do not treat older entries as current.
+
+## 2026-08-04 - review #2 fix run, scoring-console cricket-rules cluster
+
+Under a standing `/ralph-loop` (unlimited iterations, NO completion promise - it
+re-feeds the same prompt forever; the user should know it needs
+`--max-iterations` or `--completion-promise` to ever self-terminate).
+
+Working `Projects/cricket-app/2026-07-28-review2-findings.md`, re-verifying each
+finding before acting (~60% of that file was REFUTED by the skeptics).
+
+- `d734bc4` **a wicket can fall off a wide or a no-ball - the console could not
+  say so.** `_wicket()` always sent a legal delivery, so a stumping off a wide
+  (a T20 staple) and a run-out off a no-ball were unrecordable. Scoring them as
+  ordinary dismissals loses the extra run AND burns a legal ball, so the over
+  ends a delivery early and every later over is misattributed. The sheet now
+  asks what the delivery was and narrows the dismissal list to what the Laws
+  allow. A free hit that is also a wide binds BOTH guards, so `_typesFor()`
+  intersects. **The server half of this finding was REFUTED** - `record_ball`
+  already validated correctly; pgTAP 125 pins the uncovered half, that the FOLD
+  counts these deliveries right.
+- `80adbb6` **a first-ball wide locked the bowler out of his own over.**
+  `_afterBall` used `legal % bpo == 0`; a wide moves nothing, and right after an
+  over ends the count is already a multiple - so the console re-declared the
+  over over, cleared the bowler, and filed the man who had just started as
+  `_lastOverBowlerId`, which the picker shows as "Bowled last over" and refuses
+  to select. Now compares against the count from before the ball.
+
+Gates: **pgTAP 718 / 118 files**, analyze clean, **273 widget tests**.
+Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
+loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
+unbounded feeds + unindexed searches, account-deletion retention. Then a device
+journey run and a full review re-run.
 
 - **ACTIVE: fixing a 100-finding adversarial penetration review**
   (`Projects/cricket-app/2026-07-07-penetration-review.md`; machine-readable at

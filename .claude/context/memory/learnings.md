@@ -477,3 +477,33 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **A COALESCE-patch RPC cannot express "remove this".** `edit_ball` keeps any field you omit, so passing null for a wicket did nothing; the RPC had explicit `_clear_*` flags and the client never sent them. When an API is patch-shaped, every nullable field needs a paired clear flag AND a test that the omit-case KEEPS the value - otherwise the clear test looks like a tautology and nobody notices the client half is missing.
 - **A screen fed only by push needs at least one pull.** The live match viewer re-folded exclusively inside a realtime broadcast callback, so one missed message froze it forever. Anything driven by a socket needs recovery on resubscribe, on app resume, and a manual refresh - the interesting failure is precisely when the socket is what broke.
 
+
+## 2026-08-04 - counters, controls, and sheets that run off the screen
+
+- **A modulo test on a counter cannot tell "just arrived" from "already there".**
+  `legal % 6 == 0` meant to catch "this ball ended the over" also fires on every
+  delivery that does not move the counter (a wide, a no-ball) whenever it is
+  already sitting on a multiple - which it always is right after an over ends.
+  The fix is never a smarter modulo, it is comparing against the value from
+  before the event. Look for this shape anywhere an edge is inferred from a
+  counter's value instead of its change: over boundaries, page boundaries,
+  "every Nth" triggers, batch flushes.
+- **If a fix could be satisfied by deleting the behaviour, prove the control
+  discriminates.** "The bowler must not be cleared on a wide" is satisfied by
+  never clearing the bowler, which breaks cricket. Sabotaging the fix to the
+  lazy version and confirming the CONTROL test goes red - while the bug tests
+  stay green - is what proves the suite pins both directions. Cheap: two
+  minutes and a `cp` backup.
+- **A `tap()` on a widget below the test viewport does not throw, it hits
+  nothing.** The 600pt test window is much shorter than a phone, so a bottom
+  sheet that fits in real life still overflows in tests; the tap lands on the
+  barrier and the assertion fails far away with "recorded 0 calls". `tap()` only
+  prints a "would not hit test" warning. Check whether the sheet actually
+  SCROLLS (drag it) before concluding it is a real layout bug - here it scrolled
+  fine and the finding was a test artifact, so `ensureVisible` was the right fix
+  rather than changing the app.
+- **Half a recorded finding can be true.** "The app cannot record a dismissal
+  off a wide, and the backend accepts illegal ones" was two claims; the server
+  half was already correct. Re-verify each half separately - fixing the true
+  half and writing a characterisation test for the refuted half is the right
+  outcome, not a blanket "confirmed" or "refuted".
