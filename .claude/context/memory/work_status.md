@@ -184,7 +184,16 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   shapes over real HTTP. Controls keep it NEAREST-first - bounding without
   preserving order turns "games near you" into "an arbitrary hundred".
 
-Gates: **pgTAP 776 / 126 files**, analyze clean, **315 widget tests**, **8/8
+- `480f765` **pasting the tournament invite reported a valid code as already
+  used** (finding 46). The shared message is TWO sentences with a newline;
+  `split('/join-tournament/').last` kept the newline and the second sentence,
+  which survives as one URI segment - so the screen loaded, the RPC failed, and
+  a good invite was called used. Trailing slash gave an empty token because the
+  guard checked the RAW INPUT, not the derived one, landing on a route that
+  matches nothing. Two parsers for one job, only one right -> now one shared
+  `pastedToken(input, marker:)`.
+
+Gates: **pgTAP 776 / 126 files**, analyze clean, **321 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

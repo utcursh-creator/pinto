@@ -685,3 +685,15 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   Capping a feed without preserving nearest-first turns "games near you" into
   "an arbitrary hundred" - a worse bug than the unbounded read. Assert the order
   survives, and check that assertion passes both with and without the cap.
+- **Parse what the app actually SHARES, not a tidy version of it.** The
+  tournament invite message is two sentences with a newline, so everything after
+  the URL marker is "token + newline + another sentence" - and that survives as
+  a single URI segment, so the screen loads and blames the invite. Test the
+  exact string the app generates.
+- **Validate the DERIVED value, not the raw input.** The empty-check ran against
+  what the user pasted, so a trailing-slash link passed the guard and pushed an
+  empty token. Any "extract then use" pair needs the check on the extracted
+  side.
+- **Read the analyze VERDICT line, not the tail.** Committed "analyze clean"
+  while it said "2 issues found" - the same class of slip as reading the tail of
+  flutter test. Grep for `No issues found|issues found` explicitly.
