@@ -137,6 +137,16 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     Text(_error!, style: const TextStyle(color: Colors.red)),
+                    // The message used to end "Tap Edit squads below to add
+                    // them" and there was no such control anywhere on this
+                    // screen - only the back arrow. Rather than soften the
+                    // wording to "go back", give the scorer the control the
+                    // message asks for (review #2, finding 82).
+                    TextButton(
+                      onPressed: () =>
+                          context.push(Routes.matchSquads(widget.matchId)),
+                      child: const Text('Edit squads'),
+                    ),
                   ],
                   FilledButton(
                     onPressed: _busy
@@ -200,7 +210,7 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
         squadRows.where((r) => r['team_id'] == bowlingTeam).length;
     if (bowlers < 2) {
       setState(() => _error =
-          'The bowling side needs at least 2 squad members. Tap Edit squads below to add them.');
+          'The bowling side needs at least 2 squad members.');
       return;
     }
     setState(() {

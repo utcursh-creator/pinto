@@ -28,6 +28,12 @@ class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
             claimerId: claimerId,
           );
       ref.invalidate(claimInboxProvider);
+      // Approving a claim rewrites the membership row, so any team page still
+      // in the stack keeps showing the guest with its "This is me" button until
+      // it is rebuilt. The whole family, because this inbox spans every team
+      // the captain runs and the claim does not say which one is on screen
+      // (review #2, finding 71).
+      ref.invalidate(teamRosterProvider);
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)
             ?.showSnackBar(SnackBar(content: Text('$name approved')));

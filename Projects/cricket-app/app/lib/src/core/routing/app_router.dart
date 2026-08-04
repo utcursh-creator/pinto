@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -125,6 +125,35 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: refresh,
+    // go_router's built-in "Page Not Found" screen offers a Home button that
+    // pushes '/', and this app has no '/' route - so a stale or mistyped deep
+    // link left the user on an error page whose only control did nothing
+    // (review #2, finding 75). Send them somewhere that exists.
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Page not found')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.explore_off_outlined, size: 40),
+              const SizedBox(height: 12),
+              const Text(
+                'That link does not go anywhere any more.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => context.go(Routes.discover),
+                child: const Text('Go to Discover'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
     redirect: (context, state) => onboardingRedirect(
       ref.read(authGateProvider),
       state.matchedLocation,
