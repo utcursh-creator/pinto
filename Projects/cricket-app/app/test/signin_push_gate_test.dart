@@ -238,8 +238,12 @@ void main() {
     await tester.pumpAndSettle();
     _container.read(_gateSrc.notifier).set(AuthGate.ready);
     await tester.pumpAndSettle();
-    final canPop = _router.canPop();
-    debugPrint('E canPop=$canPop backButton='
-        '${find.byType(BackButton).evaluate().length}');
+    // This case originally only PRINTED canPop and asserted nothing - it was a
+    // review agent's probe. The question it was asking is the one that matters:
+    // a user who pushed /sign-in and then changed their mind must be able to get
+    // back out. Assert it.
+    expect(_router.canPop(), isTrue,
+        reason: 'a pushed sign-in must remain poppable, or a user who taps it '
+            'from a public screen and reconsiders is trapped there');
   });
 }

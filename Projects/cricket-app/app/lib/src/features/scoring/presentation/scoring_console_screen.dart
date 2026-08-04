@@ -7,6 +7,7 @@ import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import 'wagon_field.dart';
+import '../../../core/ui/app_primitives.dart';
 import '../../../core/ui/human_error.dart';
 import '../../tournaments/data/tournament_providers.dart';
 import '../../../core/supabase/supabase_providers.dart';
@@ -382,7 +383,23 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
 
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load score.'))),
+      // CRITICAL (whole-system review #2): this was a bare message. A Riverpod
+      // provider CACHES its failure, so one dropped packet while the scorer is
+      // mid-over left the console showing "Could not load score." with no way
+      // back - no retry, no refresh, and the cached error meant reopening the
+      // screen showed it again. The scorer's only recourse was to kill the app,
+      // in the middle of a live match.
+      error: (e, _) => Center(
+        child: AppEmpty(
+          icon: Icons.cloud_off_outlined,
+          title: 'Could not load the score',
+          message: humanError(e,
+              fallback: 'Check your connection and try again - nothing you '
+                  'have already recorded is lost.'),
+          actionLabel: 'Try again',
+          onAction: () => ref.invalidate(inningsStateProvider(inningsId)),
+        ),
+      ),
       data: (s) {
         final runs = (s['runs'] as num?)?.toInt() ?? 0;
         final wkts = (s['wickets'] as num?)?.toInt() ?? 0;
