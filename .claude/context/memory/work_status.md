@@ -254,13 +254,24 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
 Gates: **pgTAP 796 / 129 files**, analyze clean, **336 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 
-## STILL OPEN in review #2 (as of 2026-08-05)
-- **70** [LOW] a FAILED home-location read is indistinguishable from "no home
-  set", so Discover silently pins to the fallback city for the session. Needs a
-  UI affordance decision, not just a code change - deliberately left.
-- **THE REVIEW RE-RUN.** 24 fix units deep, including all three folds, the
-  permission model and the deletion path. My tally is not evidence; only a fresh
-  adversarial pass can say what these changes introduced.
+- `9b20c9e` **a failed location read published your ad in the wrong city**
+  (finding 70 - the LAST confirmed item). `.value` is null for BOTH "unset" and
+  "read failed", so the feed pinned to a fallback city silently AND the composer
+  published the ad geotagged there - permanent, and nobody near the author ever
+  sees it. I had set this aside as a design call; re-reading it, the composer
+  half is data corruption, which decided the scope. Composer now refuses to
+  guess, Retry re-reads the home ground, and the feed says when it is guessing.
+  A genuinely UNSET home still falls back - that is existing product behaviour
+  and a different question.
+
+Gates: **pgTAP 796 / 129 files**, analyze clean, **339 widget tests**, **8/8
+device journeys**, Android debug APK builds.
+
+## REVIEW #2 CONFIRMED LIST: DONE (2026-08-05, 25 fix units)
+**THE NEXT THING IS THE REVIEW RE-RUN, not more findings.** 25 units deep,
+touching all three folds, the permission model, the deletion path and the
+routing. My tally is not evidence - only a fresh adversarial pass can say what
+these changes introduced. Expect it to find regressions FROM this run.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device

@@ -761,3 +761,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   looks finished and its only button pushes '/', which an app with a splash
   route does not have. Any router/error default that ships a control should be
   checked against the routes that actually exist.
+- **Re-read a finding before deferring it.** I parked finding 70 as "needs a UI
+  design decision". It contained a second half - the composer publishes the ad
+  geotagged to the guessed city - which is permanent data corruption and needed
+  no design input at all. The deferrable part and the urgent part were in the
+  same paragraph.
+- **`AsyncValue.value` collapses error into absent, and that is a bug wherever
+  the two mean different things.** Null-from-error and null-from-unset took the
+  same fallback path here. Where a fallback is a guess, check `hasError`
+  separately - and never write a guess into stored data.
