@@ -73,7 +73,11 @@ OPEN = still to do.
 67 MED NRR ignored balls_per_over ........... (this commit)
 86 LOW (duplicate of 64) .................... 68575f4
 
-67 MED tournament_standings NRR hardcoded /6.0 .. CLOSED, see below
+67 MED tournament_standings NRR hardcoded /6.0 .. 2c94aba
+32 MED dev-credentials test was self-referential  (test integrity)
+50 MED no-ball enum lock tested its own copy .... (test integrity)
+69 LOW recordBall params: tearoff non-null ...... (test integrity)
+81 LOW location oracle passed on an empty result  (test integrity)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -93,7 +97,6 @@ OPEN = still to do.
 15 HIGH  DM inbox downloads every message body; thread-id list in a GET
 18 HIGH  JOURNEY G group-split step can never match a chip (test integrity)
 25 HIGH  un-ticking a saved squad member is silently discarded
-32 MED   dev-credentials test computes the prefill inside the test
 34 MED   abandoning a match refreshes only myMatchesProvider
 39 MED   async error branches offer no retry while providers cache
 40 MED   DM inbox opens one realtime channel per thread
@@ -102,7 +105,6 @@ OPEN = still to do.
 44 MED   GPS lookup has no time limit
 45 MED   JOURNEY D checks Undo only by the absence of a thing (test integrity)
 49 MED   'Propose a match' bridge silently drops the notification DM
-50 MED   no-ball secondary-kind lock copies the console mapping (test integrity)
 53 MED   winning margin derived from squad size (>11 squads wrong)
 54 MED   add_match_guest duplicate-name check ignores left_at
 55 MED   anchorProvider survives sign-out
@@ -111,8 +113,6 @@ OPEN = still to do.
 65 MED   tournament_leaderboard materialises a big join
 66 MED   tournament_overview folds every innings three times
 68 LOW   'Share image' can fail with no message
-69 LOW   weak assertion on penalty/overthrow/expectedLastSeq (test integrity)
 73 LOW   claim inbox evaluates is_team_admin per row
 76 LOW   handover leaves a stale "Continue scoring" that always fails
-81 LOW   test 110's location-oracle assertions pass vacuously (test integrity)
 87 LOW   tournamentsListProvider never refreshed after a status change
