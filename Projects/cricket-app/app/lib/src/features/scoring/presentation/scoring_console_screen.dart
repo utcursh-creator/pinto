@@ -125,7 +125,11 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         ref.invalidate(inningsStateProvider(inningsId));
         _toast('The innings changed on another device - refreshed, try again.');
       } else {
-        _toast(raw);
+        // humanError keeps our own P0001 copy ("bowler cannot bowl consecutive
+        // overs") and scrubs Postgres internals, which used to reach the
+        // scorer verbatim and read as a crash.
+        _toast(humanError(e,
+            fallback: 'Could not record that ball. Try again.'));
       }
     } finally {
       if (mounted && _busy) setState(() => _busy = false);
@@ -705,7 +709,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       if (tid != null) ref.invalidate(tournamentOverviewProvider(tid));
       if (mounted) context.pushReplacement(Routes.viewMatch(widget.matchId));
     } catch (e) {
-      _toast('$e');
+      _toast(humanError(e, fallback: 'Could not close the innings.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -755,7 +759,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         });
       }
     } catch (e) {
-      _toast('$e');
+      _toast(humanError(e, fallback: 'Could not start the next innings.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1006,7 +1010,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         );
         ref.invalidate(inningsStateProvider(inningsId));
       } catch (e) {
-        _toast('$e');
+        _toast(humanError(e, fallback: 'Could not retire that batter.'));
       } finally {
         if (mounted) setState(() => _busy = false);
       }
