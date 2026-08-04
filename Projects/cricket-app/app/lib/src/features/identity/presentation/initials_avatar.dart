@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/ui/storage_image_url.dart';
+
 import '../../../core/theme/brand_tokens.dart';
 import '../data/identity_labels.dart';
 
@@ -23,7 +25,9 @@ class InitialsAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: radius,
       backgroundColor: BrandTokens.tealLight,
-      foregroundImage: hasPhoto ? NetworkImage(photoUrl!) : null,
+      foregroundImage: hasPhoto
+          ? NetworkImage(resolveStorageUrl(photoUrl)!)
+          : null,
       // Initials remain as the fallback if the image fails to load.
       child: hasPhoto
           ? null

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/ui/storage_image_url.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -394,7 +396,7 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        _imageUrls[i],
+                        resolveStorageUrl(_imageUrls[i])!,
                         width: 84,
                         height: 84,
                         fit: BoxFit.cover,

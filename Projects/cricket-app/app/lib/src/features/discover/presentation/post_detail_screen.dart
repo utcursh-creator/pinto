@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/ui/storage_image_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -155,7 +157,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.network(url),
+                        child: Image.network(resolveStorageUrl(url)!),
                       ),
                     ],
                     if ((p['link_url'] as String?)?.isNotEmpty ?? false) ...[

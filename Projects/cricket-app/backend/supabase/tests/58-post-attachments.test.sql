@@ -15,9 +15,22 @@ select is(
 select tests.create_supabase_user('att@m.dev');
 select tests.authenticate_as('att@m.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('att@m.dev'), 'Att');
+select tests.get_supabase_uid('att@m.dev') as _au \gset
+-- REAL uploads. image_urls used to accept any string, which made every post
+-- image a potential tracking beacon; a write-time trigger now keeps only paths
+-- that resolve to an object in OUR storage, and strips the host (review #2,
+-- finding 62). This fixture said 'https://x/a.jpg' - precisely the shape that
+-- is now refused - so it seeds the objects it claims to be attaching.
+set local role postgres;
+insert into storage.objects(bucket_id, name, owner)
+values ('post-images', :'_au'::text || '/a.jpg', :'_au'::uuid),
+       ('post-images', :'_au'::text || '/b.jpg', :'_au'::uuid);
+set local role authenticated;
 select public.create_looking_for_post(
   _mode := 'player_seeking_team', _flair := 'loser_pays', _lat := 19.07, _lng := 72.87,
-  _image_urls := array['https://x/a.jpg','https://x/b.jpg'],
+  _image_urls := array[
+    'http://127.0.0.1:54321/storage/v1/object/public/post-images/' || :'_au'::text || '/a.jpg',
+    'http://127.0.0.1:54321/storage/v1/object/public/post-images/' || :'_au'::text || '/b.jpg'],
   _link_url := 'https://maps.example/ground'
 ) as _p \gset
 select is(

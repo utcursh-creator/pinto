@@ -80,7 +80,8 @@ OPEN = still to do.
 81 LOW location oracle passed on an empty result  (test integrity)
 18 HIGH journey G group split ............... already fixed; screenshot proves it
 45 MED journey D Undo asserted nothing ...... 79b16c4
-53 MED oversized squad silently changes format (this commit)
+53 MED oversized squad silently changes format 60184df
+62 MED image URLs were arbitrary client strings (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -109,7 +110,6 @@ OPEN = still to do.
 54 MED   add_match_guest duplicate-name check ignores left_at
 55 MED   anchorProvider survives sign-out
 61 MED   matches.status stuck at innings_break after a correction
-62 MED   photo_url / image_urls / logo_url unvalidated client strings
 65 MED   tournament_leaderboard materialises a big join
 66 MED   tournament_overview folds every innings three times
 68 LOW   'Share image' can fail with no message
