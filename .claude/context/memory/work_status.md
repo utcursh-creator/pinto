@@ -139,6 +139,53 @@ historical running log, newest-first; do not treat older entries as current.
     input. So every ad was headlined "Need a team" instead of the poster's own
     words, on a feed whose whole job is conveying intent. Found by LOOKING at
     run 22's frame, which showed the created post as a generic card.
+## 2026-07-28 - review #2 fixes in progress
+
+- **4 findings closed this turn (3 CRITICAL), ~30 confirmed still open.**
+  * **`1c28904` CRITICAL - EVERY Android build was broken.** The release-signing
+    guard sat INSIDE `buildTypes.release { }`, which Gradle evaluates at
+    CONFIGURATION time, so `flutter build apk --debug` and `flutter run` threw
+    too. Nobody without the release keystore could build the app - every fresh
+    clone, every CI box. **I nearly refuted it from a partial read of the file
+    (the top loads key.properties conditionally and looks fine; the throw is 40
+    lines lower).** Moved to `gradle.taskGraph.whenReady`. Verified BOTH ways:
+    debug exit 0, release-without-keystore still exit 1.
+  * **`f5c0bdf` CRITICAL - account deletion handed your identity to a stranger.**
+    Deletion detaches memberships (profile_id null + guest_name), which is
+    EXACTLY `request_guest_claim`'s definition of a claimable guest. Anyone could
+    claim the departed person's row and, once a captain approved, own their
+    innings and career record permanently. New `claimable` column set false on
+    those rows; ordinary guests stay claimable (test 4 pins that). Deletion also
+    stamps `left_at`.
+  * **`842692c` HIGH - deleting the sole captain's account froze the team.**
+    `leave_team` refuses to let the last captain leave; `delete_my_account` had no
+    such guard, so the same person achieved it by another door and the team could
+    never add a player or start a match again. Now hands the captaincy to the
+    longest-standing remaining member; the LAST member can still delete (test 4).
+  * **Google sign-in gated on `SupabaseEnv.googleConfigured`** - that helper had
+    existed since the OAuth wiring and NOTHING consulted it, so iOS showed a
+    button opening a flow that could never return.
+- **GATES: pgTAP 698 / 115 files green.** Widget suite was re-running at
+  end-of-turn (a full run timed out once right after two Android builds - suspect
+  resident Gradle/Kotlin daemons, not a code regression; the new
+  `sign_in_offers_test.dart` passes in 1s in isolation). **CONFIRM IT before
+  claiming the app gate.**
+- **NEXT, highest user-impact first** (all in
+  `Projects/cricket-app/2026-07-28-review2-findings.md`, ~60% of which was
+  REFUTED - re-verify each before acting):
+  1. ball-log editor cannot CLEAR a wicket (patch-shaped edit_ball, client never
+     sends _clear_wicket) and turning 'Wicket' off is a silent no-op
+  2. match viewer has no re-sync path - one missed broadcast freezes a live score
+  3. console cannot record a dismissal off a wide or a no-ball
+  4. "Block user" only closes DMs; the blocked person still posts and replies
+  5. scoring console has no error branch / no retry; failed loads render as the
+     'not set up yet' empty state
+  6. insert_ball emits 2 realtime broadcasts per shifted delivery
+- **STILL USER-ONLY**: rotate dev@pitch.local on hosted (live credential inside
+  the friend's APK - most urgent), hosted `db push`, rebuild the APK, supply
+  GOOGLE_IOS_CLIENT_ID + its reversed-client-id URL scheme, pitch.app/privacy +
+  /terms.
+
 - **WHOLE-SYSTEM REVIEW #2 COMPLETE**: 12 fronts, 187 agents, 18.3M tokens, ~78
   min. **35 confirmed / 52 refuted.** All 87 RAW findings are preserved in
   `Projects/cricket-app/2026-07-28-review2-findings.md` (`7d8c6a1`).
