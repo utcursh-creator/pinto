@@ -33,7 +33,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
     try {
-      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(email);
+      // redirectTo, or GoTrue builds the link against the project Site URL -
+      // 127.0.0.1:3000 - and the phone's browser shows a connection error
+      // (review #2, finding 8). This is the scheme the app already registers on
+      // both platforms for the OAuth callback.
+      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(
+            email,
+            redirectTo: 'io.supabase.pitch://login-callback',
+          );
       messenger?.showSnackBar(
           SnackBar(content: Text('Password reset link sent to $email')));
     } catch (e) {

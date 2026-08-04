@@ -16,7 +16,7 @@ REFUTED = re-verified against the code and found not to hold.
 USER = blocked on a credential or action only the user can take.
 OPEN = still to do.
 
-## CLOSED (49)
+## CLOSED (56)
 1 CRITICAL deleted account claimable ......... pgTAP 121 (earlier run)
 2 CRITICAL gradle configuration-time guard ... build.gradle.kts (earlier run)
 3 CRITICAL console innings-state no retry .... 3c27925
@@ -93,7 +93,14 @@ OPEN = still to do.
 34 MED  abandon refreshed only the Matches list . a040051
 55 MED  the discover anchor outlived its owner .. a040051
 87 MED  tournaments list never re-read .......... a040051
-39 MED  a screen that failed once stayed dead ... (this commit)
+39 MED  a screen that failed once stayed dead ... fea11c7
+44 MED  GPS had no time limit .................. 59b1439
+49 MED  the propose bridge swallowed both writes 59b1439
+68 LOW  share image failed silently ............ 59b1439
+76 LOW  handover left a dead "Continue scoring"  59b1439
+65 MED  leaderboard names CTE was unfiltered ... 2ab52a2
+73 LOW  claim inbox had no index, bare auth.uid() 2ab52a2
+8  HIGH reset-password link could not re-enter . (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -114,13 +121,19 @@ OPEN = still to do.
       rather than papered over; the cost is one socket join per conversation on
       screen, not incorrect data.
 
+66 MED  tournament_overview folds every innings three times
+   -> CONFIRMED and NOT fixed. One overview call folds each innings up to three
+      times: its own per-fixture compute_innings_state, tournament_standings
+      folding every group innings again, and tournament_leaderboard running
+      compute_innings_cards over every complete innings. For a 16-team
+      tournament that is ~156 fold invocations per page load on an anon-callable
+      endpoint with no caching.
+      The real fix is to stop folding on read - a per-innings cached state
+      written by the same trigger that already broadcasts a delivery - which is
+      an architectural change to the engine's single source of truth and needs
+      its own design pass. Raising the declared cost of the fold functions was
+      considered and rejected: it would change planner behaviour on a guess,
+      and I have no fixture big enough to measure it.
+
 ## OPEN - still to do
-8  HIGH  reset-password link cannot re-enter the app
 43 MED   expired posts still read 'open' to their author
-44 MED   GPS lookup has no time limit
-49 MED   'Propose a match' bridge silently drops the notification DM
-65 MED   tournament_leaderboard materialises a big join
-66 MED   tournament_overview folds every innings three times
-68 LOW   'Share image' can fail with no message
-73 LOW   claim inbox evaluates is_team_admin per row
-76 LOW   handover leaves a stale "Continue scoring" that always fails

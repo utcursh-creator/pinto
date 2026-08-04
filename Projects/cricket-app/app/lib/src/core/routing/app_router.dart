@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/discover/presentation/discover_screen.dart';
 import '../../features/discover/presentation/location_screen.dart';
@@ -39,6 +40,7 @@ import '../../features/tournaments/presentation/manage_tournament_screen.dart';
 import '../../features/tournaments/presentation/tournament_page_screen.dart';
 import '../../features/tournaments/presentation/tournaments_list_screen.dart';
 import '../auth/auth_gate.dart';
+import '../auth/password_recovery.dart';
 import 'router_refresh.dart';
 import 'routes.dart';
 
@@ -59,7 +61,13 @@ String? _safeNext(String? next) {
   return next;
 }
 
-String? onboardingRedirect(AuthGate gate, String loc, {String? next}) {
+String? onboardingRedirect(AuthGate gate, String loc,
+    {String? next, bool recovering = false}) {
+  // A RECOVERY session is signed in but half-finished: the user followed a
+  // reset link and does not yet know their own password (review #2, finding 8).
+  // Nothing else matters until they set one, and the session expires if they
+  // wander off.
+  if (recovering) return loc == Routes.resetPassword ? null : Routes.resetPassword;
   // Public, login-free deep links bypass the onboarding gate entirely. /invite
   // renders for anyone (the screen prompts anonymous users to sign in).
   if (loc.startsWith('/watch/') ||
@@ -158,11 +166,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ref.read(authGateProvider),
       state.matchedLocation,
       next: state.uri.queryParameters['next'],
+      recovering: ref.read(passwordRecoveryProvider),
     ),
     routes: [
       GoRoute(
         path: Routes.splash,
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: Routes.resetPassword,
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       // Public, login-free, shareable live view - top-level so deep/share links
       // cold-start correctly (outside the StatefulShellRoute branches).

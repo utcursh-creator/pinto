@@ -4,6 +4,8 @@ class Routes {
 
   static const String splash = '/splash';
   static const String signIn = '/sign-in';
+  /// Where a password-reset link lands (review #2, finding 8).
+  static const String resetPassword = '/reset-password';
 
   /// Sign in and come BACK to [returnTo]. Signing in flips the auth gate, and
   /// the gate's ready branch sends every onboarding location to Discover - so a
