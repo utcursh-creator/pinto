@@ -38,7 +38,25 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   `_lastOverBowlerId`, which the picker shows as "Bowled last over" and refuses
   to select. Now compares against the count from before the ball.
 
-Gates: **pgTAP 718 / 118 files**, analyze clean, **273 widget tests**.
+- `63f87f3` **the console was the last screen still shouting Postgres at the
+  user.** humanError() covered 78 sites but the console kept four raw
+  `_toast('$e')`, so a failed ball showed a PostgrestException dump - the only
+  feedback a scorer gets, mid-match, standing at the rope. The CONTROL is the
+  important half: our RPCs raise P0001 with copy written for this user ("bowler
+  cannot bowl consecutive overs"), so a blanket "Something went wrong" would be
+  a regression dressed as a fix. Swept the app afterwards - the console was the
+  last holdout of the class.
+- `18bae73` **one correction fired 71 realtime broadcasts.** MEASURED by
+  counting realtime.messages on a 30-ball innings: ordinary ball 1 (correct),
+  delete_ball 15, insert_ball 71. The two-pass negate/restore renumbering fires
+  the per-row trigger on every shifted delivery, and each message re-folds the
+  WHOLE innings on every viewer. Fixed with a transaction-local GUC
+  (`pitch.suppress_delivery_broadcast`, is_local => true) that the correction
+  RPCs set while shuffling, plus one `emit_delivery_broadcast` at the end.
+  Re-measured 71 -> 1. The control - ordinary scoring still emits exactly 1 -
+  matters more than the fix, since over-suppressing would silence live scoring.
+
+Gates: **pgTAP 724 / 119 files**, analyze clean, **278 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device

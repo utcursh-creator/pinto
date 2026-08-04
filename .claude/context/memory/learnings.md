@@ -507,3 +507,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   half was already correct. Re-verify each half separately - fixing the true
   half and writing a characterisation test for the refuted half is the right
   outcome, not a blanket "confirmed" or "refuted".
+- **Measure fan-out, do not estimate it.** "insert_ball emits 2 broadcasts per
+  shifted delivery" was recorded as a finding; counting `realtime.messages`
+  around one call showed 71 for a 30-ball innings (and 15 for a delete, 1 for an
+  ordinary ball). The count is trivially observable and the real number reframed
+  the fix. Any AFTER ... FOR EACH ROW trigger on a table an RPC bulk-renumbers
+  deserves this check.
+- **When suppressing noise, the control is the load-bearing test.** Silencing a
+  broadcast is a one-line change that can silence EVERYTHING; too quiet is worse
+  than too noisy, because the viewer then never learns anything. Pin "the
+  ordinary path still emits exactly once" before touching the noisy path.
+- **`set_config(..., is_local => true)` is the right scope for "quiet during
+  this RPC".** It unwinds with the transaction, so it cannot leak across a
+  pooled connection and it self-clears if the function raises partway through -
+  no need for an exception handler to reset it.
