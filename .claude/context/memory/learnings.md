@@ -661,3 +661,16 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   means: listen, drop the subscription, read again, assert the work ran twice.
   Asserting the source contains "autoDispose" would pass on a provider that is
   never actually released.
+- **Verify build config in the MERGED manifest, not the source one.** Any plugin
+  can override an application attribute during manifest merging, so
+  `build/app/intermediates/merged_manifests/.../AndroidManifest.xml` is the only
+  file that reflects what ships. Check the resource landed in the APK too
+  (`unzip -l`).
+- **Android `allowBackup="false"` is only half the opt-out since Android 12.**
+  Device-to-device transfer is governed separately by `dataExtractionRules`;
+  exclude every domain from BOTH `<cloud-backup>` and `<device-transfer>`. A
+  guard that only checks allowBackup passes on a half-open configuration.
+- **A partial exclusion is the dangerous state, so test for it.** Dropping just
+  `sharedpref` still ships the Supabase session while the config looks
+  deliberate. The guard asserts each domain in each channel rather than that the
+  file merely exists.

@@ -165,8 +165,19 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   autoDispose; ID-keyed ones must NOT" - opponentSearchProvider was already
   correct, and caching a match by id is the point.
 
-Gates: **pgTAP 770 / 125 files**, analyze clean, **313 widget tests**, **8/8
-device journeys**.
+- `a50adc7` **the refresh token was going into the user's Google backup**
+  (finding 37). Android Auto Backup is ON unless the manifest says otherwise;
+  supabase_flutter persists the session (refresh token included) in app-private
+  storage. Now allowBackup=false + dataExtractionRules excluding every domain
+  from BOTH cloud-backup and device-transfer (allowBackup alone does not stop
+  device-to-device on Android 12+). Verified in the MERGED manifest and inside
+  the built APK, not just the source. **iOS iCloud backup is NOT fixed** -
+  smaller exposure, separate work, stated in the commit rather than glossed.
+- Finding **57 is a DUPLICATE** of the CRITICAL closed earlier (pgTAP 121
+  assertion 3 pins it) - no work needed.
+
+Gates: **pgTAP 770 / 125 files**, analyze clean, **315 widget tests**, **8/8
+device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
