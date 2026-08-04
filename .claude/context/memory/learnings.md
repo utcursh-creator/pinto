@@ -602,3 +602,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   An assertion that writing one is "permission denied" tests nothing - the error
   is 428C9, and the column was never writable. Pick a plain column when the
   point is the grant.
+- **When a hardening run hides the front door, check the side doors it left.**
+  SEC-2 revoked the blanket read on looking_for_posts and moved reads behind
+  definer RPCs - but left post_replies `using (true)` and a by-id resolver with
+  no gate. The asymmetry is the tell: if one read path got a rule, every read
+  path onto the same data needs it. Enumerate them before calling it hardened.
+- **On a tightening fix, the CONTROLS are the deliverable.** Blocking a leak is
+  one line; not breaking the product is the hard part. Finding 63's test is 2
+  block assertions and 7 controls (feed still resolves, strangers can still
+  reply, author keeps their closed ad, repliers keep the thread). A tightening
+  commit with no controls should not be trusted.
+- **Check enum labels against the database, never memory.** Guessed
+  `players_needed`/`casual`; the real labels are `team_seeking_players` and
+  `practice_match`. This is the SECOND time an lf_ enum guess has cost a run -
+  `select unnest(enum_range(null::public.<type>))` first, every time.

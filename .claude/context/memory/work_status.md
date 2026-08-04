@@ -118,7 +118,18 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   seeded directly while claiming to use "the RPCs" - fixed, or the next device
   run would have failed.
 
-Gates: **pgTAP 748 / 122 files**, analyze clean, **303 widget tests**.
+- `42ed763` **every reply body in the database was readable by any account**
+  (finding 63). `post_replies` was `using (true)` + a table grant, so one
+  paginated GET returned every reply ever written - the field where people type
+  their phone number and which gate they meet at - joined to its author. And
+  `post_detail`'s entire WHERE was `p.id = _post_id`, SECURITY DEFINER, so it
+  resolved any post to a name, place and time. Together: a permanent global
+  index of who wants a game, where, with whom. Both now use ONE
+  `post_is_visible()` (your own ad forever / live on the feed's terms / you are
+  already in the thread), coalesced to false so a missing post is invisible.
+  7 of the 9 assertions are CONTROLS - over-tightening breaks Discover.
+
+Gates: **pgTAP 757 / 123 files**, analyze clean, **303 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
