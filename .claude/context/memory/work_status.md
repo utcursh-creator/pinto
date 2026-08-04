@@ -234,7 +234,15 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   every rebuild, trading silence for a storm. CONTROL pins that a successful
   write still happens exactly once.
 
-Gates: **pgTAP 796 / 129 files**, analyze clean, **331 widget tests**, **8/8
+- `5be66be` **the penalty switch told scorers to use it for the one case it
+  gets backwards** (finding 79). Subtitle said "deliberate short run", which
+  penalises the FIELDING side, while the control always credits the batting
+  side - a 10-run swing that can decide a chase. `extra_penalty` only accrues
+  to the innings being folded, so penalties AGAINST the batting side are NOT
+  MODELLED; inventing that schema is a feature, not a LOW fix. Copy now states
+  the direction and names the short run as the case NOT to use it for.
+
+Gates: **pgTAP 796 / 129 files**, analyze clean, **333 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

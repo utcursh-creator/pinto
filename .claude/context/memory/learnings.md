@@ -743,3 +743,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   innings-break write was dismissed in a comment as cosmetic while being the
   only thing three public surfaces use to decide between "Live now" and
   "Innings break". Grep for readers before believing a write does not matter.
+- **Changing user-facing copy breaks tests that pin it - budget for that.**
+  Three separate commits this run needed an existing test updated because it
+  asserted a label or an error string verbatim. That is the guard working, not
+  a nuisance: check the diff, confirm only the copy moved, then update the test.
+- **When a control cannot express a case, say so in the control.** Penalties
+  against the batting side are unmodelled. The options were to invent a schema
+  under a LOW bug fix, or to make the UI stop implying support. Naming the
+  unsupported case in the copy is honest and cheap; silently leaving help text
+  that reads as permission is what caused the bug.
