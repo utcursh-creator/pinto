@@ -104,7 +104,7 @@ class DiscoverRepository {
     if (after == null) {
       final rows = await _c
           .from('dm_messages')
-          .select('id, sender_id, body, created_at')
+          .select('id, sender_id, body, created_at, delivered_at, read_at')
           .eq('thread_id', threadId)
           .order('created_at', ascending: false)
           .limit(limit);
@@ -114,7 +114,7 @@ class DiscoverRepository {
     }
     final rows = await _c
         .from('dm_messages')
-        .select('id, sender_id, body, created_at')
+        .select('id, sender_id, body, created_at, delivered_at, read_at')
         .eq('thread_id', threadId)
         .gt('created_at', after)
         .order('created_at', ascending: true)
@@ -132,10 +132,31 @@ class DiscoverRepository {
           'sender_id': _uid,
           'body': body,
         })
-        .select('id, sender_id, body, created_at')
+        .select('id, sender_id, body, created_at, delivered_at, read_at')
         .single();
     return Map<String, dynamic>.from(row);
   }
+
+  /// The delivery + read state of MY OWN recent messages in a thread - what
+  /// the sent/delivered/seen ticks are drawn from. Only the stamps, never the
+  /// bodies: this is re-read on every receipt broadcast.
+  Future<List<Map<String, dynamic>>> myReceipts(String threadId,
+      {int limit = 50}) async {
+    final rows = await _c
+        .from('dm_messages')
+        .select('id, delivered_at, read_at')
+        .eq('thread_id', threadId)
+        .eq('sender_id', _uid)
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(rows as List);
+  }
+
+  /// Says "this device has the message" for everything the OTHER side sent -
+  /// the second tick. Distinct from markThreadRead, which means the thread was
+  /// actually opened.
+  Future<void> markThreadDelivered(String threadId) =>
+      _c.rpc('mark_thread_delivered', params: {'_thread_id': threadId});
 
   /// DM-4/SEC-4: stamps read_at on the OTHER side's unread messages via the
   /// secured RPC (table UPDATE on dm_messages is revoked).

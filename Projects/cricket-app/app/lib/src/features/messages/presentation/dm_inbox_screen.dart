@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/routing/routes.dart';
 import '../../discover/data/discover_providers.dart';
 import '../data/dm_realtime.dart';
@@ -55,7 +56,19 @@ class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
     }
     for (final id in wanted) {
       if (_detach.containsKey(id)) continue;
-      _detach[id] = rt.listen(id, (_) => ref.invalidate(dmInboxProvider));
+      _detach[id] = rt.listen(id, (record) {
+        // Two ticks mean "their phone has it", not "they had the thread open" -
+        // and the inbox is where a message actually lands while somebody is
+        // using the app. Without this the sender sits on one tick until the
+        // recipient happens to open the conversation.
+        if (record['sender_id'] != ref.read(currentSessionProvider)?.user.id) {
+          ref
+              .read(discoverRepositoryProvider)
+              .markThreadDelivered(id)
+              .catchError((_) {/* a lost receipt is not worth an error */});
+        }
+        ref.invalidate(dmInboxProvider);
+      });
     }
   }
 

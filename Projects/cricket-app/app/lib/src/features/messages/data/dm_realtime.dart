@@ -23,6 +23,7 @@ class DmRealtime {
   final Map<String, List<void Function(Map<String, dynamic>)>> _listeners = {};
 
   final Map<String, List<void Function()>> _subscribed = {};
+  final Map<String, List<void Function()>> _receipts = {};
 
   /// Subscribes [onInsert] to `dm:<threadId>`. Call the returned function to
   /// detach; the underlying channel closes when the last listener detaches.
@@ -31,15 +32,23 @@ class DmRealtime {
   /// socket was down, and what was missed while it was down is exactly what the
   /// screen is not showing (review #2 finding 41) - so this is where a listener
   /// catches up.
+  /// [onReceipt] fires when the other side stamps delivered/seen on this
+  /// thread - the sent/delivered/seen ticks. The database sends ONE receipt
+  /// event per statement, not one per message, so opening a thread with fifty
+  /// unread messages is a single broadcast.
   void Function() listen(
     String threadId,
     void Function(Map<String, dynamic>) onInsert, {
     void Function()? onSubscribed,
+    void Function()? onReceipt,
   }) {
     final topic = 'dm:$threadId';
     _listeners.putIfAbsent(topic, () => []).add(onInsert);
     if (onSubscribed != null) {
       _subscribed.putIfAbsent(topic, () => []).add(onSubscribed);
+    }
+    if (onReceipt != null) {
+      _receipts.putIfAbsent(topic, () => []).add(onReceipt);
     }
 
     if (!_channels.containsKey(topic)) {
@@ -61,6 +70,14 @@ class DmRealtime {
               }
             },
           )
+          .onBroadcast(
+            event: 'RECEIPT',
+            callback: (_) {
+              for (final r in List.of(_receipts[topic] ?? const [])) {
+                r();
+              }
+            },
+          )
           .subscribe((status, _) {
         if (status != RealtimeSubscribeStatus.subscribed) return;
         for (final s in List.of(_subscribed[topic] ?? const [])) {
@@ -72,12 +89,14 @@ class DmRealtime {
 
     return () {
       _subscribed[topic]?.remove(onSubscribed);
+      _receipts[topic]?.remove(onReceipt);
       final ls = _listeners[topic];
       if (ls == null) return;
       ls.remove(onInsert);
       if (ls.isEmpty) {
         _listeners.remove(topic);
         _subscribed.remove(topic);
+        _receipts.remove(topic);
         final ch = _channels.remove(topic);
         if (ch != null) _c.removeChannel(ch);
       }
@@ -91,6 +110,7 @@ class DmRealtime {
     _channels.clear();
     _listeners.clear();
     _subscribed.clear();
+    _receipts.clear();
   }
 }
 

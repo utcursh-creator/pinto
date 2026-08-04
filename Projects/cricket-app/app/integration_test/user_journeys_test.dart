@@ -900,6 +900,15 @@ void main() {
     expect(find.textContaining('PostgrestException'), findsNothing,
         reason: 'sending a DM must not surface a raw Postgres error');
 
+    // The receipt tick. Rahul is not on his phone, so this is ONE tick: the
+    // server has it, his device does not. Two ticks here would mean the
+    // delivered stamp is being written by the wrong side.
+    expect(find.byIcon(Icons.done), findsOneWidget,
+        reason: 'a sent message carries a tick');
+    expect(find.byIcon(Icons.done_all), findsNothing,
+        reason: 'nobody has received it yet - a tick that goes double on its '
+            'own would be a lie the sender cannot check');
+
     // THE NEW RECOVERY PATH (finding 41): pull down to catch up. It must bring
     // back what the socket missed and must NOT double what is already there -
     // the whole risk of a re-sync is that it re-appends the thread.

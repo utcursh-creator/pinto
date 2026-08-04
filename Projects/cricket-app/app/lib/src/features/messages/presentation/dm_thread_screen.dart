@@ -56,7 +56,10 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
     // The OS tears the socket down on a locked phone with no re-subscribe when
     // it wakes, so this is a distinct recovery, not a duplicate of the one
     // above.
-    if (state == AppLifecycleState.resumed) _resync();
+    if (state == AppLifecycleState.resumed) {
+      _resync();
+      _refreshReceipts();
+    }
   }
 
   /// Pull in whatever arrived while we were not listening. Asks only for what
@@ -147,6 +150,50 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
     _init();
   }
 
+  /// The sent / delivered / seen ticks on MY OWN messages.
+  ///
+  /// The stamps live on rows already on screen, so a re-sync keyed on
+  /// created_at would never see them change. The server sends one RECEIPT
+  /// broadcast per statement on the same `dm:<thread>` topic; this re-reads the
+  /// stamps (not the bodies) and merges them in place.
+  Future<void> _refreshReceipts() async {
+    if (!mounted) return;
+    try {
+      final rows = await ref
+          .read(discoverRepositoryProvider)
+          .myReceipts(widget.threadId);
+      if (!mounted || rows.isEmpty) return;
+      final byId = {for (final r in rows) r['id'] as String: r};
+      var changed = false;
+      for (final m in _messages) {
+        final r = byId[m['id']];
+        if (r == null) continue;
+        if (m['delivered_at'] != r['delivered_at'] ||
+            m['read_at'] != r['read_at']) {
+          m['delivered_at'] = r['delivered_at'];
+          m['read_at'] = r['read_at'];
+          changed = true;
+        }
+      }
+      if (changed) setState(() {});
+    } catch (_) {
+      // a tick that failed to refresh is not worth interrupting a conversation
+    }
+  }
+
+  /// Tells the SENDER their message reached this device - the second tick.
+  /// markThreadRead implies it, so this only matters for the moment between
+  /// arriving and being looked at.
+  Future<void> _markDelivered() async {
+    try {
+      await ref
+          .read(discoverRepositoryProvider)
+          .markThreadDelivered(widget.threadId);
+    } catch (_) {
+      /* non-fatal */
+    }
+  }
+
   /// DM-4: opening the thread clears the unread state (secured RPC) and
   /// refreshes the inbox badge.
   Future<void> _markRead() async {
@@ -165,16 +212,30 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
     // own channel on 'dm:<id>' while the inbox already had one on the same
     // topic - two joins on one topic, which killed live delivery in the very
     // conversation the user was reading (penetration review 2026-07-07).
-    _detach = ref.read(dmRealtimeProvider).listen(widget.threadId, (record) {
-      if (!mounted) return;
-      final id = record['id'] as String?;
-      if (id == null || _ids.contains(id)) return;
-      _ids.add(id);
-      setState(() => _messages.add(record));
-      _jump();
-      // an incoming message while the thread is open is instantly read
-      if (record['sender_id'] != _me) _markRead();
-    }, onSubscribed: _resync);
+    _detach = ref
+        .read(dmRealtimeProvider)
+        .listen(
+          widget.threadId,
+          (record) {
+            if (!mounted) return;
+            final id = record['id'] as String?;
+            if (id == null || _ids.contains(id)) return;
+            _ids.add(id);
+            setState(() => _messages.add(record));
+            _jump();
+            // an incoming message while the thread is open is instantly read, and
+            // read implies delivered, so their ticks move in one step
+            if (record['sender_id'] != _me) {
+              _markDelivered();
+              _markRead();
+            }
+          },
+          onSubscribed: () {
+            _resync();
+            _refreshReceipts();
+          },
+          onReceipt: _refreshReceipts,
+        );
   }
 
   void _jump() {
@@ -242,6 +303,28 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  /// sent / delivered / seen, in the order a message actually travels:
+  ///
+  ///   clock      still being written to the server
+  ///   one tick   the server has it
+  ///   two ticks  their app has it (delivered_at)
+  ///   two blue   they opened the thread (read_at)
+  ///
+  /// The distinction a captain chasing a fixture cares about is between "it
+  /// never reached them" and "they have read it and not replied".
+  static Widget _tick(Map<String, dynamic> m, {required bool pending}) {
+    if (pending) {
+      return const Icon(Icons.schedule, size: 12, color: Colors.white70);
+    }
+    final seen = m['read_at'] != null;
+    final delivered = seen || m['delivered_at'] != null;
+    return Icon(
+      delivered ? Icons.done_all : Icons.done,
+      size: 13,
+      color: seen ? const Color(0xFF8AD8FF) : Colors.white70,
+    );
   }
 
   /// DM-6: a compact bubble time, day-aware ("14:05" today, "Mon 14:05" else).
@@ -334,7 +417,10 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
                 : _loading
                 ? const Center(child: CircularProgressIndicator.adaptive())
                 : RefreshIndicator.adaptive(
-                    onRefresh: _resync,
+                    onRefresh: () async {
+                      await _resync();
+                      await _refreshReceipts();
+                    },
                     child: ListView.builder(
                       controller: _scroll,
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -375,16 +461,24 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
-                                  pending
-                                      ? 'sending...'
-                                      : _timeLabel(m['created_at']),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: mine
-                                        ? Colors.white70
-                                        : Colors.black45,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _timeLabel(m['created_at']),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: mine
+                                            ? Colors.white70
+                                            : Colors.black45,
+                                      ),
+                                    ),
+                                    // Receipts belong on YOUR OWN messages only
+                                    if (mine) ...[
+                                      const SizedBox(width: 4),
+                                      _tick(m, pending: pending),
+                                    ],
+                                  ],
                                 ),
                               ],
                             ),

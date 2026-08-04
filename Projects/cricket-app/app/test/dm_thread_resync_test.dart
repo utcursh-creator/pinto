@@ -48,6 +48,14 @@ class _Repo extends Fake implements DiscoverRepository {
 
   @override
   Future<void> markThreadRead(String threadId) async => reads++;
+
+  @override
+  Future<void> markThreadDelivered(String threadId) async {}
+
+  @override
+  Future<List<Map<String, dynamic>>> myReceipts(String threadId,
+          {int limit = 50}) async =>
+      const [];
 }
 
 /// A realtime double whose subscribe moment the test controls, because that is
@@ -62,6 +70,7 @@ class _Realtime extends Fake implements DmRealtime {
     String threadId,
     void Function(Map<String, dynamic>) onInsert, {
     void Function()? onSubscribed,
+    void Function()? onReceipt,
   }) {
     attaches++;
     this.onInsert = onInsert;
