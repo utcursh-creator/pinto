@@ -259,11 +259,16 @@ void main() {
     await shot(tester, 'ja5_teams_added');
 
     // moving a team to group B must actually take effect
+    // NOT wrapped in `if (chip.isNotEmpty)`. That guard is what let the same
+    // step in journey G skip silently for both teams while the run stayed
+    // green (review #2, finding 18) - if the chip is gone, this journey should
+    // fail loudly and say so.
     final bChip = find.widgetWithText(ChoiceChip, 'B');
-    if (bChip.evaluate().isNotEmpty) {
-      await tester.tap(bChip.last);
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-    }
+    expect(bChip, findsWidgets,
+        reason: 'the group chips are how a team is placed in a group; if they '
+            'are not on screen the rest of this journey is meaningless');
+    await tester.tap(bChip.last);
+    await tester.pumpAndSettle(const Duration(seconds: 1));
     await shot(tester, 'ja6_groups_assigned');
 
     // no raw Postgres error may reach the user anywhere in this flow
@@ -543,9 +548,27 @@ void main() {
             'that renders fine would pass a mere findsOneWidget');
     await shot(tester, 'jd7_after_swap');
 
+    // Undo gets the same treatment, for the same reason. This step used to
+    // assert ONLY that no "Could not undo" toast appeared - so making
+    // undoLastBall a no-op, or re-wrapping the pad in the AbsorbPointer that
+    // originally killed these controls, left it green: nothing happened, so no
+    // error appeared either (review #2, finding 45).
+    //
+    // The observable has to match WHAT IS BEING UNDONE. The last thing written
+    // above is the strike swap, and a swap is an EVENT row, not a ball - so
+    // undoing it moves neither the over nor the score. (I asserted the over
+    // first and the journey failed with 'Over 0.2 - CRR 21.0' unchanged on both
+    // sides, which is correct behaviour, not a bug.)
+    //
+    // What it must do is put the striker back.
     await tester.tap(find.widgetWithText(OutlinedButton, 'Undo'));
     await tester.pumpAndSettle(const Duration(seconds: 1));
     expect(find.textContaining('Could not undo'), findsNothing);
+    expect(onStrike(), before,
+        reason: 'Undo must actually remove the strike-swap event and put the '
+            'original batter back on strike. The absence of a "Could not undo" '
+            'toast is exactly what a DEAD button produces, so it proved '
+            'nothing on its own.');
     await shot(tester, 'jd8_after_undo');
 
     // no raw database error may have surfaced anywhere in the whole flow

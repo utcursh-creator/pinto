@@ -78,6 +78,8 @@ OPEN = still to do.
 50 MED no-ball enum lock tested its own copy .... (test integrity)
 69 LOW recordBall params: tearoff non-null ...... (test integrity)
 81 LOW location oracle passed on an empty result  (test integrity)
+18 HIGH journey G group split ............... already fixed; screenshot proves it
+45 MED journey D Undo asserted nothing ...... (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -95,7 +97,6 @@ OPEN = still to do.
 10 HIGH  partially-failed squad save cannot be undone
 11 HIGH  AuthGate.error tears down the navigation stack
 15 HIGH  DM inbox downloads every message body; thread-id list in a GET
-18 HIGH  JOURNEY G group-split step can never match a chip (test integrity)
 25 HIGH  un-ticking a saved squad member is silently discarded
 34 MED   abandoning a match refreshes only myMatchesProvider
 39 MED   async error branches offer no retry while providers cache
@@ -103,7 +104,6 @@ OPEN = still to do.
 41 MED   DM thread never re-syncs after a socket gap
 43 MED   expired posts still read 'open' to their author
 44 MED   GPS lookup has no time limit
-45 MED   JOURNEY D checks Undo only by the absence of a thing (test integrity)
 49 MED   'Propose a match' bridge silently drops the notification DM
 53 MED   winning margin derived from squad size (>11 squads wrong)
 54 MED   add_match_guest duplicate-name check ignores left_at
