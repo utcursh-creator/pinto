@@ -779,3 +779,15 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   pins NRR for a 6-ball tournament; leaving it green proved the balls_per_over
   fix was a no-op at six. Before building a control, look for the test that
   already asserts the case you must not break.
+- **Sabotage is the only proof a test works.** Four tests in this suite were
+  green for reasons unrelated to the app - a copy of the mapping, a constructor
+  tearoff, the test's own arithmetic, an empty result set. None was obvious from
+  reading it. Break the thing the test names and watch it go red; if it does
+  not, the test is decoration.
+- **`is not distinct from` and `is(null, null)` pass on two empty results.** Any
+  pgTAP assertion that compares two queries needs a POSITIVE CONTROL first
+  (count = 1) or a regression that returns nothing makes the whole file green.
+- **A test whose stated REASON is wrong is as bad as one that cannot fail.** I
+  wrote "the radius floor defeats a pinpoint probe", sabotaged the floor, and my
+  own new test passed - the real protection is grid-snapping both points.
+  Sabotage checks the rationale, not just the assertion.

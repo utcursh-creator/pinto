@@ -282,11 +282,20 @@ mental subset. A systematic pass over all 87 is now on disk at
   pgTAP 76 pins NRR=1.75 for a 6-ball tournament and still passes, proving the
   change is a no-op at six.
 
+- `31131a7` **four tests that could not fail now can** (findings 32/50/69/81).
+  The no-ball enum lock tested its OWN copy of the mapping; the recordBall
+  contract asserted a constructor tearoff was non-null; the credentials test
+  computed the prefill itself and asserted on its own arithmetic; the location
+  oracle compared identical expressions and held vacuously on an empty result.
+  All four proven by SABOTAGE - reverting the real bug fails the new test and
+  failed none of the old ones. **My first attempt at 81 was itself wrong**: I
+  claimed the radius floor defeats a pinpoint probe, sabotaged the floor, and
+  the test still passed - `_snap_geog` grids BOTH post and probe so a same-cell
+  distance is 0. Added a separate ~1.6km probe that DOES exercise the floor.
+
 Highest-value still OPEN: 53 (winning margin from squad size), 61 (status stuck
 at innings_break after a correction), 62 (unvalidated client URLs), 54
-(add_match_guest ignores left_at), and a six-finding TEST-INTEGRITY cluster
-(18/32/45/50/69/81) which matters more than usual because a green suite is what
-I have been treating as evidence.
+(add_match_guest ignores left_at), and the REMAINING test-integrity pair 18 and 45 (journey assertions).
 
 **THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
