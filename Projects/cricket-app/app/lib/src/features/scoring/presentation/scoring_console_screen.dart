@@ -354,6 +354,44 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     final innings = ref.watch(currentInningsProvider(widget.matchId));
     final squad = ref.watch(matchSquadProvider(widget.matchId));
 
+    // An errored provider is NOT loading and has a null value, so gating only
+    // on isLoading dropped a failed load straight into _content's no-data
+    // branch - "No innings yet. Finish setup first." A scorer whose connection
+    // blipped mid-over was told their match did not exist, and the obvious
+    // response (go back and run setup again) creates a SECOND innings on a
+    // live match. The inner inningsStateProvider already handled this; the
+    // outer three did not (whole-system review #2, 2026-07-28).
+    final Widget body;
+    if (match.isLoading || innings.isLoading || squad.isLoading) {
+      body = const Center(child: CircularProgressIndicator.adaptive());
+    } else if (match.hasError || innings.hasError || squad.hasError) {
+      body = Center(
+        child: AppEmpty(
+          icon: Icons.cloud_off_outlined,
+          title: 'Could not load this match',
+          message: humanError(
+            (match.error ?? innings.error ?? squad.error)!,
+            fallback: 'Check your connection and try again - the match and '
+                'everything scored so far are safe.',
+          ),
+          actionLabel: 'Try again',
+          onAction: () {
+            ref.invalidate(matchProvider(widget.matchId));
+            ref.invalidate(currentInningsProvider(widget.matchId));
+            ref.invalidate(matchSquadProvider(widget.matchId));
+          },
+        ),
+      );
+    } else {
+      body = _content(
+        match.value,
+        innings.value,
+        squad.value ?? const [],
+        ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
+            const <String, String>{},
+      );
+    }
+
     return AdaptiveScaffold(
       title: 'Live scoring',
       actions: [
@@ -374,15 +412,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
           onPressed: () => context.push(Routes.viewMatch(widget.matchId)),
         ),
       ],
-      body: (match.isLoading || innings.isLoading || squad.isLoading)
-          ? const Center(child: CircularProgressIndicator.adaptive())
-          : _content(
-              match.value,
-              innings.value,
-              squad.value ?? const [],
-              ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
-                  const <String, String>{},
-            ),
+      body: body,
     );
   }
 

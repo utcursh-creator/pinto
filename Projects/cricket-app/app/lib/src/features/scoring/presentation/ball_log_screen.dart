@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
+import '../../../core/ui/app_primitives.dart';
 import '../../../core/ui/human_error.dart';
 
 /// Corrections screen: the ball-by-ball log of the current innings. Each ball
@@ -26,11 +27,40 @@ class BallLogScreen extends ConsumerWidget {
     final innings = ref.watch(currentInningsProvider(matchId));
     final squad = ref.watch(matchSquadProvider(matchId));
 
+    // Same trap as the console: an errored provider is not loading and has a
+    // null value, so this used to fall through to "No innings to correct yet."
+    // The balls ARE there - the app just could not read them, and saying
+    // otherwise to someone trying to fix a scoring mistake is the worst
+    // possible moment to be wrong (whole-system review #2, 2026-07-28).
+    final Widget body;
+    if (match.isLoading || innings.isLoading || squad.isLoading) {
+      body = const Center(child: CircularProgressIndicator.adaptive());
+    } else if (match.hasError || innings.hasError || squad.hasError) {
+      body = Center(
+        child: AppEmpty(
+          icon: Icons.cloud_off_outlined,
+          title: 'Could not load the ball log',
+          message: humanError(
+            (match.error ?? innings.error ?? squad.error)!,
+            fallback: 'Check your connection and try again - nothing already '
+                'recorded is lost.',
+          ),
+          actionLabel: 'Try again',
+          onAction: () {
+            ref.invalidate(matchProvider(matchId));
+            ref.invalidate(currentInningsProvider(matchId));
+            ref.invalidate(matchSquadProvider(matchId));
+          },
+        ),
+      );
+    } else {
+      body =
+          _body(context, ref, match.value, innings.value, squad.value ?? const []);
+    }
+
     return AdaptiveScaffold(
       title: 'Ball log',
-      body: (match.isLoading || innings.isLoading || squad.isLoading)
-          ? const Center(child: CircularProgressIndicator.adaptive())
-          : _body(context, ref, match.value, innings.value, squad.value ?? const []),
+      body: body,
     );
   }
 
