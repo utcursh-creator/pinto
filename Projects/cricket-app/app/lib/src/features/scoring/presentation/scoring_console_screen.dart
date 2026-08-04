@@ -1161,6 +1161,31 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   ];
   // Only these are legal on a free hit (mirrors record_ball's guard).
   static const _freeHitWicketTypes = ['run_out', 'obstructing', 'hit_ball_twice'];
+  // A wicket can fall off a wide or a no-ball, and the console used to have no
+  // way to say so - every dismissal it produced was a legal delivery. A
+  // stumping off a wide is a T20 staple; a run-out off a no-ball is routine.
+  // Scored as an ordinary dismissal they cost the innings the extra run AND
+  // burn a legal ball, so the over ends a delivery early and every over after
+  // it is misattributed (whole-system review #2, 2026-07-28).
+  //
+  // These mirror record_ball's guards exactly. A no-ball allows the same set as
+  // a free hit, for the same reason: the bowler cannot be credited.
+  static const _wideWicketTypes = [
+    'stumped', 'run_out', 'hit_wicket', 'obstructing',
+  ];
+  static const _noBallWicketTypes = _freeHitWicketTypes;
+
+  /// A free hit can itself be a wide, and then BOTH guards bind - so intersect
+  /// rather than picking one.
+  static List<String> _typesFor(String delivery, bool freeHit) {
+    final base = switch (delivery) {
+      'wide' => _wideWicketTypes,
+      'no_ball' => _noBallWicketTypes,
+      _ => _allWicketTypes,
+    };
+    if (!freeHit) return base;
+    return [for (final t in base) if (_freeHitWicketTypes.contains(t)) t];
+  }
 
   static bool _needsWhoOut(String t) =>
       t == 'run_out' || t == 'obstructing' || t == 'retired_out';
@@ -1214,8 +1239,8 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         if (m['team_id'] == bowlingTeam) m['team_member_id'] as String,
     ];
 
-    final types = freeHit ? _freeHitWicketTypes : _allWicketTypes;
-    String type = types.first;
+    String delivery = 'legal';
+    String type = _typesFor(delivery, freeHit).first;
     String whoOut = 'striker';
     String? fielder;
     bool crossed = false;
@@ -1229,6 +1254,15 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         builder: (context, setSheet) {
           final needIncoming = !isLastWicket;
           final canRecord = !needIncoming || incoming != null;
+          final types = _typesFor(delivery, freeHit);
+          // A wide charges its own run; a no-ball its own penalty. The counter
+          // means something different in each case, so say which.
+          final runsLabel = switch (delivery) {
+            'wide' => 'Extra runs run',
+            'no_ball' => 'Runs off the bat',
+            _ => 'Runs completed',
+          };
+          final showRuns = _needsCrossedRuns(type) || delivery != 'legal';
           return SafeArea(
             child: Padding(
               padding: EdgeInsets.only(
@@ -1248,6 +1282,27 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                         child: Text('Free hit - only a run-out counts',
                             style: TextStyle(color: Color(0xFFB26A00))),
                       ),
+                    const Text('The delivery was'),
+                    Wrap(spacing: 8, children: [
+                      for (final (d, l) in const [
+                        ('legal', 'Legal ball'),
+                        ('wide', 'Wide'),
+                        ('no_ball', 'No-ball'),
+                      ])
+                        ChoiceChip(
+                          label: Text(l),
+                          selected: delivery == d,
+                          onSelected: (_) => setSheet(() {
+                            delivery = d;
+                            // The allowed dismissals shrink with the delivery -
+                            // keep the selection legal rather than letting a
+                            // stale "Bowled" ride along into a server error.
+                            final allowed = _typesFor(delivery, freeHit);
+                            if (!allowed.contains(type)) type = allowed.first;
+                          }),
+                        ),
+                    ]),
+                    const SizedBox(height: 12),
                     const Text('How out?'),
                     Wrap(
                       spacing: 8,
@@ -1277,10 +1332,10 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                         ),
                       ]),
                     ],
-                    if (_needsCrossedRuns(type)) ...[
+                    if (showRuns) ...[
                       const SizedBox(height: 8),
                       Row(children: [
-                        const Text('Runs completed'),
+                        Text(runsLabel),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline),
@@ -1293,12 +1348,13 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                           onPressed: () => setSheet(() => runs++),
                         ),
                       ]),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Batters had crossed'),
-                        value: crossed,
-                        onChanged: (v) => setSheet(() => crossed = v),
-                      ),
+                      if (_needsCrossedRuns(type))
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Batters had crossed'),
+                          value: crossed,
+                          onChanged: (v) => setSheet(() => crossed = v),
+                        ),
                     ],
                     if (_needsFielder(type)) ...[
                       const SizedBox(height: 12),
@@ -1349,10 +1405,23 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       final dismissedId = _needsWhoOut(type) && whoOut == 'non_striker'
           ? nonStrikerId
           : strikerId;
+      // A wide's runs are extras on top of the wide itself; a no-ball's are off
+      // the bat on top of the penalty; a legal ball's are only meaningful for
+      // the run-out family. Sending any of these as a bare legal delivery is
+      // what made a stumping-off-a-wide unrecordable.
+      final offBat = switch (delivery) {
+        'wide' => 0,
+        'no_ball' => runs,
+        _ => _needsCrossedRuns(type) ? runs : 0,
+      };
       await _record(
         inningsId,
         bpo,
-        runs: _needsCrossedRuns(type) ? runs : 0,
+        runs: offBat,
+        wides: delivery == 'wide' ? 1 + runs : 0,
+        noBall: delivery == 'no_ball' ? 1 : 0,
+        noballSecondaryKind:
+            delivery == 'no_ball' && runs > 0 ? _nbKindEnum('off_bat') : null,
         wicketType: type,
         dismissedId: dismissedId,
         incomingId: incoming,
