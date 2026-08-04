@@ -225,6 +225,12 @@ class BallLogScreen extends ConsumerWidget {
             dismissedPlayerId: res.dismissedId,
             incomingBatterId: res.incomingId,
             fielderId: res.fielderId,
+            // The ball HAD a wicket and the scorer switched it off. Without this
+            // the COALESCE patch keeps the old dismissal, so a mis-tapped wicket
+            // could never be taken back - the batter stayed out on the scorecard
+            // forever (whole-system review #2).
+            clearWicket: (d['wicket_type'] as String?) != null &&
+                res.wicketType == null,
           );
           ref.invalidate(inningsDeliveriesProvider(inningsId));
           ref.invalidate(inningsStateProvider(inningsId));

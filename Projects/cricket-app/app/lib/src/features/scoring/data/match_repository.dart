@@ -218,9 +218,18 @@ class MatchRepository {
     String? dismissedPlayerId,
     String? incomingBatterId,
     String? fielderId,
+    // edit_ball is COALESCE-patch shaped: omitting a field KEEPS it. So a null
+    // wicketType cannot mean "remove the wicket" - the RPC has explicit
+    // _clear_wicket / _clear_wagon flags for that, and nothing was sending them,
+    // which made turning "Wicket" off in the editor a silent no-op
+    // (whole-system review #2).
+    bool clearWicket = false,
+    bool clearWagon = false,
   }) {
     final params = <String, dynamic>{
       '_delivery_id': deliveryId,
+      if (clearWicket) '_clear_wicket': true,
+      if (clearWagon) '_clear_wagon': true,
       '_runs_off_bat': runsOffBat,
       '_extra_wides': wides,
       '_extra_no_ball_penalty': noBallPenalty,
