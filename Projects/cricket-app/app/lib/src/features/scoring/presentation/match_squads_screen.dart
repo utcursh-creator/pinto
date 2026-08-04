@@ -60,6 +60,14 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
     }
   }
 
+  /// The larger side's size when either exceeds a normal XI, else null.
+  int? _oversizedSide(String teamA, String teamB) {
+    final a = _selected.where((id) => _teamOf[id] == teamA).length;
+    final b = _selected.where((id) => _teamOf[id] == teamB).length;
+    final biggest = a > b ? a : b;
+    return biggest > 11 ? biggest : null;
+  }
+
   Future<void> _next(String teamA, String teamB) async {
     // SCOR-14/M3: validate PER TEAM, not just the combined count - otherwise a
     // side can reach the console with nobody to bat or bowl.
@@ -171,6 +179,30 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Text(_error!,
                               style: const TextStyle(color: Colors.red)),
+                        ),
+                      // A squad bigger than eleven silently changes the FORMAT
+                      // of the match. all_out is squad_size - 1, so a 13-man
+                      // squad does not close at ten wickets: a 12th and 13th
+                      // batter come in, and "won by N wickets" is computed off
+                      // 12 instead of 10. Rosters are routinely bigger than the
+                      // XI, so ticking everyone available is a natural mistake
+                      // and nothing said a word about it (review #2, finding
+                      // 53).
+                      //
+                      // NOT a hard cap: 12- and 13-a-side social games are real
+                      // and the backend supports them deliberately (squad_size
+                      // lives in matches.rules). The point is that choosing one
+                      // should be a decision, not an accident.
+                      if (_oversizedSide(teamA, teamB) != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            'That is ${_oversizedSide(teamA, teamB)} players a '
+                            'side, so this match will play as such - all out '
+                            'at ${_oversizedSide(teamA, teamB)! - 1} wickets, '
+                            'not 10.',
+                            style: TextStyle(color: Colors.orange.shade900),
+                          ),
                         ),
                       FilledButton(
                         onPressed: _busy ? null : () => _next(teamA, teamB),

@@ -79,7 +79,8 @@ OPEN = still to do.
 69 LOW recordBall params: tearoff non-null ...... (test integrity)
 81 LOW location oracle passed on an empty result  (test integrity)
 18 HIGH journey G group split ............... already fixed; screenshot proves it
-45 MED journey D Undo asserted nothing ...... (this commit)
+45 MED journey D Undo asserted nothing ...... 79b16c4
+53 MED oversized squad silently changes format (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -105,7 +106,6 @@ OPEN = still to do.
 43 MED   expired posts still read 'open' to their author
 44 MED   GPS lookup has no time limit
 49 MED   'Propose a match' bridge silently drops the notification DM
-53 MED   winning margin derived from squad size (>11 squads wrong)
 54 MED   add_match_guest duplicate-name check ignores left_at
 55 MED   anchorProvider survives sign-out
 61 MED   matches.status stuck at innings_break after a correction
