@@ -616,3 +616,19 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   `players_needed`/`casual`; the real labels are `team_seeking_players` and
   `practice_match`. This is the SECOND time an lf_ enum guess has cost a run -
   `select unnest(enum_range(null::public.<type>))` first, every time.
+- **storage.objects cannot be DELETEd from SQL.** Supabase installs a trigger
+  that rejects it - "Direct deletion from storage tables is not allowed. Use the
+  Storage API instead" - because removing the row would orphan the actual file.
+  Any "delete the user's uploads" work has to run through the Storage API from a
+  client or an Edge Function, never a migration.
+- **Order matters when a cleanup needs the identity it is about to destroy.**
+  delete_my_account revokes the auth rows, so the Storage API can no longer act
+  as that user afterwards. Photos must be removed FIRST, and the failure must
+  NOT be swallowed: an account still present can be deleted again tomorrow, a
+  photo whose owner no longer exists cannot. Same shape for any revoke-then-
+  cleanup sequence.
+- **When the UI states a promise in words, that sentence is a spec.** "This
+  permanently removes your profile, posts and messages" is testable, and it was
+  false for two of the three nouns. Grep user-facing promises and check each
+  clause against what the code does - and when the code is right but the
+  sentence is short, fix the sentence too.

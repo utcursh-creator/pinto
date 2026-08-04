@@ -129,7 +129,17 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   already in the thread), coalesced to false so a missing post is invisible.
   7 of the 9 assertions are CONTROLS - over-tightening breaks Discover.
 
-Gates: **pgTAP 757 / 123 files**, analyze clean, **303 widget tests**.
+- `53b45f1` **account deletion did not delete the messages or the photos**
+  (findings 35 + 52). The dialog said "permanently removes your profile, posts
+  and messages"; it removed posts and NOTHING else - every DM body and every
+  post_reply survived verbatim, and the avatar/post photos stayed in PUBLIC
+  buckets at their original URLs. The line held: the friend's side of a
+  conversation survives. **Photos cannot be deleted from SQL** - Supabase
+  rejects direct DELETE on storage.objects ("Use the Storage API instead"), so
+  the client removes them BEFORE the RPC (which revokes auth and would strand
+  them), and a failure is deliberately not swallowed.
+
+Gates: **pgTAP 764 / 124 files**, analyze clean, **307 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
