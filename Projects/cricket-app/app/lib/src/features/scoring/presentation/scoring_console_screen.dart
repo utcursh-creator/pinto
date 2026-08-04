@@ -442,6 +442,27 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     // provider nobody has subscribed to returns null while it loads - which
     // would silently mean "no quota" on the first open.
     final capOvers = ref.watch(bowlerOverCapProvider(inningsId)).value;
+
+    // An over can REOPEN from several directions: Undo, a ball-log delete or
+    // insert, or another device scoring over realtime. _undo() reconciled this
+    // inside its own handler, so every other route left the console stranded -
+    // the pad behind its AbsorbPointer and the picker branding the very bowler
+    // whose over is in progress as "Bowled last over", disabled. The only
+    // selectable bowlers were the wrong ones, and picking one credits the rest
+    // of that over to him permanently, through the career-stats re-fold. The
+    // sole escape was to leave and re-enter the console, which nothing says.
+    //
+    // React to the FOLD, which is the one thing all of those routes move.
+    ref.listen(inningsStateProvider(inningsId), (prev, next) {
+      final legal = (next.value?['legal_balls'] as num?)?.toInt();
+      if (legal == null) return;
+      if (legal % bpo != 0 && _bowlerId == null && _lastOverBowlerId != null) {
+        setState(() {
+          _bowlerId = _lastOverBowlerId;
+          _lastOverBowlerId = null;
+        });
+      }
+    });
     final names = _names(squad);
     final state = ref.watch(inningsStateProvider(inningsId));
 
@@ -1121,17 +1142,10 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     try {
       await _repo.undoLastBall(inningsId);
       ref.invalidate(inningsStateProvider(inningsId));
-      final after = await ref.read(inningsStateProvider(inningsId).future);
-      final legalAfter = (after['legal_balls'] as num?)?.toInt() ?? 0;
-      // mid-over again: whoever was bowling that over resumes it
-      if (legalAfter % bpo != 0 && _bowlerId == null && _lastOverBowlerId != null) {
-        if (mounted) {
-          setState(() {
-            _bowlerId = _lastOverBowlerId;
-            _lastOverBowlerId = null;
-          });
-        }
-      }
+      // Resuming the bowler when this reopens an over used to happen here. It
+      // now lives in _content as a listener on the fold, so a ball-log delete
+      // and a realtime change from another device recover the same way undo
+      // always did - the recovery follows the data, not this one handler.
     } catch (e) {
       _toast(humanError(e, fallback: 'Could not undo.'));
     } finally {
