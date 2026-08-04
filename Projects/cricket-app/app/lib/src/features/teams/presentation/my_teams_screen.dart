@@ -7,18 +7,14 @@ import '../../../core/routing/routes.dart';
 import '../../identity/data/identity_labels.dart';
 import '../../identity/data/identity_providers.dart';
 import '../../identity/presentation/initials_avatar.dart';
+import '../../../core/routing/pasted_token.dart';
 import '../../../core/ui/human_error.dart';
 
-/// Pulls the token out of whatever the user pasted. People paste the whole
-/// link far more often than the bare code, so accept both.
-String inviteTokenFrom(String input) {
-  final t = input.trim();
-  if (t.isEmpty) return '';
-  final marker = t.lastIndexOf('/invite/');
-  final tail = marker >= 0 ? t.substring(marker + '/invite/'.length) : t;
-  // drop any query/fragment a chat client may have appended
-  return tail.split(RegExp(r'[?#\s]')).first.trim();
-}
+/// Pulls the token out of whatever the user pasted. Delegates to the shared
+/// parser so the tournament flow cannot drift away from this one again
+/// (review #2, finding 46 - it already had).
+String inviteTokenFrom(String input) =>
+    pastedToken(input, marker: '/invite/');
 
 Future<void> _promptForInviteCode(BuildContext context) async {
   final controller = TextEditingController();

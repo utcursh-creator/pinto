@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
+import '../../../core/routing/pasted_token.dart';
 import '../../../core/routing/routes.dart';
 import '../data/tournament_models.dart';
 import '../data/tournament_providers.dart';
@@ -114,11 +115,17 @@ class TournamentsListScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (code == null || code.isEmpty || !context.mounted) return;
-    // Accept either a raw code or a full join link.
-    final token = code.contains('/join-tournament/')
-        ? code.split('/join-tournament/').last.trim()
-        : code;
+    if (code == null || !context.mounted) return;
+    // The shared message is two sentences with a newline between them, so
+    // everything after the marker is the token PLUS "Or enter this code in the
+    // app: <token>". That whole thing survives as one URI segment, the screen
+    // loads, and a perfectly valid invite is reported as already used. Split on
+    // whitespace too - which is what the team-invite parser always did.
+    final token = pastedToken(code, marker: '/join-tournament/');
+    // Re-check the DERIVED token, not the raw input: a link with a trailing
+    // slash leaves this empty, and pushing an empty token lands on
+    // '/join-tournament', which matches no route at all.
+    if (token.isEmpty) return;
     context.push(Routes.joinTournament(token));
   }
 }
