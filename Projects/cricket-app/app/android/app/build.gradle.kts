@@ -52,19 +52,39 @@ android {
 
     buildTypes {
         release {
-            // NEVER silently fall back to the debug key: a debug-signed release
-            // cannot be updated over a real install and is rejected by Play, and
-            // the fallback made that failure invisible until upload
-            // (penetration review 2026-07-07). Fail the build instead.
-            if (!keystorePropertiesFile.exists()) {
-                throw GradleException(
-                    "android/key.properties is missing - refusing to build an " +
-                    "unsigned/debug-signed release. Create it from the release " +
-                    "keystore before building."
-                )
+            // Only attach the real signing config when we actually have it. The
+            // "you must have a keystore" rule is enforced below, at EXECUTION
+            // time, not here.
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
             }
-            signingConfig = signingConfigs.getByName("release")
         }
+    }
+}
+
+// NEVER silently fall back to the debug key: a debug-signed release cannot be
+// updated over a real install and is rejected by Play, and the old fallback made
+// that failure invisible until upload (penetration review 2026-07-07).
+//
+// But this check used to live INSIDE `buildTypes.release { }`, and Gradle
+// evaluates that block at CONFIGURATION time for every invocation - so it threw
+// on `flutter build apk --debug`, `flutter run`, and `flutter test` too. Nobody
+// without the release keystore could build the app at all, which is every fresh
+// clone and every CI machine (whole-system review #2, 2026-07-28).
+//
+// Check when a release artifact is actually being assembled, and only then.
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any { task ->
+        val n = task.name
+        (n.startsWith("assemble") || n.startsWith("bundle") || n.startsWith("package")) &&
+            n.contains("Release")
+    }
+    if (buildingRelease && !keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "android/key.properties is missing - refusing to build an " +
+            "unsigned/debug-signed release. Create it from the release " +
+            "keystore before building. (Debug builds do not need it.)"
+        )
     }
 }
 
