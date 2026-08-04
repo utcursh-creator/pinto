@@ -72,7 +72,18 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   to tombstones by `where left_at is not null`, proven discriminating (without
   it, approving a stray request demotes a sitting captain).
 
-Gates: **pgTAP 732 / 120 files**, analyze clean, **284 widget tests**.
+- `3004ed6` **a short match with few bowlers could not be scored to the end**
+  (review #2 finding 13). The picker enforced the RAW `max_overs_per_bowler`
+  (ceil(overs/5)); the server enforces `greatest(rule, ceil(overs/squad_size))`
+  via `_bowler_over_cap` so a small bowling side can still bowl the innings out.
+  Measured: 10-over match, rule 2, effective cap 4 - so after 6 overs every
+  picker row read "At over limit", the pad stayed disabled, and the match was
+  unfinishable. Client now ASKS the server (`_bowler_over_cap` is SECURITY
+  INVOKER and already granted to authenticated; verified over real HTTP that
+  PostgREST exposes the underscore name). Watched not read, or the first open
+  silently means "no quota".
+
+Gates: **pgTAP 732 / 120 files**, analyze clean, **290 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device

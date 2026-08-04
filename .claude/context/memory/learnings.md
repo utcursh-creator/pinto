@@ -535,3 +535,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   to tombstones.** Without the WHERE, the upsert rewrites live rows too - here
   it would demote a sitting captain. Sabotage-test the guard; an unguarded
   version still passes the happy-path assertions.
+- **When the server relaxes a rule, the client must ASK, not re-derive it.** The
+  bowler quota was computed in two places: the app stamped `ceil(overs/5)` and
+  the server enforced `greatest(rule, ceil(overs/squad_size))`. The client copy
+  was stricter, so the UI dead-ended matches the backend would happily have
+  accepted. Any rule with two implementations will drift; the one that matters
+  is the server's, so expose it and read it.
+- **`ref.read` on a FutureProvider nobody watches returns null while it loads.**
+  Reading a cap/flag lazily inside an on-demand sheet therefore silently means
+  "unset" on first open. Watch it where the data is already in scope and pass
+  the resolved value in.
+- **Read the actual pass/fail line, not the tail of `flutter test`.** The tail
+  is the FAILURE LIST, which looks like ordinary test names. Grep for
+  `All tests passed|Some tests failed` - a commit went out claiming a green
+  suite that was 288 +2 red because the tail read like success.
