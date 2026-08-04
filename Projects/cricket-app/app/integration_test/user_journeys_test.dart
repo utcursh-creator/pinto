@@ -850,4 +850,73 @@ void main() {
     expect(tester.widget<FilledButton>(genPlayoffs).onPressed, isNull,
         reason: 'playoffs cannot be seeded before the group games are played');
   });
+
+  // JOURNEY M: message a player you just found.
+  //
+  // Messaging is the whole point of a matchmaking app - a post you cannot
+  // follow up on is a dead end - and until now NO device journey opened the
+  // inbox or a thread at all. Both were rewritten in one unit (review #2
+  // findings 15 and 41): the inbox is a single `dm_inbox()` RPC instead of a
+  // download of every message body the user owns, and the thread gained a
+  // re-sync so a socket gap no longer silently eats part of a conversation.
+  // Neither the RPC's JSON reaching a ListTile nor the new pull-to-refresh had
+  // ever been on a screen.
+  testWidgets('JOURNEY M: find a player and message them', (tester) async {
+    app.main();
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+
+    // the person being messaged has to exist first
+    await signUpFresh(tester, run, 'Rahul $run');
+    // ...and the person doing the messaging is somebody else
+    await signUpFresh(tester, run + 1, 'Priya ${run + 1}');
+
+    await tester.tap(find.text('Discover').last);
+    await settle(tester, find.byIcon(Icons.mail_outline), label: 'discover_m');
+    await tester.tap(find.byIcon(Icons.mail_outline).first);
+    await settle(tester, find.text('Messages'), label: 'inbox_m');
+    await shot(tester, 'jm1_inbox_empty');
+
+    // compose: search by handle, which is unique per run (a name search would
+    // match every Rahul every previous run left behind)
+    await tester.tap(find.byIcon(Icons.edit_outlined).first);
+    await settle(tester, find.text('New message'), label: 'compose_sheet');
+    await tester.enterText(find.byType(TextField).last, 'j$run');
+    await settle(tester, find.text('Rahul $run'), label: 'people_search');
+    await tester.tap(find.text('Rahul $run').last);
+
+    // the thread opens named after the person, not "Chat" (DM-1)
+    await settle(tester, find.widgetWithText(TextField, 'Message...'),
+        label: 'dm_thread');
+    expect(find.text('Rahul $run'), findsWidgets,
+        reason: 'the thread header names the person being messaged');
+
+    const msg = 'Are we on for Sunday?';
+    await tester.enterText(find.widgetWithText(TextField, 'Message...'), msg);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.send));
+    await settle(tester, find.text(msg), label: 'sent_bubble');
+    await shot(tester, 'jm2_thread_sent');
+    expect(find.textContaining('PostgrestException'), findsNothing,
+        reason: 'sending a DM must not surface a raw Postgres error');
+
+    // THE NEW RECOVERY PATH (finding 41): pull down to catch up. It must bring
+    // back what the socket missed and must NOT double what is already there -
+    // the whole risk of a re-sync is that it re-appends the thread.
+    await tester.fling(find.byType(ListView).last, const Offset(0, 300), 1000);
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(find.text(msg), findsOneWidget,
+        reason: 'a re-sync must not duplicate a message already on screen');
+    await shot(tester, 'jm3_thread_after_refresh');
+
+    // back to the inbox: this row is the dm_inbox() RPC rendered - the other
+    // participant's name and the preview both come out of that one call
+    await tester.pageBack();
+    await settle(tester, find.text('Messages'), label: 'inbox_after');
+    await settle(tester, find.text(msg), label: 'inbox_preview');
+    expect(find.text('Rahul $run'), findsOneWidget,
+        reason: 'the inbox row names the other participant');
+    expect(find.textContaining('Could not load messages'), findsNothing);
+    await shot(tester, 'jm4_inbox_row');
+  });
 }

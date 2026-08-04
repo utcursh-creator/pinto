@@ -47,9 +47,16 @@ void main() {
       file: 'lib/src/features/tournaments/data/tournament_providers.dart',
       anchor: "from('tournaments')",
     ),
+    // The thread's reads moved into the repository when the screen gained a
+    // re-sync (review #2 finding 41). BOTH of its queries are anchored: a
+    // catch-up after a long silence can be as big as a first load.
     'a DM thread': (
-      file: 'lib/src/features/messages/presentation/dm_thread_screen.dart',
+      file: 'lib/src/features/discover/data/discover_repository.dart',
       anchor: "from('dm_messages')",
+    ),
+    'a DM thread catching up after a socket gap': (
+      file: 'lib/src/features/discover/data/discover_repository.dart',
+      anchor: "gt('created_at', after)",
     ),
   };
 

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
-import '../../../core/supabase/supabase_providers.dart';
 import '../../discover/data/discover_providers.dart';
 import '../data/dm_realtime.dart';
 import '../../discover/data/discover_repository.dart';
@@ -25,7 +24,8 @@ class DmThreadScreen extends ConsumerStatefulWidget {
   ConsumerState<DmThreadScreen> createState() => _DmThreadScreenState();
 }
 
-class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
+class _DmThreadScreenState extends ConsumerState<DmThreadScreen>
+    with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
@@ -35,13 +35,67 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   String? _loadError;
   bool _sending = false;
 
-  SupabaseClient get _c => ref.read(supabaseClientProvider);
-  String? get _me => _c.auth.currentSession?.user.id;
+  String? get _me => ref.read(currentSessionProvider)?.user.id;
 
   @override
   void initState() {
     super.initState();
+    // HIGH (whole-system review #2, finding 41): history loaded ONCE and every
+    // message after it came from a broadcast callback, so a tunnel, a locked
+    // phone or a dropped socket silently swallowed part of the conversation.
+    // Nothing looked wrong - the thread reads as complete while the other
+    // person is replying into a void. Three recoveries, the same ones the match
+    // viewer got: on (re)subscribe, on return to the foreground, and
+    // pull-to-refresh.
+    WidgetsBinding.instance.addObserver(this);
     _init();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The OS tears the socket down on a locked phone with no re-subscribe when
+    // it wakes, so this is a distinct recovery, not a duplicate of the one
+    // above.
+    if (state == AppLifecycleState.resumed) _resync();
+  }
+
+  /// Pull in whatever arrived while we were not listening. Asks only for what
+  /// is newer than the newest message held - re-downloading the whole thread on
+  /// every reconnect would trade finding 41 for finding 74.
+  Future<void> _resync() async {
+    if (!mounted || _loading) return;
+    if (_loadError != null) return; // the retry button owns that path
+    String? newest;
+    for (final m in _messages) {
+      if (m['pending'] == true) continue; // a local clock is not a cursor
+      final at = m['created_at'] as String?;
+      if (at != null && (newest == null || at.compareTo(newest) > 0)) {
+        newest = at;
+      }
+    }
+    try {
+      final rows = await ref
+          .read(discoverRepositoryProvider)
+          .threadMessages(widget.threadId, after: newest);
+      if (!mounted) return;
+      final fresh = [
+        for (final r in rows)
+          if (!_ids.contains(r['id'] as String)) r,
+      ];
+      if (fresh.isEmpty) return;
+      setState(() {
+        for (final r in fresh) {
+          _ids.add(r['id'] as String);
+          _messages.add(r);
+        }
+      });
+      _jump();
+      // caught up while the thread is open, so they are read
+      if (fresh.any((m) => m['sender_id'] != _me)) _markRead();
+    } catch (_) {
+      // a failed catch-up is not worth an error state over a healthy thread;
+      // the next resume or pull-to-refresh tries again
+    }
   }
 
   /// A throw here used to leave a PERMANENT spinner: no error, no retry, and
@@ -58,14 +112,10 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       // older than the most recent 200 are not reachable in the UI. That is a
       // deliberate trade for now - unbounded download on a phone is worse - but
       // it is a cap, not a solution, and back-pagination is still owed.
-      final rows = await _c
-          .from('dm_messages')
-          .select('id, sender_id, body, created_at')
-          .eq('thread_id', widget.threadId)
-          .order('created_at', ascending: false)
-          .limit(200);
-      for (final r
-          in (rows as List).cast<Map<String, dynamic>>().reversed) {
+      final rows = await ref
+          .read(discoverRepositoryProvider)
+          .threadMessages(widget.threadId);
+      for (final r in rows) {
         _ids.add(r['id'] as String);
         _messages.add(r);
       }
@@ -74,7 +124,10 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _loadError = humanError(e, fallback: 'Could not load this conversation.');
+          _loadError = humanError(
+            e,
+            fallback: 'Could not load this conversation.',
+          );
         });
       }
       return; // do not subscribe/mark-read against a failed load
@@ -98,9 +151,13 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   /// refreshes the inbox badge.
   Future<void> _markRead() async {
     try {
-      await ref.read(discoverRepositoryProvider).markThreadRead(widget.threadId);
+      await ref
+          .read(discoverRepositoryProvider)
+          .markThreadRead(widget.threadId);
       ref.invalidate(dmInboxProvider);
-    } catch (_) {/* non-fatal */}
+    } catch (_) {
+      /* non-fatal */
+    }
   }
 
   void _subscribe() {
@@ -117,7 +174,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       _jump();
       // an incoming message while the thread is open is instantly read
       if (record['sender_id'] != _me) _markRead();
-    });
+    }, onSubscribed: _resync);
   }
 
   void _jump() {
@@ -172,10 +229,15 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
           _input.text = body; // restore so nothing is lost
         });
         final raw = '$e';
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-            content: Text(raw.contains('row-level security')
-                ? 'You cannot message this user.'
-                : 'Message not sent - check your connection.')));
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              raw.contains('row-level security')
+                  ? 'You cannot message this user.'
+                  : 'Message not sent - check your connection.',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -187,7 +249,8 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     final dt = DateTime.tryParse(createdAt?.toString() ?? '')?.toLocal();
     if (dt == null) return '';
     final now = DateTime.now();
-    final hm = '${dt.hour.toString().padLeft(2, '0')}:'
+    final hm =
+        '${dt.hour.toString().padLeft(2, '0')}:'
         '${dt.minute.toString().padLeft(2, '0')}';
     if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
       return hm;
@@ -200,6 +263,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   void dispose() {
     // no ref.read() here: Riverpod throws StateError once the element is gone,
     // which previously leaked the channel AND the controllers below it.
+    WidgetsBinding.instance.removeObserver(this);
     _detach?.call();
     _input.dispose();
     _scroll.dispose();
@@ -214,12 +278,14 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       builder: (ctx) => AlertDialog(
         title: Text('Block $name?'),
         content: const Text(
-            'They will no longer be able to message you, and you will not '
-            'be able to message them.'),
+          'They will no longer be able to message you, and you will not '
+          'be able to message them.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -235,7 +301,9 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       messenger?.showSnackBar(SnackBar(content: Text('$name blocked')));
       if (mounted && context.canPop()) context.pop();
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not block.'))));
+      messenger?.showSnackBar(
+        SnackBar(content: Text(humanError(e, fallback: 'Could not block.'))),
+      );
     }
   }
 
@@ -265,55 +333,65 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                 ? ErrorRetry(message: _loadError!, onRetry: _retryLoad)
                 : _loading
                 ? const Center(child: CircularProgressIndicator.adaptive())
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, i) {
-                      final m = _messages[i];
-                      final mine = m['sender_id'] == _me;
-                      final pending = m['pending'] == true;
-                      return Align(
-                        alignment:
-                            mine ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: mine
-                                ? const Color(0xFF0F6E56)
-                                : const Color(0xFFEDEDED),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                m['body'] as String,
-                                style: TextStyle(
-                                  color: mine ? Colors.white : Colors.black87,
+                : RefreshIndicator.adaptive(
+                    onRefresh: _resync,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, i) {
+                        final m = _messages[i];
+                        final mine = m['sender_id'] == _me;
+                        final pending = m['pending'] == true;
+                        return Align(
+                          alignment: mine
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.75,
+                            ),
+                            decoration: BoxDecoration(
+                              color: mine
+                                  ? const Color(0xFF0F6E56)
+                                  : const Color(0xFFEDEDED),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  m['body'] as String,
+                                  style: TextStyle(
+                                    color: mine ? Colors.white : Colors.black87,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                pending ? 'sending...' : _timeLabel(m['created_at']),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: mine ? Colors.white70 : Colors.black45,
+                                const SizedBox(height: 2),
+                                Text(
+                                  pending
+                                      ? 'sending...'
+                                      : _timeLabel(m['created_at']),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: mine
+                                        ? Colors.white70
+                                        : Colors.black45,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
           ),
           SafeArea(
@@ -333,8 +411,9 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                     ),
                   ),
                   IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _sending ? null : _send),
+                    icon: const Icon(Icons.send),
+                    onPressed: _sending ? null : _send,
+                  ),
                 ],
               ),
             ),

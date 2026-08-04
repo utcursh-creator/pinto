@@ -168,57 +168,20 @@ final dmThreadMessagesProvider =
     });
 
 /// The DM inbox: one entry per thread with the other participant + last message.
+///
+/// ONE call. This used to be three round-trips, the last of which pulled down
+/// every message of every thread - body included - just to take the newest as a
+/// preview and count the unread ones (review #2 finding 15). The inbox is
+/// invalidated on every incoming message, so the cost was paid again and again
+/// on exactly the conversations that had grown longest. The thread-id list also
+/// travelled in a GET query string, which has a length limit.
+///
+/// `public.dm_inbox()` does the DISTINCT ON and the count server-side and is
+/// scoped to the caller; the shape below is pinned by pgTAP 141.
 final dmInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final me = ref.watch(currentSessionProvider)?.user.id;
-  if (me == null) return [];
-  final c = ref.watch(supabaseClientProvider);
-
-  final mine = await c.from('dm_participants').select('thread_id').eq('profile_id', me);
-  final ids = [for (final r in (mine as List)) r['thread_id'] as String];
-  if (ids.isEmpty) return [];
-
-  final others = await c
-      .from('dm_participants')
-      .select('thread_id, profiles(id, display_name, photo_url)')
-      .neq('profile_id', me)
-      .inFilter('thread_id', ids);
-  final byThread = <String, Map<String, dynamic>?>{};
-  for (final r in (others as List)) {
-    byThread[r['thread_id'] as String] = r['profiles'] as Map<String, dynamic>?;
-  }
-
-  final msgs = await c
-      .from('dm_messages')
-      .select('thread_id, body, created_at, sender_id, read_at')
-      .inFilter('thread_id', ids)
-      .order('created_at', ascending: false);
-  final preview = <String, String>{};
-  final lastAt = <String, String>{};
-  final unread = <String, int>{};
-  for (final m in (msgs as List).cast<Map<String, dynamic>>()) {
-    final t = m['thread_id'] as String;
-    preview.putIfAbsent(t, () => m['body'] as String);
-    lastAt.putIfAbsent(t, () => m['created_at'] as String);
-    // DM-4: unread = the other side's messages I have not read yet.
-    if (m['sender_id'] != me && m['read_at'] == null) {
-      unread[t] = (unread[t] ?? 0) + 1;
-    }
-  }
-
-  final rows = [
-    for (final t in ids)
-      {
-        'thread_id': t,
-        'other': byThread[t],
-        'preview': preview[t],
-        'last_at': lastAt[t],
-        'unread': unread[t] ?? 0,
-      },
-  ];
-  // Most recent conversation first (threads with no messages sink).
-  rows.sort((a, b) =>
-      ((b['last_at'] as String?) ?? '').compareTo((a['last_at'] as String?) ?? ''));
-  return rows;
+  if (ref.watch(currentSessionProvider)?.user.id == null) return [];
+  final rows = await ref.watch(supabaseClientProvider).rpc('dm_inbox');
+  return [for (final r in (rows as List)) Map<String, dynamic>.from(r as Map)];
 });
 
 /// Total unread DM count, as a PURE function of inbox rows.

@@ -22,12 +22,25 @@ class DmRealtime {
   final Map<String, RealtimeChannel> _channels = {};
   final Map<String, List<void Function(Map<String, dynamic>)>> _listeners = {};
 
+  final Map<String, List<void Function()>> _subscribed = {};
+
   /// Subscribes [onInsert] to `dm:<threadId>`. Call the returned function to
   /// detach; the underlying channel closes when the last listener detaches.
+  ///
+  /// [onSubscribed] fires whenever the topic is (re)joined. A re-join means the
+  /// socket was down, and what was missed while it was down is exactly what the
+  /// screen is not showing (review #2 finding 41) - so this is where a listener
+  /// catches up.
   void Function() listen(
-      String threadId, void Function(Map<String, dynamic>) onInsert) {
+    String threadId,
+    void Function(Map<String, dynamic>) onInsert, {
+    void Function()? onSubscribed,
+  }) {
     final topic = 'dm:$threadId';
     _listeners.putIfAbsent(topic, () => []).add(onInsert);
+    if (onSubscribed != null) {
+      _subscribed.putIfAbsent(topic, () => []).add(onSubscribed);
+    }
 
     if (!_channels.containsKey(topic)) {
       // a private channel needs a JWT on the socket, or the participant-scoped
@@ -48,16 +61,23 @@ class DmRealtime {
               }
             },
           )
-          .subscribe();
+          .subscribe((status, _) {
+        if (status != RealtimeSubscribeStatus.subscribed) return;
+        for (final s in List.of(_subscribed[topic] ?? const [])) {
+          s();
+        }
+      });
       _channels[topic] = ch;
     }
 
     return () {
+      _subscribed[topic]?.remove(onSubscribed);
       final ls = _listeners[topic];
       if (ls == null) return;
       ls.remove(onInsert);
       if (ls.isEmpty) {
         _listeners.remove(topic);
+        _subscribed.remove(topic);
         final ch = _channels.remove(topic);
         if (ch != null) _c.removeChannel(ch);
       }
@@ -70,6 +90,7 @@ class DmRealtime {
     }
     _channels.clear();
     _listeners.clear();
+    _subscribed.clear();
   }
 }
 

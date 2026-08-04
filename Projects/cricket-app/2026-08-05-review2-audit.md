@@ -16,7 +16,7 @@ REFUTED = re-verified against the code and found not to hold.
 USER = blocked on a credential or action only the user can take.
 OPEN = still to do.
 
-## CLOSED (39)
+## CLOSED (41)
 1 CRITICAL deleted account claimable ......... pgTAP 121 (earlier run)
 2 CRITICAL gradle configuration-time guard ... build.gradle.kts (earlier run)
 3 CRITICAL console innings-state no retry .... 3c27925
@@ -83,7 +83,9 @@ OPEN = still to do.
 53 MED oversized squad silently changes format 60184df
 62 MED image URLs were arbitrary client strings aff06c9
 61 MED status stuck at innings_break ......... 6223e6e
-54 MED a departed guest could never be re-added (this commit)
+54 MED a departed guest could never be re-added .. 24022fb
+15 HIGH DM inbox downloaded every message body ... (this commit)
+41 MED DM thread never re-synced after a socket gap (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -95,17 +97,23 @@ OPEN = still to do.
    -> needs GOOGLE_IOS_CLIENT_ID. The dead-end half IS fixed: the Google button
       is hidden unless SupabaseEnv.googleConfigured.
 
+## DEFERRED with a reason
+40 MED  DM inbox opens one realtime channel per thread
+   -> CONFIRMED: dm_inbox_screen listens per visible thread and each listener
+      invalidates the WHOLE inbox. Fixing it properly needs a per-user realtime
+      topic (a `user:<id>` channel the DM trigger also broadcasts to), which is
+      a backend design change, not a client tidy-up. Left open deliberately
+      rather than papered over; the cost is one socket join per conversation on
+      screen, not incorrect data.
+
 ## OPEN - still to do
 8  HIGH  reset-password link cannot re-enter the app
 9  HIGH  'Add my team' awaits an RPC with no try/catch
 10 HIGH  partially-failed squad save cannot be undone
 11 HIGH  AuthGate.error tears down the navigation stack
-15 HIGH  DM inbox downloads every message body; thread-id list in a GET
 25 HIGH  un-ticking a saved squad member is silently discarded
 34 MED   abandoning a match refreshes only myMatchesProvider
 39 MED   async error branches offer no retry while providers cache
-40 MED   DM inbox opens one realtime channel per thread
-41 MED   DM thread never re-syncs after a socket gap
 43 MED   expired posts still read 'open' to their author
 44 MED   GPS lookup has no time limit
 49 MED   'Propose a match' bridge silently drops the notification DM

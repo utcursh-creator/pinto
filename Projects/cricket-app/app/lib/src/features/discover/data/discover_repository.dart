@@ -91,6 +91,37 @@ class DiscoverRepository {
     return id as String;
   }
 
+  /// A thread's messages, oldest-first.
+  ///
+  /// With no [after] this is the MOST RECENT [limit] - a long conversation must
+  /// not download its whole history to show the last screenful (review #2
+  /// finding 74). With [after] it is only what is newer than a timestamp the
+  /// caller already holds, which is what a re-sync after a socket gap needs
+  /// (finding 41): asking for the whole thread again on every reconnect would
+  /// trade one bug for another.
+  Future<List<Map<String, dynamic>>> threadMessages(String threadId,
+      {String? after, int limit = 200}) async {
+    if (after == null) {
+      final rows = await _c
+          .from('dm_messages')
+          .select('id, sender_id, body, created_at')
+          .eq('thread_id', threadId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+      return [
+        for (final r in (rows as List).cast<Map<String, dynamic>>().reversed) r,
+      ];
+    }
+    final rows = await _c
+        .from('dm_messages')
+        .select('id, sender_id, body, created_at')
+        .eq('thread_id', threadId)
+        .gt('created_at', after)
+        .order('created_at', ascending: true)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(rows as List);
+  }
+
   /// DM-3: returns the inserted row so the sender's bubble is confirmed by
   /// the write itself - a dropped broadcast echo can no longer eat a message.
   Future<Map<String, dynamic>> sendDm(String threadId, String body) async {
