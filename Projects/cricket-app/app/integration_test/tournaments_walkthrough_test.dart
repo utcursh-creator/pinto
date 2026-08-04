@@ -52,16 +52,20 @@ void main() {
       final b = (bm as List).map((e) => e['id'] as String).toList();
       final i1 = await c.rpc('start_innings', params: {'_match_id': matchId, '_innings_number': 1,
         '_batting_team': m['team_a_id'], '_bowling_team': m['team_b_id'], '_opening_striker': a[0], '_opening_non_striker': a[1]}) as String;
-      await c.from('deliveries').insert([
-        for (var s = 1; s <= 6; s++)
-          {'innings_id': i1, 'seq': s, 'bowler_id': b[0], 'striker_id': a[0], 'non_striker_id': a[1], 'runs_off_bat': 4},
-      ]);
+      // Through record_ball, not a direct insert: the client's write grant on
+      // deliveries is gone, so every ball goes through the RPC that enforces
+      // the cricket rules. This function's own comment always claimed the
+      // fixture was seeded "via the RPCs" - now it is.
+      for (var s = 1; s <= 6; s++) {
+        await c.rpc('record_ball',
+            params: {'_innings_id': i1, '_bowler_id': b[0], '_runs_off_bat': 4});
+      }
       final i2 = await c.rpc('start_innings', params: {'_match_id': matchId, '_innings_number': 2,
         '_batting_team': m['team_b_id'], '_bowling_team': m['team_a_id'], '_opening_striker': b[0], '_opening_non_striker': b[1]}) as String;
-      await c.from('deliveries').insert([
-        for (var s = 1; s <= 3; s++)
-          {'innings_id': i2, 'seq': s, 'bowler_id': a[0], 'striker_id': b[0], 'non_striker_id': b[1], 'runs_off_bat': 1},
-      ]);
+      for (var s = 1; s <= 3; s++) {
+        await c.rpc('record_ball',
+            params: {'_innings_id': i2, '_bowler_id': a[0], '_runs_off_bat': 1});
+      }
       await c.rpc('set_match_result', params: {'_match_id': matchId, '_result_type': 'win_by_runs', '_winner_team_id': m['team_a_id']});
     }
 

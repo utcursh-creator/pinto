@@ -13,12 +13,21 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _mt \gset
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- seq1: S scores 2 (stays on strike). seq2: S bowled (B3 in). seq3: B3 scores 3.
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,2);
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,incoming_batter_id) values
  (:'_in'::uuid,2,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,'bowled',:'_b3'::uuid);
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,3,:'_bw'::uuid,:'_b3'::uuid,:'_ns'::uuid,3);
+set local role :_seedrole;
 
 select is((select jsonb_array_length(public.compute_innings_state(:'_in'::uuid)->'partnerships')), 1, 'one completed partnership');
 select is((public.compute_innings_state(:'_in'::uuid)->'partnerships'->0->>'runs')::int, 2, 'first partnership = 2 runs');

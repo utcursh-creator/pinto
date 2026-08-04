@@ -24,34 +24,61 @@ select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:
 -- A rich one-over+ innings exercising every attribution path. striker_id stamps
 -- below are illustrative; the fold re-derives strike, so cards must agree with it.
 -- seq1: S off-bat 1 (rotate -> NS on strike)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1);
+set local role :_seedrole;
 -- seq2: wide to NS (not legal, not faced)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_wides) values
  (:'_in'::uuid,2,:'_bw'::uuid,:'_ns'::uuid,:'_s'::uuid,1);
+set local role :_seedrole;
 -- seq3: no-ball to NS (faced when count_noball_as_ball_faced=true; sets free hit)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_no_ball_penalty) values
  (:'_in'::uuid,3,:'_bw'::uuid,:'_ns'::uuid,:'_s'::uuid,1);
+set local role :_seedrole;
 -- seq4 (free hit): NS off-bat 6
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,4,:'_bw'::uuid,:'_ns'::uuid,:'_s'::uuid,6);
+set local role :_seedrole;
 -- seq5: NS bowled (null dismissed_player_id -> on-strike), incoming B3
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,incoming_batter_id) values
  (:'_in'::uuid,5,:'_bw'::uuid,:'_ns'::uuid,:'_s'::uuid,'bowled',:'_b3'::uuid);
+set local role :_seedrole;
 -- seq6: B3 off-bat 4
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,6,:'_bw'::uuid,:'_b3'::uuid,:'_s'::uuid,4);
+set local role :_seedrole;
 -- seq7: B3 caught (null dismissed_player_id -> on-strike), fielder Fd, incoming B4
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,fielder_id,incoming_batter_id) values
  (:'_in'::uuid,7,:'_bw'::uuid,:'_b3'::uuid,:'_s'::uuid,'caught',:'_fd'::uuid,:'_b4'::uuid);
+set local role :_seedrole;
 -- seq8: run out of S (the non-striker), fielder Fd, incoming B5 (over also ends here)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,dismissed_player_id,fielder_id,incoming_batter_id) values
  (:'_in'::uuid,8,:'_bw'::uuid,:'_b4'::uuid,:'_s'::uuid,'run_out',:'_s'::uuid,:'_fd'::uuid,:'_b5'::uuid);
+set local role :_seedrole;
 -- seq9: B5 retired_not_out (NOT a dismissal). Since fold v14 a retirement is a
 -- non-ball EVENT row, never a delivery - recording it as a ball consumed a ball
 -- and charged the bowler. A CHECK constraint now enforces that.
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,event_kind,striker_id,non_striker_id,wicket_type,dismissed_player_id) values
  (:'_in'::uuid,9,'retirement',:'_b5'::uuid,:'_b4'::uuid,'retired_not_out',:'_b5'::uuid);
+set local role :_seedrole;
 
 -- ---- batting lines (resolved per-player, dismissal attribution) ----
 select is((select (e->>'runs')::int from jsonb_array_elements(public.compute_innings_cards(:'_in'::uuid)->'batting') e where e->>'member_id'=:'_s'),
@@ -114,8 +141,11 @@ select is(
 -- ---- count_noball_as_ball_faced=false branch ----
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,6,'{"count_noball_as_ball_faced":false}'::jsonb) as _mt2 \gset
 select public.start_innings(:'_mt2'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_no_ball_penalty) values
  (:'_in2'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1);
+set local role :_seedrole;
 select is(
   (select (e->>'balls')::int from jsonb_array_elements(public.compute_innings_cards(:'_in2'::uuid)->'batting') e where e->>'member_id'=:'_s'),
   0, 'count_noball_as_ball_faced=false: a faced no-ball is NOT a ball faced');

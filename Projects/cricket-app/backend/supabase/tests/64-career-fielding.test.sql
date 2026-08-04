@@ -21,13 +21,22 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _m1 \gset
 select public.add_squad_member(:'_m1'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m1'::uuid,1,:'_b'::uuid,:'_a'::uuid,:'_b1'::uuid,:'_b2'::uuid) as _i1 \gset
 -- cap catches 2, runs out 1 (the non-striker), stumps 1; bowler is Bw2 throughout
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,fielder_id,incoming_batter_id) values
   (:'_i1'::uuid,1,:'_bw'::uuid,:'_b1'::uuid,:'_b2'::uuid,'caught',:'_cap'::uuid,:'_b3'::uuid),
   (:'_i1'::uuid,2,:'_bw'::uuid,:'_b3'::uuid,:'_b2'::uuid,'caught',:'_cap'::uuid,:'_b4'::uuid);
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,dismissed_player_id,fielder_id,incoming_batter_id) values
   (:'_i1'::uuid,3,:'_bw'::uuid,:'_b4'::uuid,:'_b2'::uuid,'run_out',:'_b2'::uuid,:'_cap'::uuid,:'_b5'::uuid);
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,fielder_id,incoming_batter_id) values
   (:'_i1'::uuid,4,:'_bw'::uuid,:'_b4'::uuid,:'_b5'::uuid,'stumped',:'_cap'::uuid,:'_b6'::uuid);
+set local role :_seedrole;
 select public.set_match_result(:'_m1'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 
 select is((public.player_career_stats(tests.get_supabase_uid('cap@s.dev'))->'fielding'->>'catches')::int, 2, 'catches = 2');

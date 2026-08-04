@@ -18,8 +18,11 @@ select public.add_squad_member(:'_mt'::uuid, :'_a'::uuid, :'_ns'::uuid, 2, false
 select public.start_innings(:'_mt'::uuid, 1, :'_a'::uuid, :'_b'::uuid, :'_s'::uuid, :'_ns'::uuid) as _in \gset
 
 -- one wicket (striker bowled); with only 2 in the squad this is all out
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id, seq, bowler_id, striker_id, non_striker_id, wicket_type, dismissed_player_id)
 values (:'_in'::uuid, 1, :'_bw'::uuid, :'_s'::uuid, :'_ns'::uuid, 'bowled', :'_s'::uuid);
+set local role :_seedrole;
 
 select is((public.compute_innings_state(:'_in'::uuid)->>'wickets')::int, 1, 'one wicket recorded');
 select is(public.compute_innings_state(:'_in'::uuid)->>'innings_status', 'completed',

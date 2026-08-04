@@ -17,11 +17,21 @@ begin
   select array(select id from public.team_members where team_id=_ta order by created_at limit 2) into _am;
   select array(select id from public.team_members where team_id=_tb order by created_at limit 2) into _bm;
   _i := public.start_innings(_m,1,_ta,_tb,_am[1],_am[2]);
+  -- fixture seed: the client no longer holds a direct write grant on
+  -- deliveries, so elevate for the insert only. SET ROLE back to the
+  -- session user is always permitted, even from inside plpgsql.
+  set local role postgres;
   insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
     select _i, gs, _bm[1], _am[1], _am[2], case when gs<=60 then 1 else 0 end from generate_series(1,120) gs;
+  set local role authenticated;
   _i := public.start_innings(_m,2,_tb,_ta,_bm[1],_bm[2]);
+  -- fixture seed: the client no longer holds a direct write grant on
+  -- deliveries, so elevate for the insert only. SET ROLE back to the
+  -- session user is always permitted, even from inside plpgsql.
+  set local role postgres;
   insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
     select _i, gs, _am[1], _bm[1], _bm[2], case when gs<=30 then 1 else 0 end from generate_series(1,120) gs;
+  set local role authenticated;
   perform public.set_match_result(_m,'win_by_runs'::public.result_type,_ta);
 end; $$;
 

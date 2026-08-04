@@ -12,21 +12,33 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _mt \gset
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- no-ball sets free hit
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_no_ball_penalty) values (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1);
+set local role :_seedrole;
 select is(public.compute_innings_state(:'_in'::uuid)->>'free_hit_active','true','no-ball sets free hit');
 
 -- a wide carries the free hit over (no consume)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_wides) values (:'_in'::uuid,2,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1);
+set local role :_seedrole;
 select is(public.compute_innings_state(:'_in'::uuid)->>'free_hit_active','true','wide carries the free hit over');
 
 -- a legal ball consumes the free hit
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values (:'_in'::uuid,3,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0);
+set local role :_seedrole;
 select is(public.compute_innings_state(:'_in'::uuid)->>'free_hit_active','false','a legal ball consumes the free hit');
 
 -- two no-balls in a row keep it set (chaining)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_no_ball_penalty) values
  (:'_in'::uuid,4,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1),
  (:'_in'::uuid,5,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1);
+set local role :_seedrole;
 select is(public.compute_innings_state(:'_in'::uuid)->>'free_hit_active','true','consecutive no-balls keep the free hit set');
 select * from finish();
 rollback;

@@ -18,6 +18,8 @@ select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:
 -- 4: bye 1                                        team+1  bowler+0  legal
 -- 5: leg-bye 3                                    team+3  bowler+0  legal
 -- 6: dot                                          team+0  bowler+0  legal
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat,extra_wides,extra_no_ball_penalty,extra_byes,extra_leg_byes,noball_secondary_kind) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,2,0,0,0,null),
  (:'_in'::uuid,2,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,4,0,1,0,0,'off_bat'),
@@ -25,6 +27,7 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
  (:'_in'::uuid,4,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0,0,1,0,null),
  (:'_in'::uuid,5,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0,0,0,3,null),
  (:'_in'::uuid,6,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0,0,0,0,null);
+set local role :_seedrole;
 
 select is((public.compute_innings_state(:'_in'::uuid)->>'runs')::int, 14, 'team runs = 14');
 select is((public.compute_innings_state(:'_in'::uuid)->>'legal_balls')::int, 3, 'legal_balls = 3 (wide + 2 no-balls excluded)');

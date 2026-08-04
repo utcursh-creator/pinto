@@ -36,13 +36,22 @@ select public.add_tournament_team(:'_t'::uuid, :'_z'::uuid, 'A');
 -- Match X v Z: X 100 (20 ov, not out), Z all out 50 -> X wins by runs
 select public.create_match(:'_x'::uuid,:'_z'::uuid,20,6,'{"squad_size":2}'::jsonb) as _mxz \gset
 select public.start_innings(:'_mxz'::uuid,1,:'_x'::uuid,:'_z'::uuid,:'_x1'::uuid,:'_x2'::uuid) as _ixz1 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_ixz1'::uuid, gs, :'_zb'::uuid, :'_x1'::uuid, :'_x2'::uuid, case when gs<=100 then 1 else 0 end from generate_series(1,120) gs;
+set local role :_seedrole;
 select public.start_innings(:'_mxz'::uuid,2,:'_z'::uuid,:'_x'::uuid,:'_z1'::uuid,:'_z2'::uuid) as _ixz2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_ixz2'::uuid, gs, :'_xb'::uuid, :'_z1'::uuid, :'_z2'::uuid, 1 from generate_series(1,50) gs;
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type)
   values (:'_ixz2'::uuid,51,:'_xb'::uuid,:'_z1'::uuid,:'_z2'::uuid,'bowled');
+set local role :_seedrole;
 select public.set_match_result(:'_mxz'::uuid,'win_by_runs'::public.result_type,:'_x'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_mxz'::uuid,:'_t'::uuid,'group','A');
@@ -51,11 +60,17 @@ select tests.authenticate_as('org@s.dev');
 -- Match X v Y: X 90 (20 ov), Y 70 (20 ov) -> X wins
 select public.create_match(:'_x'::uuid,:'_y'::uuid,20,6,'{"squad_size":2}'::jsonb) as _mxy \gset
 select public.start_innings(:'_mxy'::uuid,1,:'_x'::uuid,:'_y'::uuid,:'_x1'::uuid,:'_x2'::uuid) as _ixy1 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_ixy1'::uuid, gs, :'_yb'::uuid, :'_x1'::uuid, :'_x2'::uuid, case when gs<=90 then 1 else 0 end from generate_series(1,120) gs;
+set local role :_seedrole;
 select public.start_innings(:'_mxy'::uuid,2,:'_y'::uuid,:'_x'::uuid,:'_y1'::uuid,:'_y2'::uuid) as _ixy2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_ixy2'::uuid, gs, :'_xb'::uuid, :'_y1'::uuid, :'_y2'::uuid, case when gs<=70 then 1 else 0 end from generate_series(1,120) gs;
+set local role :_seedrole;
 select public.set_match_result(:'_mxy'::uuid,'win_by_runs'::public.result_type,:'_x'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_mxy'::uuid,:'_t'::uuid,'group','A');
@@ -64,11 +79,17 @@ select tests.authenticate_as('org@s.dev');
 -- Match Y v Z: Y 80 (20 ov), Z 60 (20 ov) -> Y wins
 select public.create_match(:'_y'::uuid,:'_z'::uuid,20,6,'{"squad_size":2}'::jsonb) as _myz \gset
 select public.start_innings(:'_myz'::uuid,1,:'_y'::uuid,:'_z'::uuid,:'_y1'::uuid,:'_y2'::uuid) as _iyz1 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_iyz1'::uuid, gs, :'_zb'::uuid, :'_y1'::uuid, :'_y2'::uuid, case when gs<=80 then 1 else 0 end from generate_series(1,120) gs;
+set local role :_seedrole;
 select public.start_innings(:'_myz'::uuid,2,:'_z'::uuid,:'_y'::uuid,:'_z1'::uuid,:'_z2'::uuid) as _iyz2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_iyz2'::uuid, gs, :'_yb'::uuid, :'_z1'::uuid, :'_z2'::uuid, case when gs<=60 then 1 else 0 end from generate_series(1,120) gs;
+set local role :_seedrole;
 select public.set_match_result(:'_myz'::uuid,'win_by_runs'::public.result_type,:'_y'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_myz'::uuid,:'_t'::uuid,'group','A');

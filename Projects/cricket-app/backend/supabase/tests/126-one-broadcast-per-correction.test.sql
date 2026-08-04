@@ -29,9 +29,12 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _m \gset
 select public.start_innings(:'_m'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _i \gset
 
 -- 30 deliveries, inserted directly so the fixture is cheap and deterministic
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
 select :'_i'::uuid, g, :'_bw'::uuid, :'_s'::uuid, :'_ns'::uuid, 1
 from generate_series(1,30) g;
+set local role :_seedrole;
 
 -- 1. CONTROL: ordinary scoring must keep emitting exactly one. If the fix
 --    suppressed too broadly, live scoring would go silent - which is far worse

@@ -19,8 +19,11 @@ select public.add_guest_member(:'_b'::uuid,'b3') as _b3 \gset
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mo \gset
 select public.add_squad_member(:'_mo'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mo'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _io \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
   (:'_io'::uuid,1,:'_b1'::uuid,:'_cap'::uuid,:'_p2'::uuid,4),(:'_io'::uuid,2,:'_b1'::uuid,:'_cap'::uuid,:'_p2'::uuid,6);
+set local role :_seedrole;
 select public.set_match_result(:'_mo'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set created_at = now() - interval '3 days' where id = :'_mo'::uuid;
@@ -30,8 +33,11 @@ select tests.authenticate_as('cap@s.dev');
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mm \gset
 select public.add_squad_member(:'_mm'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mm'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _im \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_im'::uuid, g, :'_b1'::uuid, :'_cap'::uuid, :'_p2'::uuid, 4 from generate_series(1,5) g;
+set local role :_seedrole;
 select public.set_match_result(:'_mm'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set created_at = now() - interval '2 days' where id = :'_mm'::uuid;
@@ -41,12 +47,18 @@ select tests.authenticate_as('cap@s.dev');
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mn \gset
 select public.add_squad_member(:'_mn'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mn'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _in1 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_in1'::uuid, g, :'_b1'::uuid, :'_cap'::uuid, :'_p2'::uuid, 6 from generate_series(1,5) g;
+set local role :_seedrole;
 select public.start_innings(:'_mn'::uuid,2,:'_b'::uuid,:'_a'::uuid,:'_b1'::uuid,:'_b2'::uuid) as _in2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,incoming_batter_id) values
   (:'_in2'::uuid,1,:'_cap'::uuid,:'_b1'::uuid,:'_b2'::uuid,'bowled',:'_b3'::uuid),
   (:'_in2'::uuid,2,:'_cap'::uuid,:'_b3'::uuid,:'_b2'::uuid,'bowled',:'_b1'::uuid);
+set local role :_seedrole;
 select public.set_match_result(:'_mn'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 update public.matches set created_at = now() - interval '1 day' where id = :'_mn'::uuid;

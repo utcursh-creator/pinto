@@ -18,8 +18,11 @@ select public.record_ball(:'_in'::uuid, :'_bw'::uuid, 1);
 select public.record_ball(:'_in'::uuid, :'_bw'::uuid, 0);
 
 -- A) restamp repairs corrupted stamps: corrupt all to the opening pair, then fix.
+select current_role as _seedrole \gset
+set local role postgres;
 update public.deliveries set striker_id = :'_s'::uuid, non_striker_id = :'_ns'::uuid
   where innings_id = :'_in'::uuid;
+set local role :_seedrole;
 select public.restamp_innings_strike(:'_in'::uuid);
 select is(
   (select striker_id from public.deliveries where innings_id = :'_in'::uuid and seq = 2),

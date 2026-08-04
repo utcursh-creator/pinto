@@ -16,11 +16,14 @@ select public.add_squad_member(:'_mt'::uuid, :'_a'::uuid, :'_x'::uuid, 3, false,
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- S faces: 4, 6, 1 (then swaps to NS); NS faces a dot. X never bats.
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,4),
  (:'_in'::uuid,2,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,6),
  (:'_in'::uuid,3,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1),
  (:'_in'::uuid,4,:'_bw'::uuid,:'_ns'::uuid,:'_s'::uuid,0);
+set local role :_seedrole;
 
 select is((select (b->>'runs')::int from jsonb_array_elements(public.compute_innings_state(:'_in'::uuid)->'batting') b where b->>'batter_id' = (:'_s'::uuid)::text), 11, 'S runs = 11');
 select is((select (b->>'balls')::int from jsonb_array_elements(public.compute_innings_state(:'_in'::uuid)->'batting') b where b->>'batter_id' = (:'_s'::uuid)::text), 3, 'S balls = 3');

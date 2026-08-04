@@ -17,16 +17,22 @@ select public.add_guest_member(:'_b'::uuid,'Bw') as _bw \gset
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _mc \gset
 select public.add_squad_member(:'_mc'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_mc'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _ic \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_ic'::uuid, g, :'_bw'::uuid, :'_cap'::uuid, :'_p2'::uuid, 6 from generate_series(1,4) g;
+set local role :_seedrole;
 select public.set_match_result(:'_mc'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 
 -- LIVE match (no result): cap 36 - must NOT be visible to anon
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _ml \gset
 select public.add_squad_member(:'_ml'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_ml'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _il \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_il'::uuid, g, :'_bw'::uuid, :'_cap'::uuid, :'_p2'::uuid, 6 from generate_series(1,6) g;
+set local role :_seedrole;
 
 -- become anon
 select tests.clear_authentication();

@@ -17,20 +17,32 @@ select public.add_guest_member(:'_b'::uuid,'Bw') as _bw \gset
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _m1 \gset
 select public.add_squad_member(:'_m1'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m1'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _i1 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_i1'::uuid, g, :'_bw'::uuid, :'_cap'::uuid, :'_p2'::uuid, 6 from generate_series(1,8) g;
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   values (:'_i1'::uuid,9,:'_bw'::uuid,:'_cap'::uuid,:'_p2'::uuid,2);
+set local role :_seedrole;
 select public.set_match_result(:'_m1'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 
 -- M2: cap 30 then bowled (5 sixes + a wicket ball)
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _m2 \gset
 select public.add_squad_member(:'_m2'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m2'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _i2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_i2'::uuid, g, :'_bw'::uuid, :'_cap'::uuid, :'_p2'::uuid, 6 from generate_series(1,5) g;
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,incoming_batter_id)
   values (:'_i2'::uuid,6,:'_bw'::uuid,:'_cap'::uuid,:'_p2'::uuid,'bowled',:'_p3'::uuid);
+set local role :_seedrole;
 select public.set_match_result(:'_m2'::uuid,'win_by_runs'::public.result_type,:'_b'::uuid);
 
 select is((public.player_career_stats(tests.get_supabase_uid('cap@s.dev'))->>'matches')::int, 2, 'matches played = 2');

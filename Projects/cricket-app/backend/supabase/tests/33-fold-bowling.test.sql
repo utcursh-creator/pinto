@@ -12,6 +12,8 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _mt \gset
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- Over 1: 5 dots + 1 leg-bye(1) => 6 legal, bowler charged 0 => MAIDEN (leg-byes do not break a maiden). 5 dots.
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat,extra_leg_byes) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
  (:'_in'::uuid,2,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
@@ -19,7 +21,10 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
  (:'_in'::uuid,4,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
  (:'_in'::uuid,5,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
  (:'_in'::uuid,6,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,1);
+set local role :_seedrole;
 -- Over 2: a wide then 6 dots => 6 legal + 1 wide, bowler charged 1 => NOT a maiden. 6 dots.
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat,extra_wides) values
  (:'_in'::uuid,7,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,1),
  (:'_in'::uuid,8,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
@@ -28,6 +33,7 @@ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id
  (:'_in'::uuid,11,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
  (:'_in'::uuid,12,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0),
  (:'_in'::uuid,13,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,0,0);
+set local role :_seedrole;
 
 select is((public.compute_innings_state(:'_in'::uuid)->'bowling'->0->>'maidens')::int, 1, 'one maiden (leg-byes do not break it; the wide-over does)');
 select is((public.compute_innings_state(:'_in'::uuid)->'bowling'->0->>'dots')::int, 11, 'dots = 11 (5 + 6)');

@@ -12,10 +12,13 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _mt \gset
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- three legal singles (insert directly as scorer; the fold reads the log however it was written)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1),
  (:'_in'::uuid,2,:'_bw'::uuid,:'_ns'::uuid,:'_s'::uuid,1),
  (:'_in'::uuid,3,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,1);
+set local role :_seedrole;
 
 select is((public.compute_innings_state(:'_in'::uuid)->>'runs')::int, 3, 'runs = 3');
 select is((public.compute_innings_state(:'_in'::uuid)->>'wickets')::int, 0, 'wickets = 0');

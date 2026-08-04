@@ -23,10 +23,17 @@ select has_column('public','deliveries','is_legal','is_legal column');
 -- rows that picked a STRANGER'S innings, so the insert was refused by RLS
 -- (42501) and the CHECK constraint this test exists to prove was never reached
 -- (penetration review 2026-07-07).
+-- The client's direct write grant on deliveries is gone (every write goes
+-- through the RPCs now), so as an ordinary user this insert fails with 42501
+-- BEFORE the CHECK is evaluated - which is the very trap this test's comment
+-- above warns about. Elevate so the constraint itself is what gets tested.
+select current_role as _seedrole \gset
+set local role postgres;
 select throws_ok(
   format($$ insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,extra_wides,extra_no_ball_penalty)
      values (%L, 1, %L, %L, %L, 1, 1) $$, :'_in', :'_bw', :'_s', :'_ns'),
   '23514', null, 'cannot be both wide and no-ball');
+set local role :_seedrole;
 
 select has_index('public','deliveries','deliveries_innings_seq_uidx','unique (innings_id, seq) index');
 select * from finish();

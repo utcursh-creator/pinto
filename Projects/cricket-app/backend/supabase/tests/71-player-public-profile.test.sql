@@ -14,8 +14,11 @@ select public.add_guest_member(:'_b'::uuid,'Bw') as _bw \gset
 select public.create_match(:'_a'::uuid,:'_b'::uuid,20,12) as _m \gset
 select public.add_squad_member(:'_m'::uuid,:'_a'::uuid,:'_cap'::uuid);
 select public.start_innings(:'_m'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_cap'::uuid,:'_p2'::uuid) as _in \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_in'::uuid, g, :'_bw'::uuid, :'_cap'::uuid, :'_p2'::uuid, 6 from generate_series(1,3) g;
+set local role :_seedrole;
 select public.set_match_result(:'_m'::uuid,'win_by_runs'::public.result_type,:'_a'::uuid);
 
 select tests.clear_authentication();

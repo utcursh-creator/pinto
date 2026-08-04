@@ -14,15 +14,21 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20) as _mt \gset
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in \gset
 
 -- S bowled; B3 comes in and takes strike (bowled = striker out, incoming on strike)
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,incoming_batter_id) values
  (:'_in'::uuid,1,:'_bw'::uuid,:'_s'::uuid,:'_ns'::uuid,'bowled',:'_b3'::uuid);
+set local role :_seedrole;
 select is((public.compute_innings_state(:'_in'::uuid)->>'wickets')::int, 1, 'one wicket');
 select is(public.compute_innings_state(:'_in'::uuid)->>'striker_id', (:'_b3'::uuid)::text, 'incoming B3 on strike after bowled');
 select is((public.compute_innings_state(:'_in'::uuid)->'bowling'->0->>'wickets')::int, 1, 'bowler credited the wicket');
 
 -- run out of NS; B4 comes in. Run out is NOT credited to the bowler.
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,dismissed_player_id,incoming_batter_id) values
  (:'_in'::uuid,2,:'_bw'::uuid,:'_b3'::uuid,:'_ns'::uuid,'run_out',:'_ns'::uuid,:'_b4'::uuid);
+set local role :_seedrole;
 select is((public.compute_innings_state(:'_in'::uuid)->>'wickets')::int, 2, 'two wickets');
 select is((public.compute_innings_state(:'_in'::uuid)->'bowling'->0->>'wickets')::int, 1, 'run out NOT credited to the bowler');
 select * from finish();

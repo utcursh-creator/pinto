@@ -21,14 +21,23 @@ select public.add_guest_member(:'_z'::uuid,'zf') as _zf \gset
 select public.create_match(:'_x'::uuid,:'_z'::uuid,20,6,'{"squad_size":2}'::jsonb) as _m \gset
 -- innings 1: X bats, zb bowls. x1 hits 5 fours (20), then caught by zf -> all out.
 select public.start_innings(:'_m'::uuid,1,:'_x'::uuid,:'_z'::uuid,:'_x1'::uuid,:'_x2'::uuid) as _i1 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_i1'::uuid, gs, :'_zb'::uuid, :'_x1'::uuid, :'_x2'::uuid, 4 from generate_series(1,5) gs;
+set local role :_seedrole;
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,wicket_type,fielder_id)
   values (:'_i1'::uuid,6,:'_zb'::uuid,:'_x1'::uuid,:'_x2'::uuid,'caught',:'_zf'::uuid);
+set local role :_seedrole;
 -- innings 2: Z bats, xb bowls. z1 makes 5, not out.
 select public.start_innings(:'_m'::uuid,2,:'_z'::uuid,:'_x'::uuid,:'_z1'::uuid,:'_z2'::uuid) as _i2 \gset
+select current_role as _seedrole \gset
+set local role postgres;
 insert into public.deliveries(innings_id,seq,bowler_id,striker_id,non_striker_id,runs_off_bat)
   select :'_i2'::uuid, gs, :'_xb'::uuid, :'_z1'::uuid, :'_z2'::uuid, 1 from generate_series(1,5) gs;
+set local role :_seedrole;
 select public.set_match_result(:'_m'::uuid,'win_by_runs'::public.result_type,:'_x'::uuid);
 reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id,tournament_id,stage,group_label) values (:'_m'::uuid,:'_t'::uuid,'group','A');
