@@ -16,7 +16,7 @@ REFUTED = re-verified against the code and found not to hold.
 USER = blocked on a credential or action only the user can take.
 OPEN = still to do.
 
-## CLOSED (45)
+## CLOSED (48)
 1 CRITICAL deleted account claimable ......... pgTAP 121 (earlier run)
 2 CRITICAL gradle configuration-time guard ... build.gradle.kts (earlier run)
 3 CRITICAL console innings-state no retry .... 3c27925
@@ -86,10 +86,13 @@ OPEN = still to do.
 54 MED a departed guest could never be re-added .. 24022fb
 15 HIGH DM inbox downloaded every message body ... 38f24ea
 41 MED DM thread never re-synced after a socket gap 38f24ea
-10 HIGH un-ticking a squad member never removed him (this commit)
-25 HIGH the same, on a resumed setup ............ (this commit)
-9  HIGH 'Add my team' offered teams it could not add (this commit)
-11 HIGH AuthGate.error tore down the whole nav stack (this commit)
+10 HIGH un-ticking a squad member never removed him 495a08f
+25 HIGH the same, on a resumed setup ............ 495a08f
+9  HIGH 'Add my team' offered teams it could not add 495a08f
+11 HIGH AuthGate.error tore down the whole nav stack 495a08f
+34 MED  abandon refreshed only the Matches list . (this commit)
+55 MED  the discover anchor outlived its owner .. (this commit)
+87 MED  tournaments list never re-read .......... (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -112,15 +115,12 @@ OPEN = still to do.
 
 ## OPEN - still to do
 8  HIGH  reset-password link cannot re-enter the app
-34 MED   abandoning a match refreshes only myMatchesProvider
 39 MED   async error branches offer no retry while providers cache
 43 MED   expired posts still read 'open' to their author
 44 MED   GPS lookup has no time limit
 49 MED   'Propose a match' bridge silently drops the notification DM
-55 MED   anchorProvider survives sign-out
 65 MED   tournament_leaderboard materialises a big join
 66 MED   tournament_overview folds every innings three times
 68 LOW   'Share image' can fail with no message
 73 LOW   claim inbox evaluates is_team_admin per row
 76 LOW   handover leaves a stale "Continue scoring" that always fails
-87 LOW   tournamentsListProvider never refreshed after a status change

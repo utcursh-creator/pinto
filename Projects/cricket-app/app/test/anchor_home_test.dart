@@ -1,23 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:pitch_app/src/core/auth/auth_providers.dart';
 import 'package:pitch_app/src/features/discover/data/discover_providers.dart';
 
 /// The discover anchor crashed the build phase TWICE while being fixed, so these
 /// lock the shape that finally holds (see discover_providers.dart):
 ///   - anchorProvider holds ONLY the user's explicit choice and has NO
-///     dependencies, so it can never invalidate itself.
+///     ASYNC dependency (its only dependency is the sync signed-in user id, so
+///     that a chosen city does not outlive its owner - finding 55), so it can
+///     never invalidate itself.
 ///   - the anchor actually used is derived by the pure effectiveAnchor().
 /// The rule: no provider may watch homeLocationProvider. Widgets may.
 void main() {
   group('anchorProvider holds only an explicit choice', () {
     test('starts null - nothing chosen', () {
-      final c = ProviderContainer();
+      final c = ProviderContainer(overrides: [
+        // anchorProvider now watches WHO is signed in, so that one person's
+        // chosen city does not follow the next person signed in on this phone
+        // (review #2, finding 55). Nothing here needs a real session.
+        currentSessionProvider.overrideWithValue(null),
+      ]);
       addTearDown(c.dispose);
       expect(c.read(anchorProvider), isNull);
     });
 
-    test('has no dependencies, so resolving a home base cannot disturb it', () {
+    test('has no async dependency, so resolving a home base cannot disturb it',
+        () {
       final c = ProviderContainer(overrides: [
+        currentSessionProvider.overrideWithValue(null),
         homeLocationProvider
             .overrideWith((_) async => (lat: 9.0, lng: 9.0, label: 'Home')),
       ]);
@@ -27,7 +38,12 @@ void main() {
     });
 
     test('clear() returns to deriving from the home base', () {
-      final c = ProviderContainer();
+      final c = ProviderContainer(overrides: [
+        // anchorProvider now watches WHO is signed in, so that one person's
+        // chosen city does not follow the next person signed in on this phone
+        // (review #2, finding 55). Nothing here needs a real session.
+        currentSessionProvider.overrideWithValue(null),
+      ]);
       addTearDown(c.dispose);
       c.read(anchorProvider.notifier).set((lat: 1, lng: 2, radiusM: 5000));
       c.read(anchorProvider.notifier).clear();

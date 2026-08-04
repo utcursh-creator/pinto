@@ -8,7 +8,10 @@ import 'discover_repository.dart';
 /// The anchor the discover feed searches around.
 ///
 /// [anchorProvider] holds ONLY the anchor the user explicitly chose (null until
-/// they do) and has NO dependencies, so it can never invalidate itself. The
+/// they do). Its one dependency is the signed-in user's ID - a SYNC provider,
+/// so it still cannot participate in an async invalidation cascade - and it
+/// exists so one person's chosen city does not follow the next person signed in
+/// on the same phone (review #2, finding 55). The
 /// anchor the feed should actually use is derived by [effectiveAnchor] as a pure
 /// function of two values the WIDGET watches.
 ///
@@ -30,7 +33,19 @@ const Anchor kFallbackAnchor = (lat: 19.07, lng: 72.87, radiusM: 25000.0);
 
 class AnchorNotifier extends Notifier<Anchor?> {
   @override
-  Anchor? build() => null; // no dependencies, by design
+  Anchor? build() {
+    // Resets when the SIGNED-IN PERSON changes (review #2, finding 55). The
+    // anchor is a personal choice, not a device setting: left behind at
+    // sign-out it centred the next user's feed on the previous user's city AND
+    // geotagged every looking-for post they published there, so nobody near
+    // them ever saw it - with no coordinates anywhere on screen to explain why.
+    //
+    // Keyed on the USER ID, not the Session: gotrue yields a new Session object
+    // on every JWT refresh (about hourly), and resetting "Near me" once an hour
+    // would be its own bug.
+    ref.watch(currentSessionProvider.select((s) => s?.user.id));
+    return null;
+  }
 
   void set(Anchor anchor) => state = anchor;
 

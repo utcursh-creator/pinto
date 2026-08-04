@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:pitch_app/src/core/auth/auth_providers.dart';
 import 'package:pitch_app/src/features/discover/data/location_service.dart';
 import 'package:pitch_app/src/features/discover/presentation/location_screen.dart';
 
@@ -19,7 +21,12 @@ void main() {
       try {
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [locationServiceProvider.overrideWithValue(_FakeLoc())],
+            overrides: [
+              // finding 55: the anchor is now per-user, so it reads who is
+              // signed in
+              currentSessionProvider.overrideWithValue(null),
+              locationServiceProvider.overrideWithValue(_FakeLoc()),
+            ],
             child: const MaterialApp(home: LocationScreen()),
           ),
         );

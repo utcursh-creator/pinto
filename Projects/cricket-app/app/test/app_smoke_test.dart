@@ -17,6 +17,7 @@ void main() {
           authGateProvider.overrideWithValue(AuthGate.ready),
           anonBootstrapProvider.overrideWith((ref) async {}),
           isAnonymousProvider.overrideWithValue(false),
+          currentSessionProvider.overrideWithValue(null),
         ],
         child: const PitchApp(),
       ),

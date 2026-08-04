@@ -17,6 +17,7 @@ void main() {
       ProviderScope(
         overrides: [
           isAnonymousProvider.overrideWithValue(false),
+          currentSessionProvider.overrideWithValue(null),
           discoverFeedProvider.overrideWith(
             (ref, q) async => [
               <String, dynamic>{
@@ -59,6 +60,7 @@ void main() {
       ProviderScope(
         overrides: [
           isAnonymousProvider.overrideWithValue(false),
+          currentSessionProvider.overrideWithValue(null),
           discoverFeedProvider.overrideWith((ref, q) async {
             seenQueries.add(q);
             return [];
@@ -103,6 +105,7 @@ void main() {
           ProviderScope(
             overrides: [
               isAnonymousProvider.overrideWithValue(true),
+              currentSessionProvider.overrideWithValue(null),
               // If the feed were queried this would throw; assert it is NOT.
               discoverFeedProvider.overrideWith(
                 (ref, q) async => throw StateError('feed must not be queried when anonymous'),

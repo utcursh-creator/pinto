@@ -6,6 +6,7 @@ import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/platform/platform.dart';
 import '../../../core/routing/routes.dart';
+import '../../identity/data/identity_providers.dart';
 import '../../scoring/data/match_providers.dart';
 import '../../scoring/data/match_repository.dart';
 import '../../../core/ui/human_error.dart';
@@ -231,7 +232,17 @@ class _MatchTile extends ConsumerWidget {
     if (ok != true) return;
     try {
       await run();
+      // Every cache that describes this match, not just the list in front of
+      // us (review #2, finding 34). None of these are autoDispose, so the row
+      // fetched when the console was opened is held for the whole session: the
+      // viewer would keep rendering the red LIVE badge with no result, the Info
+      // tab would say "Status: live", and Watch-live would keep listing an
+      // abandoned game. The viewer's realtime re-fold cannot save it - it
+      // subscribes when opened, long after the UPDATE broadcast fired.
       ref.invalidate(myMatchesProvider);
+      ref.invalidate(matchProvider);
+      ref.invalidate(liveMatchesProvider);
+      ref.invalidate(teamMatchesProvider);
       messenger?.showSnackBar(SnackBar(content: Text('$action done.')));
     } catch (e) {
       messenger?.showSnackBar(SnackBar(content: Text(humanError(e, fallback: 'Could not $action.'))));

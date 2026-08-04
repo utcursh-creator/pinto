@@ -13,11 +13,36 @@ import '../../../core/ui/human_error.dart';
 
 /// All tournaments. Tapping a card opens the public page; the organizer of a
 /// tournament also gets a Manage shortcut.
-class TournamentsListScreen extends ConsumerWidget {
+class TournamentsListScreen extends ConsumerStatefulWidget {
   const TournamentsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TournamentsListScreen> createState() =>
+      _TournamentsListScreenState();
+}
+
+class _TournamentsListScreenState extends ConsumerState<TournamentsListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Re-read on every open (review #2, finding 87). Managing a tournament
+    // invalidates only tournamentOverviewProvider, so coming back here showed
+    // the row still chipped "Registration open" for a tournament that already
+    // had a champion - and this provider is not autoDispose, so the only other
+    // cure was restarting the app.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Only when there is already an answer to be stale. A first open is
+      // fetching anyway, and invalidating that in flight would make every
+      // cold open cost two round-trips.
+      if (ref.read(tournamentsListProvider).hasValue) {
+        ref.invalidate(tournamentsListProvider);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(tournamentsListProvider);
     final me = ref.watch(currentSessionProvider)?.user.id;
     final cupertino = isCupertino(context);
@@ -43,48 +68,65 @@ class TournamentsListScreen extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: const Text('Create tournament'),
             ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load tournaments.'))),
-        data: (rows) => rows.isEmpty
-            ? const Center(child: Text('No tournaments yet. Create one.'))
-            : ListView.separated(
-                itemCount: rows.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, i) {
-                  final t = rows[i];
-                  final id = t['id'] as String;
-                  final mine = me != null && t['organizer_id'] == me;
-                  final champion = t['champion_team_id'] != null;
-                  return ListTile(
-                    leading: const Icon(Icons.emoji_events_outlined),
-                    title: Text((t['name'] as String?) ?? 'Tournament'),
-                    subtitle: Row(
-                      children: [
-                        _StatusChip(status: t['status'] as String?),
-                        if (t['city'] != null) ...[
-                          const SizedBox(width: 8),
-                          Text(t['city'] as String,
-                              style: Theme.of(context).textTheme.bodySmall),
+      body: RefreshIndicator.adaptive(
+        onRefresh: () async => ref.invalidate(tournamentsListProvider),
+        child: async.when(
+          loading: () =>
+              const Center(child: CircularProgressIndicator.adaptive()),
+          error: (e, _) => Center(
+            child: Text(humanError(e, fallback: 'Could not load tournaments.')),
+          ),
+          data: (rows) => rows.isEmpty
+              ? ListView(
+                  children: const [
+                    SizedBox(height: 200),
+                    Center(child: Text('No tournaments yet. Create one.')),
+                  ],
+                )
+              : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: rows.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final t = rows[i];
+                    final id = t['id'] as String;
+                    final mine = me != null && t['organizer_id'] == me;
+                    final champion = t['champion_team_id'] != null;
+                    return ListTile(
+                      leading: const Icon(Icons.emoji_events_outlined),
+                      title: Text((t['name'] as String?) ?? 'Tournament'),
+                      subtitle: Row(
+                        children: [
+                          _StatusChip(status: t['status'] as String?),
+                          if (t['city'] != null) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              t['city'] as String,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                          if (champion) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.emoji_events,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ],
                         ],
-                        if (champion) ...[
-                          const SizedBox(width: 8),
-                          Icon(Icons.emoji_events,
-                              size: 14, color: Theme.of(context).colorScheme.primary),
-                        ],
-                      ],
-                    ),
-                    trailing: mine
-                        ? TextButton(
-                            onPressed: () =>
-                                context.push(Routes.manageTournament(id)),
-                            child: const Text('Manage'),
-                          )
-                        : const Icon(Icons.chevron_right),
-                    onTap: () => context.push(Routes.tournamentPage(id)),
-                  );
-                },
-              ),
+                      ),
+                      trailing: mine
+                          ? TextButton(
+                              onPressed: () =>
+                                  context.push(Routes.manageTournament(id)),
+                              child: const Text('Manage'),
+                            )
+                          : const Icon(Icons.chevron_right),
+                      onTap: () => context.push(Routes.tournamentPage(id)),
+                    );
+                  },
+                ),
+        ),
       ),
     );
   }
@@ -107,7 +149,9 @@ class TournamentsListScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
             child: const Text('Continue'),
@@ -143,8 +187,10 @@ class _StatusChip extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(tournamentStatusLabel(status),
-          style: theme.textTheme.labelSmall),
+      child: Text(
+        tournamentStatusLabel(status),
+        style: theme.textTheme.labelSmall,
+      ),
     );
   }
 }
