@@ -81,7 +81,8 @@ OPEN = still to do.
 18 HIGH journey G group split ............... already fixed; screenshot proves it
 45 MED journey D Undo asserted nothing ...... 79b16c4
 53 MED oversized squad silently changes format 60184df
-62 MED image URLs were arbitrary client strings (this commit)
+62 MED image URLs were arbitrary client strings aff06c9
+61 MED status stuck at innings_break ......... (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -109,7 +110,6 @@ OPEN = still to do.
 49 MED   'Propose a match' bridge silently drops the notification DM
 54 MED   add_match_guest duplicate-name check ignores left_at
 55 MED   anchorProvider survives sign-out
-61 MED   matches.status stuck at innings_break after a correction
 65 MED   tournament_leaderboard materialises a big join
 66 MED   tournament_overview folds every innings three times
 68 LOW   'Share image' can fail with no message

@@ -170,6 +170,13 @@ class MatchRepository {
 
   /// SCOR-1: record the first-innings close on the match itself so viewers
   /// and lists see 'innings break' instead of a frozen 'live'.
+  /// Puts a match back to 'live' after a correction reopened its innings.
+  ///
+  /// The RPC asks the FOLD whether the innings really is in progress, so this
+  /// cannot drag a completed match back to live (review #2, finding 61).
+  Future<void> resumeFromInningsBreak(String matchId) =>
+      _c.rpc('resume_from_innings_break', params: {'_match_id': matchId});
+
   Future<void> markInningsBreak(String matchId) =>
       _c.rpc('mark_innings_break', params: {'_match_id': matchId});
 

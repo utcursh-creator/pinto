@@ -469,6 +469,24 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     // sole escape was to leave and re-enter the console, which nothing says.
     //
     // React to the FOLD, which is the one thing all of those routes move.
+    // A correction can REOPEN an innings that had ended - delete the wrong
+    // final wicket from the ball log and the fold goes back to in_progress,
+    // the run pad returns and scoring carries on. But the break status was
+    // written once and nothing put it back, and `_breakMarked` stayed latched
+    // so the console never re-evaluated. For the rest of that innings the
+    // viewer showed no LIVE badge, the Watch-live list said "innings break"
+    // and the Matches tile agreed - while balls were being recorded
+    // (review #2, finding 61).
+    ref.listen(inningsStateProvider(inningsId), (prev, next) {
+      final status = next.value?['innings_status'] as String?;
+      if (status != 'in_progress' || !_breakMarked) return;
+      _breakMarked = false;
+      _breakWriteFailed = false;
+      _repo.resumeFromInningsBreak(widget.matchId).then((_) {
+        if (mounted) ref.invalidate(matchProvider(widget.matchId));
+      }).catchError((_) {/* the next correction or reopen will retry */});
+    });
+
     ref.listen(inningsStateProvider(inningsId), (prev, next) {
       final legal = (next.value?['legal_balls'] as num?)?.toInt();
       if (legal == null) return;
