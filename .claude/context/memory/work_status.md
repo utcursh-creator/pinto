@@ -139,7 +139,17 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   the client removes them BEFORE the RPC (which revokes auth and would strand
   them), and a failure is deliberately not swallowed.
 
-Gates: **pgTAP 764 / 124 files**, analyze clean, **307 widget tests**.
+- `7d60e02` **DEVICE PASS after 12 fix units** (iPhone 17 sim, live local
+  Supabase, re-seeded). **8/8 journeys green.** Read the frames, not just the
+  result: the console gates the pad correctly, jd6 still shows a no-ball with a
+  bye as 2/0 at Over 0.0 with FREE HIT and strike rotated. Added jd4b/jd4c so
+  the WICKET sheet is actually looked at - choosing Wide narrows "How out?" from
+  8 to the 4 the Laws allow, resets a stale "Bowled", relabels the counter to
+  "Extra runs run" and reveals Fielder. The sheet FITS on a real phone: the
+  scroll needed in the widget test was a 600pt-viewport artifact, not a defect.
+
+Gates: **pgTAP 764 / 124 files**, analyze clean, **307 widget tests**, **8/8
+device journeys**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device

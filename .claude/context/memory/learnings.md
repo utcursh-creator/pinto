@@ -632,3 +632,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   false for two of the three nouns. Grep user-facing promises and check each
   clause against what the code does - and when the code is right but the
   sentence is short, fix the sentence too.
+- **A cramped bottom sheet in a widget test is usually the 600pt viewport, not
+  the app.** The test window is far shorter than a phone, so a sheet that needs
+  scrolling there can be comfortable on device. Confirm by dragging (does it
+  scroll?) and by LOOKING at a device frame before changing layout - here the
+  fix was `ensureVisible` in the test, and the real screen had room to spare.
+- **Re-seed after every `supabase db reset` before any device run.** Six resets
+  this session wiped dev@pitch.local each time; the journeys sign in as that
+  user and would fail for a reason that has nothing to do with the code.
+  Admin API POST /auth/v1/admin/users, then insert the profiles via psql.
