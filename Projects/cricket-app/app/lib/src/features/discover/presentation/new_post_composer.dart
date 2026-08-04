@@ -125,8 +125,23 @@ class _NewPostComposerState extends ConsumerState<NewPostComposer> {
       setState(() => _error = 'Pick which team this post is for.');
       return;
     }
-    final anchor = effectiveAnchor(
-      ref.read(anchorProvider), ref.read(homeLocationProvider).value);
+    // `.value` is null both when the home ground is UNSET and when the read
+    // FAILED, and effectiveAnchor then quietly returns a city centre. For the
+    // feed that is a cosmetic wrong answer; here it is permanent - the post is
+    // published geotagged to a city the author may be a thousand kilometres
+    // from, where nobody near them will ever see it (review #2, finding 70).
+    //
+    // If they picked a location themselves, use it. If not and we could not
+    // read their home ground, stop rather than guess.
+    final chosenAnchor = ref.read(anchorProvider);
+    final homeRead = ref.read(homeLocationProvider);
+    if (chosenAnchor == null && homeRead.hasError) {
+      setState(() => _error =
+          'We could not read your home ground, so this post would be pinned to '
+          'the wrong place. Check your connection, or set a location first.');
+      return;
+    }
+    final anchor = effectiveAnchor(chosenAnchor, homeRead.value);
     setState(() {
       _busy = true;
       _error = null;

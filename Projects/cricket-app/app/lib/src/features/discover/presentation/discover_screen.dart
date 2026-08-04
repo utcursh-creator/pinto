@@ -40,10 +40,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
     // Derived purely from two watched values - no provider watches another, so
     // nothing can invalidate itself mid-build (see discover_providers.dart).
-    final anchor = effectiveAnchor(
-      ref.watch(anchorProvider),
-      ref.watch(homeLocationProvider).value,
-    );
+    final chosenAnchor = ref.watch(anchorProvider);
+    final homeRead = ref.watch(homeLocationProvider);
+    // Error and "not set" both arrive as a null `.value`, so the feed silently
+    // pinned itself to a fallback city with nothing said (review #2, finding
+    // 70). Guessing is fine; guessing silently is not.
+    final guessingLocation = chosenAnchor == null && homeRead.hasError;
+    final anchor = effectiveAnchor(chosenAnchor, homeRead.value);
     final query = DiscoverQuery(
       lat: anchor.lat,
       lng: anchor.lng,
@@ -100,6 +103,30 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ),
       body: Column(
         children: [
+          // Guessing is fine; guessing SILENTLY is not. Without this the feed
+          // showed another city's games with nothing to indicate it, and the
+          // only recovery was to reopen Location and re-save by hand.
+          if (guessingLocation)
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFFFF3CD),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'We could not read your home ground, so these are games '
+                      'near a default city.',
+                      style: TextStyle(color: Color(0xFF8A6D00)),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => ref.invalidate(homeLocationProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
           _FilterBar(
             mode: _mode,
             flair: _flair,
@@ -121,7 +148,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               error: (e, _) => ErrorRetry(
                 message: 'Could not load the feed.',
                 detail: e,
-                onRetry: () => ref.invalidate(discoverFeedProvider(query)),
+                onRetry: () {
+                  // the home ground read is what failed first; retrying only
+                  // the feed keeps the wrong anchor forever
+                  ref.invalidate(homeLocationProvider);
+                  ref.invalidate(discoverFeedProvider(query));
+                },
               ),
               data: (posts) => posts.isEmpty
                   ? const Center(child: Text('No open posts nearby yet.'))
