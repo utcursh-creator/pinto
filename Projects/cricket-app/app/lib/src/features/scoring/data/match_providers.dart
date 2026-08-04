@@ -190,7 +190,12 @@ final liveMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asy
       .from('matches')
       .select('id, status, venue, overs_limit, team_a:team_a_id(name), team_b:team_b_id(name)')
       .inFilter('status', ['live', 'innings_break'])
-      .order('created_at', ascending: false);
+      // Global and reachable WITHOUT signing in, so it is the most exposed
+      // query in the app - unbounded it seq-scanned and sorted every match ever
+      // played on every open (review #2 finding 21). Backed by the partial
+      // index matches_live_created_idx.
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(rows as List);
 });
 
@@ -240,7 +245,10 @@ final myMatchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async
           'team_a:team_a_id(name), team_b:team_b_id(name), '
           'tournament_matches(tournament_id)')
       .eq('scorer_id', me)
-      .order('created_at', ascending: false);
+      // A keen scorer accumulates these for years; the tab only ever shows the
+      // recent ones.
+      .order('created_at', ascending: false)
+      .limit(100);
   // MTCH-5: tournament fixtures are managed under Tournaments, so keep the
   // personal Matches tab to the user's own casual games - drop the linked ones.
   return [

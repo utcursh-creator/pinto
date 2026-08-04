@@ -12,7 +12,10 @@ final tournamentsListProvider =
   final rows = await c
       .from('tournaments')
       .select('id, name, status, city, starts_on, champion_team_id, organizer_id')
-      .order('created_at', ascending: false);
+      // Every tournament that has ever existed, unfiltered (review #2 finding
+      // 83). Newest first and capped.
+      .order('created_at', ascending: false)
+      .limit(100);
   return List<Map<String, dynamic>>.from(rows as List);
 });
 

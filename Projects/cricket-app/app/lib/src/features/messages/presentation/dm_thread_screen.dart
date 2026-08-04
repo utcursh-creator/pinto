@@ -49,12 +49,23 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   /// (penetration review 2026-07-07).
   Future<void> _init() async {
     try {
+      // The MOST RECENT 200, then flipped back to oldest-first for display.
+      // Loading the whole history meant a long-running conversation downloaded
+      // every message it had ever contained just to show the last screenful
+      // (review #2 finding 74).
+      //
+      // KNOWN GAP: this caps the thread rather than paginating it, so messages
+      // older than the most recent 200 are not reachable in the UI. That is a
+      // deliberate trade for now - unbounded download on a phone is worse - but
+      // it is a cap, not a solution, and back-pagination is still owed.
       final rows = await _c
           .from('dm_messages')
           .select('id, sender_id, body, created_at')
           .eq('thread_id', widget.threadId)
-          .order('created_at', ascending: true); // oldest first: new messages append
-      for (final r in (rows as List).cast<Map<String, dynamic>>()) {
+          .order('created_at', ascending: false)
+          .limit(200);
+      for (final r
+          in (rows as List).cast<Map<String, dynamic>>().reversed) {
         _ids.add(r['id'] as String);
         _messages.add(r);
       }
