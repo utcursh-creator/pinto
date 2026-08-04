@@ -39,11 +39,22 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
               memberName(s['team_members'] as Map<String, dynamic>),
       };
 
-  Future<void> _afterBall(String inningsId, int bpo) async {
+  /// [legalBefore] is what the fold reported BEFORE this delivery.
+  ///
+  /// An over ends when a delivery COMPLETES it, not merely when the legal-ball
+  /// count happens to sit on a multiple of the over. A wide or a no-ball adds
+  /// no legal ball, so the count does not move - and immediately after an over
+  /// ends it is already a multiple. Testing `legal % bpo == 0` alone therefore
+  /// declared the over finished a second time on any first-ball wide, cleared
+  /// the bowler, and filed the man who had just started as `_lastOverBowlerId`
+  /// - which the picker renders as "Bowled last over" and refuses to select.
+  /// The scorer was left unable to nominate the bowler who was mid-over
+  /// (whole-system review #2, 2026-07-28).
+  Future<void> _afterBall(String inningsId, int bpo, int legalBefore) async {
     ref.invalidate(inningsStateProvider(inningsId));
     final fresh = await ref.read(inningsStateProvider(inningsId).future);
     final legal = (fresh['legal_balls'] as num?)?.toInt() ?? 0;
-    if (legal > 0 && legal % bpo == 0) {
+    if (legal > legalBefore && legal % bpo == 0) {
       // over completed by the current bowler - the next over needs a new one
       if (mounted) {
         setState(() {
@@ -74,6 +85,12 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
   }) async {
     if (_bowlerId == null || _busy) return;
     setState(() => _busy = true);
+    // capture BEFORE the delivery - a wide leaves this unchanged, which is
+    // exactly how _afterBall tells "the over ended" from "it already had"
+    final legalBefore = (ref.read(inningsStateProvider(inningsId)).value?[
+            'legal_balls'] as num?)
+        ?.toInt() ??
+        0;
     try {
       final res = await _repo.recordBall(
         inningsId: inningsId,
@@ -94,7 +111,7 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
         // SCOR-24: the version this tap was decided against
         expectedLastSeq: lastSeq,
       );
-      await _afterBall(inningsId, bpo);
+      await _afterBall(inningsId, bpo, legalBefore);
       // the recording is DONE here - drop the busy state BEFORE the wagon
       // prompt, or the progress bar animates under the open sheet forever
       if (mounted) setState(() => _busy = false);
