@@ -752,3 +752,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   under a LOW bug fix, or to make the UI stop implying support. Naming the
   unsupported case in the copy is honest and cheap; silently leaving help text
   that reads as permission is what caused the bug.
+- **"Tap X" in an error message is a promise that X exists.** Three separate
+  dead ends this run - copy naming a missing control, a framework default
+  offering a route the app never defined, and a stale provider leaving an action
+  visible after it had been taken. Worth a periodic sweep: for every
+  instruction the UI gives, does the thing it names exist and do something?
+- **A framework's default error screen is not free.** go_router's Page Not Found
+  looks finished and its only button pushes '/', which an app with a splash
+  route does not have. Any router/error default that ships a control should be
+  checked against the routes that actually exist.

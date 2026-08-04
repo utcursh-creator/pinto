@@ -242,8 +242,25 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   MODELLED; inventing that schema is a feature, not a LOW fix. Copy now states
   the direction and names the short run as the case NOT to use it for.
 
-Gates: **pgTAP 796 / 129 files**, analyze clean, **333 widget tests**, **8/8
+- `2e3b3fd` **three controls that pointed nowhere** (findings 82/75/71, one
+  unit - same shape: the app told somebody to do a thing it had not given them
+  a way to do). Toss error said "Tap Edit squads below" with no such control
+  anywhere in lib/ -> the button now exists and navigates. GoRouter had no
+  errorBuilder, so a dead deep link showed Page Not Found whose Home button
+  pushes '/' which this app does not define -> a real error page offering
+  Discover. Approving a guest claim refreshed the inbox but not the roster, so
+  a team page kept offering "This is me" on an already-claimed membership.
+
+Gates: **pgTAP 796 / 129 files**, analyze clean, **336 widget tests**, **8/8
 device journeys**, Android debug APK builds.
+
+## STILL OPEN in review #2 (as of 2026-08-05)
+- **70** [LOW] a FAILED home-location read is indistinguishable from "no home
+  set", so Discover silently pins to the fallback city for the session. Needs a
+  UI affordance decision, not just a code change - deliberately left.
+- **THE REVIEW RE-RUN.** 24 fix units deep, including all three folds, the
+  permission model and the deletion path. My tally is not evidence; only a fresh
+  adversarial pass can say what these changes introduced.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
