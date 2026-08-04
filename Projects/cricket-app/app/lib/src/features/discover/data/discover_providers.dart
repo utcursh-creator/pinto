@@ -121,8 +121,17 @@ final postProvider = FutureProvider.family<Map<String, dynamic>?, String>((
 
 /// Player + team name search (MISS-3). Returns rows shaped
 /// {kind, id, name, subtitle, photo_url}. Empty for queries under 2 chars.
+///
+/// autoDispose, and that is not a tidiness choice. The key is a free-text query
+/// and the screens watch it on EVERY KEYSTROKE, so without it each prefix a
+/// person types ("r", "ra", "rah", "rahu", "rahul") leaves an element alive for
+/// the whole session - and, worse, a query that failed on a dropped connection
+/// stays cached AS AN ERROR. Retyping the exact same name then re-reads the
+/// dead element and never touches the network, so the one thing a user will
+/// naturally try is precisely the thing that cannot work
+/// (review #2, findings 33/64/86).
 final searchProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, query) async {
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, query) async {
   final q = query.trim();
   if (q.length < 2) return const [];
   final c = ref.watch(supabaseClientProvider);

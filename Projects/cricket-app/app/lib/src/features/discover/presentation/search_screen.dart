@@ -6,6 +6,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../../identity/presentation/initials_avatar.dart';
 import '../data/discover_providers.dart';
+import '../../../core/ui/app_primitives.dart';
 import '../../../core/ui/human_error.dart';
 
 /// Find a player or team by name (MISS-3). A player row opens their career page;
@@ -63,7 +64,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 : results.when(
                     loading: () =>
                         const Center(child: CircularProgressIndicator.adaptive()),
-                    error: (e, _) => Center(child: Text(humanError(e, fallback: 'Search failed.'))),
+                    // A dropped connection is the common case here, and this
+                    // used to be a bare line of text with nothing to tap.
+                    error: (e, _) => Center(
+                      child: AppEmpty(
+                        icon: Icons.cloud_off_outlined,
+                        title: 'Could not search',
+                        message: humanError(e,
+                            fallback: 'Check your connection and try again.'),
+                        actionLabel: 'Try again',
+                        onAction: () => ref.invalidate(searchProvider(_query)),
+                      ),
+                    ),
                     data: (rows) => rows.isEmpty
                         ? const Center(child: Text('No players or teams found.'))
                         : ListView.separated(
