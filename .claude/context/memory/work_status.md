@@ -305,9 +305,17 @@ mental subset. A systematic pass over all 87 is now on disk at
   proves it - but its SILENT GUARD (`if (chip.isNotEmpty)`) was still live in
   journey A and is now an assertion. 8/8 green after.
 
-Highest-value still OPEN: 53 (winning margin from squad size), 61 (status stuck
-at innings_break after a correction), 62 (unvalidated client URLs), 54
-(add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
+- `60184df` **ticking a whole roster silently made it a 13-a-side match**
+  (finding 53). all_out = squad_size - 1 with no upper bound on the squads
+  screen, so a 13-man squad does not close at 10 wickets and "won by N wickets"
+  is computed off 12 - persisted into matches.result.note forever. **Did NOT
+  add a hard cap**: 12/13-a-side games are real and the backend supports them
+  deliberately (squad_size in matches.rules, pgTAP 76/77 rely on it). The fold
+  is right for the data; the UI let that data mean something unchosen. Now
+  states the consequence in wickets. Control catches warning at >10.
+
+Highest-value still OPEN: 61 (status stuck at innings_break after a correction),
+62 (unvalidated client URLs), 54 (add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
 
 **THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed

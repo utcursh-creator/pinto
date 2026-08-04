@@ -804,3 +804,11 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   run.** Journey D asserts the striker changed after a swap and is restored
   after the undo; a no-op undo cannot satisfy both. That is airtight without
   spending nine minutes re-driving the simulator.
+- **Before "fixing" a derivation, check whether the input was supposed to be
+  possible.** all_out = squad_size - 1 looked wrong for a 13-man squad, but the
+  backend supports variable squad sizes on purpose. The bug was upstream: the UI
+  let a scorer choose a format without knowing it. Correct the layer that made
+  the choice invisible, not the arithmetic that honoured it.
+- **A warning that fires on the normal case is worse than no warning.** Hence
+  the control asserting an ordinary XI stays silent - and it catches an
+  off-by-one in the threshold, which is exactly how these degrade into noise.
