@@ -458,6 +458,21 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
     }
 
+    // The WICKET sheet gained a "The delivery was" row, because a stumping off
+    // a wide and a run-out off a no-ball were previously unrecordable (review
+    // #2). Widget tests only ever see this sheet in a 600pt viewport, where it
+    // has to be scrolled - so LOOK at it on a real screen before believing it
+    // fits. Nothing is recorded here; the sheet is dismissed and journey D
+    // carries on with the no-ball below.
+    await tester.tap(find.text('WICKET'));
+    await settle(tester, find.text('The delivery was'), label: 'wicket_sheet');
+    await shot(tester, 'jd4b_wicket_sheet');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Wide'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+    await shot(tester, 'jd4c_wicket_off_wide');
+    Navigator.of(tester.element(find.text('The delivery was'))).pop();
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+
     // THE REGRESSION THAT MATTERS: a no-ball that went for byes. Before the fix
     // the console sent the plural enum spelling and Postgres rejected the ball.
     await tester.tap(find.widgetWithText(OutlinedButton, 'Extras'));
