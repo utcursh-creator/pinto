@@ -156,7 +156,16 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   Goes to the longest-standing captain of the longest-established enrolled club.
   Controls: a COMPLETE tournament is left alone, an empty one strands nobody.
 
-Gates: **pgTAP 770 / 125 files**, analyze clean, **307 widget tests**, **8/8
+- `68575f4` **a search that failed once could never be retried** (findings
+  33/64/86). `searchProvider` is keyed by the query string and was NOT
+  autoDispose (riverpod 3 FutureProvider defaults to false), so every prefix
+  leaked for the session and a failed query cached AS AN ERROR - retyping the
+  same name, the one thing a user will try, re-read the dead element. Now
+  autoDispose + a real retry. The rule is "free-text-keyed families must
+  autoDispose; ID-keyed ones must NOT" - opponentSearchProvider was already
+  correct, and caching a match by id is the point.
+
+Gates: **pgTAP 770 / 125 files**, analyze clean, **313 widget tests**, **8/8
 device journeys**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

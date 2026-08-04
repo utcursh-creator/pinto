@@ -652,3 +652,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   actually enters by token (create_tournament_invite +
   join_tournament_with_token). Guessing the shortcut cost a run; the error
   message named the exact gate.
+- **Riverpod 3 FutureProvider is NOT autoDispose by default, and that is a bug
+  wherever the family key is free text.** An id-keyed family should cache - that
+  is the point. A query-keyed family must not: every prefix typed leaks, and a
+  failure is cached as a failure, so retyping the same string never retries. The
+  guard should encode that LINE, not "everything must be autoDispose".
+- **Test the property the user feels, not the keyword.** For autoDispose that
+  means: listen, drop the subscription, read again, assert the work ran twice.
+  Asserting the source contains "autoDispose" would pass on a provider that is
+  never actually released.
