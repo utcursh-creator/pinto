@@ -1039,20 +1039,43 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                   value: out,
                   onChanged: (v) => setSheet(() => out = v),
                 ),
-                const Text('Incoming batter'),
-                DropdownButton<String>(
-                  isExpanded: true,
-                  value: incoming,
-                  hint: const Text('Choose'),
-                  items: [
-                    for (final id in availableIncoming)
-                      DropdownMenuItem(value: id, child: Text(names[id] ?? '-')),
-                  ],
-                  onChanged: (v) => setSheet(() => incoming = v),
-                ),
+                // The mirror of the server rule: somebody must come in unless
+                // this retirement IS the last wicket, which only a retired OUT
+                // can be. With nobody left the button used to be disabled
+                // outright, so a genuine last-pair retirement could not be
+                // recorded at all (review #2, finding 85).
+                if (!(out && availableIncoming.isEmpty)) ...[
+                  const Text('Incoming batter'),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: incoming,
+                    hint: const Text('Choose'),
+                    items: [
+                      for (final id in availableIncoming)
+                        DropdownMenuItem(
+                            value: id, child: Text(names[id] ?? '-')),
+                    ],
+                    onChanged: (v) => setSheet(() => incoming = v),
+                  ),
+                  if (availableIncoming.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                          'Nobody left to bat. A hurt batter who cannot be '
+                          'replaced ends the innings - switch "Retired out" on '
+                          'to record that.',
+                          style: TextStyle(color: Color(0xFFB26A00))),
+                    ),
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text('Last wicket - this ends the innings.',
+                        style: TextStyle(color: Color(0xFFB26A00))),
+                  ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: incoming == null
+                  onPressed: (incoming == null &&
+                          !(out && availableIncoming.isEmpty))
                       ? null
                       : () => Navigator.pop(context, true),
                   child: const Text('Retire'),

@@ -65,7 +65,12 @@ select throws_ok(
   'cannot retire a batter who is not batting');
 select throws_ok(
   format($$ select public.retire_batter(%L, %L, false) $$, :'_i', :'_a4'),
-  'P0001', 'an incoming batter is required (this is not the last wicket)',
+  'P0001', -- The copy changed with review #2 finding 85 and is now accurate: the old
+-- wording blamed "this is not the last wicket", but the real rule is that a
+-- retired HURT counts no wicket, so somebody must come in even at the last
+-- pair. The behaviour asserted here - a mid-innings retirement is refused
+-- without a replacement - is unchanged.
+  'an incoming batter is required (a retired hurt is not a wicket, so somebody must come in)',
   'a mid-innings retirement needs the incoming batter');
 
 select * from finish();
