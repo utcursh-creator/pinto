@@ -148,7 +148,15 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   "Extra runs run" and reveals Fielder. The sheet FITS on a real phone: the
   scroll needed in the widget test was a 600pt-viewport artifact, not a defect.
 
-Gates: **pgTAP 764 / 124 files**, analyze clean, **307 widget tests**, **8/8
+- `c926bb4` **deleting the organizer's account froze every tournament they
+  ran** (finding 36). All six management RPCs gate on `organizer_id =
+  auth.uid()`, no transfer-organizer RPC exists, and the write policy is the
+  same condition - so a half-finished bracket could never reach a final. SAME
+  SHAPE as the sole-captain bug: hand it on rather than refuse the deletion.
+  Goes to the longest-standing captain of the longest-established enrolled club.
+  Controls: a COMPLETE tournament is left alone, an empty one strands nobody.
+
+Gates: **pgTAP 770 / 125 files**, analyze clean, **307 widget tests**, **8/8
 device journeys**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

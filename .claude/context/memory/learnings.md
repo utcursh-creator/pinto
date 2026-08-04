@@ -641,3 +641,14 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   this session wiped dev@pitch.local each time; the journeys sign in as that
   user and would fail for a reason that has nothing to do with the code.
   Admin API POST /auth/v1/admin/users, then insert the profiles via psql.
+- **"Who else is now the sole holder of a permission?" is a repeatable audit.**
+  The sole-captain freeze and the orphaned-tournament freeze are the same bug in
+  two places: an entity whose only administrator is one account, with no
+  transfer path and no handover on deletion. Grep for `= auth.uid()` gates on an
+  owner column and ask what happens when that account leaves - teams and
+  tournaments both failed it, and both took the identical fix.
+- **Test fixtures must use the real entry path.** `add_tournament_team` requires
+  the caller to be an admin of the TEAM as well as the organizer, so a club
+  actually enters by token (create_tournament_invite +
+  join_tournament_with_token). Guessing the shortcut cost a run; the error
+  message named the exact gate.
