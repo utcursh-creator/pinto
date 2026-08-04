@@ -51,6 +51,34 @@ class IdentityRepository {
     return _client.storage.from('avatars').getPublicUrl(path);
   }
 
+  /// Removes every object this account owns from the two public buckets.
+  ///
+  /// MUST run BEFORE delete_my_account. It needs a live session, and the RPC
+  /// revokes the auth rows - after that the Storage API can no longer
+  /// authenticate as this user and the photos are stranded, still served at
+  /// their original public URLs.
+  ///
+  /// The database cannot do this itself: Supabase rejects any direct DELETE on
+  /// storage.objects ("Use the Storage API instead"), deliberately, because
+  /// removing the row would orphan the file rather than delete it. So the
+  /// storage half of "this permanently removes your profile, posts and
+  /// messages" has to be kept from here (review #2, finding 52).
+  ///
+  /// Both buckets name objects `<uid>/<timestamp>.<ext>`, and the
+  /// avatars_delete_own / post_images_delete_own policies scope a user to
+  /// exactly that folder.
+  Future<void> deleteMyUploads() async {
+    final uid = _client.auth.currentSession?.user.id;
+    if (uid == null) return;
+    for (final bucket in const ['avatars', 'post-images']) {
+      final files = await _client.storage.from(bucket).list(path: uid);
+      if (files.isEmpty) continue;
+      await _client.storage
+          .from(bucket)
+          .remove([for (final f in files) '$uid/${f.name}']);
+    }
+  }
+
   /// Sets the current user's profile photo.
   Future<void> setMyPhoto(String url) => updateMyProfile({'photo_url': url});
 

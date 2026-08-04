@@ -9,6 +9,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/ui/human_error.dart';
+import '../../identity/data/identity_repository.dart';
 
 /// PROF-2 / MISS-4: account management + store-compliance surface - password
 /// reset, email change, ACCOUNT DELETION (Apple/Google reject apps without it),
@@ -84,7 +85,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete your account?'),
         content: const Text(
-            'This permanently removes your profile, posts and messages. '
+            'This permanently removes your profile, posts, photos and '
+            'messages. '
             'Completed matches stay in your opponents\' history under '
             '"Deleted user". This cannot be undone.'),
         actions: [
@@ -103,6 +105,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _busy = true);
     try {
       final c = ref.read(supabaseClientProvider);
+      // Photos FIRST, and deliberately not swallowed. The RPC revokes this
+      // user's auth rows, after which the Storage API can no longer act as
+      // them and their pictures are stranded in a public bucket forever. If
+      // this throws, the account is NOT deleted and the user can try again -
+      // far better than a deletion that half happened (review #2, finding 52).
+      await ref.read(identityRepositoryProvider).deleteMyUploads();
       await c.rpc('delete_my_account');
       await c.auth.signOut();
       // the auth listener re-anons + the router gate takes over
