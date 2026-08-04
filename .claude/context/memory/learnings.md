@@ -521,3 +521,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   this RPC".** It unwinds with the transaction, so it cannot leak across a
   pooled connection and it self-clears if the function raises partway through -
   no need for an exception handler to reset it.
+- **A soft delete is often only half the story - check when the code hard-
+  deletes instead.** `leave_team` tombstones a member who has match history and
+  DELETES one who does not. A rejoin test written with a player who never played
+  exercised the delete path, passed against the broken function, and nearly
+  cleared a real bug. Before testing tombstone behaviour, verify the fixture
+  actually produces a tombstone.
+- **`on conflict ... do nothing` is a silent-failure generator wherever soft
+  deletes exist.** The row is there, so nothing happens, and the caller's own
+  status update ("approved") lands anyway - so the UI reports success. Audit
+  every `do nothing` against a table that has a `deleted_at`/`left_at` column.
+- **`do update ... where <target>.col is not null` is how you confine a revival
+  to tombstones.** Without the WHERE, the upsert rewrites live rows too - here
+  it would demote a sitting captain. Sabotage-test the guard; an unguarded
+  version still passes the happy-path assertions.

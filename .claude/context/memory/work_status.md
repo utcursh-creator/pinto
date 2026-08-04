@@ -56,7 +56,23 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   Re-measured 71 -> 1. The control - ordinary scoring still emits exactly 1 -
   matters more than the fix, since over-suppressing would silence live scoring.
 
-Gates: **pgTAP 724 / 119 files**, analyze clean, **278 widget tests**.
+- `2a67a21` **a dropped connection told the scorer their match was never set
+  up.** Console + ball log gated only on `isLoading`; an errored provider is not
+  loading and has a null value, so it fell through to "No innings yet. Finish
+  setup first." The obvious response - re-run setup - creates a SECOND innings
+  on a live match. Classic instance-vs-class: the INNER inningsStateProvider had
+  a good error branch already, the three OUTER ones did not. Swept after: those
+  two files were the only users of the pattern.
+- `b6a4640` **a player who actually played for your club could never rejoin.**
+  `on conflict do nothing` silently skipped the tombstone while the request was
+  marked approved anyway, and the consumed request made the lockout permanent.
+  **My first analysis was incomplete and the test caught it**: leave_team HARD-
+  deletes a member with no match history and only tombstones one who HAS played,
+  so the first test version passed against the broken function. Guard confined
+  to tombstones by `where left_at is not null`, proven discriminating (without
+  it, approving a stray request demotes a sitting captain).
+
+Gates: **pgTAP 732 / 120 files**, analyze clean, **284 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
