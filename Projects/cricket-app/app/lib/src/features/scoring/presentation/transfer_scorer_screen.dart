@@ -6,6 +6,7 @@ import '../../../core/platform/adaptive_scaffold.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 
 /// Hand scoring to another registered member of either team. After a successful
 /// transfer the caller is no longer the scorer, so we pop back out of the
@@ -34,6 +35,13 @@ class _TransferScorerScreenState extends ConsumerState<TransferScorerScreen> {
             matchId: widget.matchId,
             newScorerId: profileId,
           );
+      // The Matches list is keyed on scorer_id = me and is not autoDispose, so
+      // without this the handed-over match stays listed under Live with a
+      // "Continue scoring" action - and every tap inside the console then fails
+      // with a raw "not authorized" from record_ball (review #2, finding 76).
+      ref.invalidate(myMatchesProvider);
+      ref.invalidate(matchProvider(widget.matchId));
+      ref.invalidate(liveMatchesProvider);
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)
           ?.showSnackBar(SnackBar(content: Text('Scoring handed to $name')));
@@ -55,7 +63,10 @@ class _TransferScorerScreenState extends ConsumerState<TransferScorerScreen> {
       body: candidates.when(
         loading: () =>
             const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load members.'))),
+        error: (e, _) => ErrorRetry(
+          message: humanError(e, fallback: 'Could not load members.'),
+          onRetry: () => ref.invalidate(matchScorerCandidatesProvider(widget.matchId)),
+        ),
         data: (rows) {
           if (rows.isEmpty) {
             return const Center(

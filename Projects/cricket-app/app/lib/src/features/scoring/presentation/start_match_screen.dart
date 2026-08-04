@@ -103,14 +103,22 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
             overs: overs,
             venue: _venue.text.trim(),
           );
-      // MTCH-7: the post's date/time survives onto the match
+      // MTCH-7: the post's date/time survives onto the match.
+      //
+      // Both side effects below used to be swallowed whole (review #2, finding
+      // 49). The match is created either way - that is why they are not fatal -
+      // but the user has to be told WHICH half did not happen, or they carry on
+      // believing a date was set and an opponent was messaged.
+      final missed = <String>[];
       if (_matchAt != null) {
         try {
           await repo0.updateMatchSchedule(
               matchId: id,
               scheduledAt: _matchAt,
               venue: _venue.text.trim());
-        } catch (_) {/* non-fatal: the match exists either way */}
+        } catch (_) {
+          missed.add('the date and ground could not be saved');
+        }
       }
       // MTCH-7: notify the poster who was seeking an opponent.
       if (widget.proposeToAuthorId != null) {
@@ -122,7 +130,15 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
               'I proposed a match against your team ($overs overs). '
               "Let's set it up - watch it live once we start: "
               "${Routes.publicMatchUrl(id)}");
-        } catch (_) {/* non-fatal: the match is created regardless */}
+        } catch (_) {
+          missed.add('the other captain could not be messaged');
+        }
+      }
+      if (missed.isNotEmpty && mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+          content: Text('Match created, but ${missed.join(' and ')}.'),
+          duration: const Duration(seconds: 6),
+        ));
       }
       // the Matches list is cached; a new match must appear on return
       ref.invalidate(myMatchesProvider);

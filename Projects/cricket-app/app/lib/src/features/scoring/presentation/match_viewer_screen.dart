@@ -20,6 +20,7 @@ import '../data/match_providers.dart';
 import 'match_share_card.dart';
 import 'wagon_field.dart';
 import '../../../core/ui/human_error.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/platform/share.dart';
 
 const _kInk = Color(0xFF0F2E26);
@@ -293,18 +294,40 @@ class _MatchViewerScreenState extends ConsumerState<MatchViewerScreen>
     }
   }
 
+  /// Every step here can fail and used to fail SILENTLY (review #2, finding
+  /// 68): two bare returns, and no try/catch around toImage (a two-innings card
+  /// at 3x can exceed the platform's maximum texture size), toByteData, or
+  /// writing the file (no space left). The user taps "Share image" on the
+  /// scorecard they wanted to post to the team group and nothing happens at
+  /// all - no sheet, no error, nothing to try again.
   Future<void> _captureAndShare(GlobalKey key, String title) async {
-    final boundary =
-        key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) return;
-    final image = await boundary.toImage(pixelRatio: 3);
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    if (bytes == null) return;
-    final file = await File('${Directory.systemTemp.path}/pitch_${widget.matchId}.png')
-        .writeAsBytes(bytes.buffer.asUint8List());
-    if (!mounted) return;
-    await shareFrom(context,
-        files: [XFile(file.path)], text: '$title - live on Pitch');
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    void failed(String why) {
+      messenger?.showSnackBar(SnackBar(content: Text(why)));
+    }
+
+    try {
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        failed('The card is not ready yet - try again in a moment.');
+        return;
+      }
+      final image = await boundary.toImage(pixelRatio: 3);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) {
+        failed('Could not build the image to share.');
+        return;
+      }
+      final file =
+          await File('${Directory.systemTemp.path}/pitch_${widget.matchId}.png')
+              .writeAsBytes(bytes.buffer.asUint8List());
+      if (!mounted) return;
+      await shareFrom(context,
+          files: [XFile(file.path)], text: '$title - live on Pitch');
+    } catch (e) {
+      failed(humanError(e, fallback: 'Could not share that image.'));
+    }
   }
 
   @override
@@ -524,7 +547,10 @@ class _LiveTab extends ConsumerWidget {
     final state = ref.watch(inningsStateProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load score.'))),
+      error: (e, _) => ErrorRetry(
+        message: humanError(e, fallback: 'Could not load score.'),
+        onRetry: () => ref.invalidate(inningsStateProvider(innings['id'] as String)),
+      ),
       data: (s) => _content(s),
     );
   }
@@ -787,7 +813,10 @@ class _ScorecardTab extends ConsumerWidget {
     final state = ref.watch(inningsStateProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load scorecard.'))),
+      error: (e, _) => ErrorRetry(
+        message: humanError(e, fallback: 'Could not load scorecard.'),
+        onRetry: () => ref.invalidate(inningsStateProvider(innings['id'] as String)),
+      ),
       data: (s) => _content(s),
     );
   }
@@ -946,7 +975,10 @@ class _ChartsTab extends ConsumerWidget {
     final wagon = ref.watch(inningsWagonProvider(innings['id'] as String));
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-      error: (e, _) => Center(child: Text(humanError(e, fallback: 'Could not load charts.'))),
+      error: (e, _) => ErrorRetry(
+        message: humanError(e, fallback: 'Could not load charts.'),
+        onRetry: () => ref.invalidate(inningsStateProvider(innings['id'] as String)),
+      ),
       data: (s) => _content(s, wagon.value ?? const []),
     );
   }
