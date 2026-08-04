@@ -835,3 +835,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   actually in progress; a blind `set status = 'live'` would let a scorer drag a
   finished match back. The control asserting a COMPLETED innings stays at the
   break is what separates the two.
+- **When one query filters tombstones and another does not, a row can become
+  unreachable from both sides.** The squad picker hid `left_at is not null`
+  while the duplicate check counted it, so a departed guest was invisible to
+  selection AND blocking by name. Whenever a soft-delete exists, check EVERY
+  reader agrees on whether tombstones count.
+- **Third time this run: soft delete plus an unfiltered uniqueness check.**
+  respond_join_request (31), add_match_guest (54), and the same shape nearly bit
+  the claim flow. The pattern is `on conflict`/`if exists` against a table with
+  `left_at`/`deleted_at` - grep for it rather than waiting for the next report.

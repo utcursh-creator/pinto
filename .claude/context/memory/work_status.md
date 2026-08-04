@@ -335,7 +335,16 @@ mental subset. A systematic pass over all 87 is now on disk at
   blindly setting live - control 6 pins that a genuinely completed innings
   STAYS at the break, which a blind update would fail.
 
-Highest-value still OPEN: 54 (add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
+- `24022fb` **a guest who had played for the club could never be picked again**
+  (finding 54). leave_team tombstones a member with match history; the squad
+  picker filters `left_at is null` so the old row is invisible, AND the
+  duplicate-name check ignored left_at so typing the name was refused. Both
+  doors shut on the same player. Check now scoped to ACTIVE members and the
+  tombstone REVIVED (same as accept_invite / respond_join_request). Trade stated
+  in the commit: two different guests of one name on a team get merged - the
+  assumption the duplicate check always made.
+
+Highest-value still OPEN: the DM cluster (15/40/41), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
 
 **THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
