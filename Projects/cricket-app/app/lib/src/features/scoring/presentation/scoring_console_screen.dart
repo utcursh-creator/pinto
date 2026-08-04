@@ -293,9 +293,24 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('+5 penalty runs on this ball'),
+                      title: const Text('+5 penalty runs to the batting side'),
+                      // The old subtitle read "Ball hit a helmet, deliberate
+                      // short run, etc." - and a deliberate short run is a
+                      // penalty awarded to the FIELDING side. A scorer
+                      // following that instruction handed the batting side the
+                      // 5 runs it had just been penalised: a 10-run swing that
+                      // in a chase also moves the required rate and can decide
+                      // the match (review #2, finding 79).
+                      //
+                      // deliveries.extra_penalty only ever accrues to the
+                      // innings being folded, so penalties AGAINST the batting
+                      // side are not modelled at all. Rather than invent a
+                      // schema for them here, the control now says exactly what
+                      // it does and names only cases that go this way.
                       subtitle: const Text(
-                          'Ball hit a helmet, deliberate short run, etc.'),
+                          'Ball hit a fielding helmet, or the fielding side '
+                          'was penalised. NOT for a deliberate short run - '
+                          'that penalises the batting side.'),
                       value: penalty,
                       onChanged: (v) => setSheet(() => penalty = v),
                     ),

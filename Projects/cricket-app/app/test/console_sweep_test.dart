@@ -185,7 +185,10 @@ void main() {
         expect(find.text('This ball was'), findsOneWidget);
         expect(find.widgetWithText(ChoiceChip, 'Runs'), findsOneWidget);
         expect(find.text('Includes overthrows'), findsOneWidget);
-        expect(find.text('+5 penalty runs on this ball'), findsOneWidget);
+        // Title changed with review #2 finding 79: the switch now states WHICH
+        // side it credits, because its old subtitle told scorers to use it for
+        // a deliberate short run, which penalises the other side.
+        expect(find.text('+5 penalty runs to the batting side'), findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
