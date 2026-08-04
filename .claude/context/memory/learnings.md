@@ -791,3 +791,16 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   wrote "the radius floor defeats a pinpoint probe", sabotaged the floor, and my
   own new test passed - the real protection is grid-snapping both points.
   Sabotage checks the rationale, not just the assertion.
+- **Assert the observable that matches WHAT CHANGED.** I asserted the over moved
+  after Undo; it did not, and that was correct - the last write was a strike
+  swap, an EVENT row rather than a ball, so it moves neither over nor score.
+  Before writing a before/after assertion, ask what the operation actually
+  touches. A failing test is not automatically a found bug.
+- **`if (finder.isNotEmpty)` in a journey is how a broken step stays green.**
+  It hid journey G's group split entirely. Replace with an assertion: if the
+  control is missing, everything after it is meaningless anyway, so failing
+  loudly costs nothing and silence costs the whole run's credibility.
+- **A discriminating assertion can sometimes be proven by LOGIC, not another
+  run.** Journey D asserts the striker changed after a swap and is restored
+  after the undo; a no-op undo cannot satisfy both. That is airtight without
+  spending nine minutes re-driving the simulator.

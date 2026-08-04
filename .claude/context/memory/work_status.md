@@ -293,9 +293,21 @@ mental subset. A systematic pass over all 87 is now on disk at
   the test still passed - `_snap_geog` grids BOTH post and probe so a same-cell
   distance is 0. Added a separate ~1.6km probe that DOES exercise the floor.
 
+- `79b16c4` **Undo proved nothing, and a silent guard could hide the same
+  again** (findings 45 + 18). Journey D asserted only that no "Could not undo"
+  toast appeared - which is EXACTLY what a dead button produces. **My first fix
+  was wrong and the device caught it**: I asserted the OVER changed, and the run
+  failed with 'Over 0.2 - CRR 21.0' identical both sides. Correct behaviour -
+  the last write before Undo is the strike SWAP, an event row not a ball, so it
+  moves neither over nor score. Now asserts the striker is restored, which is
+  provably discriminating (the line above asserts the striker CHANGED, so a
+  no-op cannot satisfy both). 18 was already fixed - jg2_groups_split.png
+  proves it - but its SILENT GUARD (`if (chip.isNotEmpty)`) was still live in
+  journey A and is now an assertion. 8/8 green after.
+
 Highest-value still OPEN: 53 (winning margin from squad size), 61 (status stuck
 at innings_break after a correction), 62 (unvalidated client URLs), 54
-(add_match_guest ignores left_at), and the REMAINING test-integrity pair 18 and 45 (journey assertions).
+(add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
 
 **THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
