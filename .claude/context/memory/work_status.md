@@ -215,7 +215,17 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   retirement was unrecordable. Test 101 pinned the OLD message; behaviour
   unchanged, copy corrected.
 
-Gates: **pgTAP 788 / 128 files**, analyze clean, **325 widget tests**, **8/8
+- `f5b94ea` **a no-ball that went for byes was not charged to the bowler**
+  (finding 72). Law 21.13: runs off a No ball the bat did not strike are NO BALL
+  extras, and the whole No ball is debited to the bowler. Fold charged the
+  penalty only and bucketed the runs as byes, so the card read "nb 1, b 2" -
+  byes off a delivery from which byes cannot be scored. Innings total was never
+  wrong, which is why it survived. **Changed an EXISTING test's expectations**
+  (30-fold-extras asserted "byes/leg-byes never charged" as a blanket rule) -
+  the fold and its test encoded the same misunderstanding. **NEEDS A CRICKETER'S
+  SECOND OPINION** - it rests on a Laws reading, and is a two-line revert.
+
+Gates: **pgTAP 796 / 129 files**, analyze clean, **325 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,

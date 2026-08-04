@@ -720,3 +720,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   behaviour is fine.** Read the diff before "fixing" anything: here the old
   wording ("this is not the last wicket") was itself the misleading part, so the
   test was updated, not the code.
+- **When a test's DESCRIPTION states a rule, check the rule, not just the
+  number.** 30-fold-extras said "bowler conceded = 8 (byes/leg-byes never
+  charged)" - a blanket claim that the Laws make true only for a legal
+  delivery. The implementation and its test encoded the same misunderstanding,
+  which is exactly how a bug survives a green suite. A parenthetical
+  justification in a test name is an assertion too.
+- **Say out loud when a fix rests on domain judgment rather than on the code.**
+  The no-ball attribution follows from Law 21.13, not from anything observable
+  in the repo. Flag it, cite the law, keep the change small enough to revert,
+  and invite the person who actually scores cricket to check it.
+- **A wrong TOTAL gets noticed; wrong ATTRIBUTION does not.** The innings score
+  was right the whole time - only the bowler's figures and the extras breakdown
+  were wrong, so nobody saw it. Where a quantity is split across buckets, test
+  the buckets, not just the sum.
