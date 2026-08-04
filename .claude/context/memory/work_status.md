@@ -314,8 +314,20 @@ mental subset. A systematic pass over all 87 is now on disk at
   is right for the data; the UI let that data mean something unchosen. Now
   states the consequence in wickets. Control catches warning at >10.
 
+- `aff06c9` **an avatar could report every viewer's IP to whoever set it**
+  (finding 62). photo_url/logo_url/image_urls were arbitrary client strings, so
+  an attacker points theirs at a host they control, joins a public squad, and
+  every roster/inbox/leaderboard render leaks the VIEWER's IP, UA and a
+  timestamp - including logged-out visitors, since photo_url goes to anon and
+  the public routes bypass the gate. **The host is no longer stored**: a
+  write-time trigger normalises to `/storage/v1/object/public/BUCKET/NAME` and
+  the client resolves against its OWN origin. Shape-checking alone would have
+  been theatre (anyone can serve that path), so the object must EXIST in our
+  storage too. 58-post-attachments seeded `https://x/a.jpg` - the exact shape
+  now refused - and was made honest.
+
 Highest-value still OPEN: 61 (status stuck at innings_break after a correction),
-62 (unvalidated client URLs), 54 (add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
+54 (add_match_guest ignores left_at), The test-integrity cluster (18/32/45/50/69/81) is now CLOSED.
 
 **THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed

@@ -812,3 +812,16 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **A warning that fires on the normal case is worse than no warning.** Hence
   the control asserting an ordinary XI stays silent - and it catches an
   off-by-one in the threshold, which is exactly how these degrade into noise.
+- **Don't store a host you don't control.** photo_url/logo_url/image_urls held
+  full URLs, so whoever wrote the row chose the host every viewer's device would
+  contact. Storing the PATH and resolving against the app's own configured
+  origin removes the attacker's choice entirely - far stronger than validating
+  the string, because "starts with https and looks like our path" is trivially
+  forged on someone else's domain.
+- **Validate that the referenced object EXISTS, not just that the reference
+  looks right.** Shape checks are the security equivalent of a comforting
+  assertion. Pair the format rule with a lookup against the table that actually
+  holds the thing.
+- **A user-supplied URL rendered in a list is a beacon, not a cosmetic field.**
+  Every render is an outbound request carrying the VIEWER's IP and user agent.
+  Worth checking any column that ends up in Image.network / NetworkImage.
