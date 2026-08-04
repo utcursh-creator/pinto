@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Whole-system review #2 (2026-07-28), finding 37.
+
+  Android's Auto Backup is ON by default. supabase_flutter persists the session -
+  including the REFRESH TOKEN - in app-private storage, so with the default
+  settings a signed-in user's long-lived credential is copied into their Google
+  cloud backup and restored onto any device that recovers that backup.
+
+  A refresh token is not a password: it needs no second factor and is silently
+  exchangeable for access tokens until it is revoked. Nothing in this app is
+  worth putting one in a third-party backup, so nothing is backed up at all.
+
+  Two separate channels since Android 12 (API 31), and allowBackup="false" alone
+  only closes the first:
+    cloud-backup    - Google Drive
+    device-transfer - direct device-to-device copy on setup
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
