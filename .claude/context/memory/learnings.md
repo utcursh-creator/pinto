@@ -581,3 +581,24 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **Capping is not paginating.** Say so in the commit and the code when the fix
   trades unbounded download for lost reach, instead of letting a LIMIT read as
   a solved problem.
+- **A table-level GRANT is not fronted by an RPC.** Comments in two separate
+  migrations claimed "delete_match fronts it" / "the scorer writes through
+  record_ball" while `grant ... to authenticated` was still in force. If every
+  writer is SECURITY DEFINER, REVOKE the grant - that is the only thing that
+  makes the RPC the sole door. Check `information_schema.role_table_grants` for
+  the client roles whenever an RPC carries the real business rules.
+- **Revoking a grant surfaces every test that was quietly using it.** 28 pgTAP
+  files seeded via direct INSERT. The fix is elevate-for-the-seed then RESTORE
+  the previous role (`select current_role as _r \gset; set local role postgres;
+  ...; set local role :_r;`) so later assertions still run as the intended user.
+  Inside plpgsql, SET ROLE back to the SESSION user is still permitted; a
+  `security definer` temp function does NOT help if it was created after
+  authenticate_as, because it is then owned by `authenticated`.
+- **After a permission change, grep the DEVICE JOURNEYS too.** A walkthrough was
+  seeding deliveries by direct insert while its own comment claimed it used the
+  RPCs. Widget tests and pgTAP both stayed green; only the next simulator run
+  would have caught it.
+- **GENERATED ALWAYS columns are rejected by the parser before permissions.**
+  An assertion that writing one is "permission denied" tests nothing - the error
+  is 428C9, and the column was never writable. Pick a plain column when the
+  point is the grant.

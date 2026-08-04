@@ -105,7 +105,20 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   guard testing BOTH directions (capping a match squad is a correctness bug).
   KNOWN GAP: the DM thread is capped at 200, not paginated.
 
-Gates: **pgTAP 738 / 121 files**, analyze clean, **303 widget tests**.
+- `e26294f` **the scoring engine's rules were bypassable straight off the
+  table** (finding 56, plus a bigger hole found verifying it). deliveries,
+  innings and match_squad each had an ALL policy for the scorer PLUS the grants,
+  so every cricket rule (consecutive overs, bowler quota, legal dismissals, the
+  seq token, the three folds) could be bypassed with one HTTP call - and those
+  rows are tournament standings and other players' career records. All 22
+  writers are SECURITY DEFINER, so revoking the grants closed the side door.
+  Also revoked matches DELETE (delete_match's tournament guard was decorative).
+  FALLOUT: 28 pgTAP files seeded deliveries directly and now elevate-then-
+  restore; 2 do it inside plpgsql helpers; and the tournaments DEVICE JOURNEY
+  seeded directly while claiming to use "the RPCs" - fixed, or the next device
+  run would have failed.
+
+Gates: **pgTAP 748 / 122 files**, analyze clean, **303 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
