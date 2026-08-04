@@ -267,11 +267,28 @@ device journeys**, Android debug APK builds.
 Gates: **pgTAP 796 / 129 files**, analyze clean, **339 widget tests**, **8/8
 device journeys**, Android debug APK builds.
 
-## REVIEW #2 CONFIRMED LIST: DONE (2026-08-05, 25 fix units)
-**THE NEXT THING IS THE REVIEW RE-RUN, not more findings.** 25 units deep,
-touching all three folds, the permission model, the deletion path and the
-routing. My tally is not evidence - only a fresh adversarial pass can say what
-these changes introduced. Expect it to find regressions FROM this run.
+## CORRECTION (2026-08-05): I reported the list DONE too early
+The findings doc's confirmed/refuted split was LOST, so there is no enumerable
+"confirmed list" - the header says re-verify all 87. I had been working from a
+mental subset. A systematic pass over all 87 is now on disk at
+`Projects/cricket-app/2026-08-05-review2-audit.md`:
+**55 CLOSED, 1 REFUTED (28), 1 USER-ONLY (4), 30 OPEN.**
+
+- `2c94aba` **NRR ignored the match's over length, so the wrong team qualified**
+  (finding 67, the top of the open list). `legal_balls / 6.0` hardcoded at both
+  sites; balls_per_over is a real column create_match accepts. The error does
+  NOT cancel - measured +6.000 where the truth is +8.000 on a 10x8 match - and
+  NRR is the tiebreaker generate_playoffs seeds from. Best control came free:
+  pgTAP 76 pins NRR=1.75 for a 6-ball tournament and still passes, proving the
+  change is a no-op at six.
+
+Highest-value still OPEN: 53 (winning margin from squad size), 61 (status stuck
+at innings_break after a correction), 62 (unvalidated client URLs), 54
+(add_match_guest ignores left_at), and a six-finding TEST-INTEGRITY cluster
+(18/32/45/50/69/81) which matters more than usual because a green suite is what
+I have been treating as evidence.
+
+**THE REVIEW RE-RUN still matters more than the tail of this list.**
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device

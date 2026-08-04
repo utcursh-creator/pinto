@@ -770,3 +770,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   the two mean different things.** Null-from-error and null-from-unset took the
   same fallback path here. Where a fallback is a guess, check `hasError`
   separately - and never write a guess into stored data.
+- **"Work down the findings" needs the findings ENUMERATED, not remembered.**
+  I worked review #2 from a mental subset and reported the list complete when
+  30 of 87 were still open. The fix was a per-finding audit file on disk with
+  CLOSED/REFUTED/USER/OPEN and a commit against each. Do that at the START of a
+  long fix run, not after claiming it is finished.
+- **The best control is often an EXISTING test you did not write.** pgTAP 76
+  pins NRR for a 6-ball tournament; leaving it green proved the balls_per_over
+  fix was a no-op at six. Before building a control, look for the test that
+  already asserts the case you must not break.
