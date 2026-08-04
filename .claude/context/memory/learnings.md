@@ -549,3 +549,17 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   is the FAILURE LIST, which looks like ordinary test names. Grep for
   `All tests passed|Some tests failed` - a commit went out claiming a green
   suite that was 288 +2 red because the tail read like success.
+- **Recovery logic belongs on the DATA, not in the handler that happened to
+  need it first.** The console resumed a mid-over bowler inside `_undo()`, so
+  undo worked and every other route to the same state - ball-log delete, insert,
+  another device over realtime - was stranded. A `ref.listen` on the fold covers
+  all of them, because the fold is the one thing they all move. Ask "what else
+  can produce this state?" before writing the fix into one callback.
+- **Deleting working code needs a regression guard, and the guard must be shown
+  to depend on the replacement.** After moving the recovery, an undo test
+  passing proves nothing on its own - it might pass for an unrelated reason.
+  Sabotage the NEW mechanism and confirm the old-route guard goes red with it.
+- **Reactive state changes need a driveable source in tests.** A static provider
+  override cannot express "the fold said 6, then said 5 again". A small
+  `Notifier<int>` the override watches, plus a fake repo that moves it, models
+  ball-then-correction faithfully - and the same harness then covers undo.

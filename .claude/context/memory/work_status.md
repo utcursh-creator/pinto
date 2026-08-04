@@ -83,7 +83,18 @@ finding before acting (~60% of that file was REFUTED by the skeptics).
   PostgREST exposes the underscore name). Watched not read, or the first open
   silently means "no quota".
 
-Gates: **pgTAP 732 / 120 files**, analyze clean, **290 widget tests**.
+- `42d0f89` **deleting an over's last ball stranded the console on the wrong
+  bowler.** After an over, `_lastOverBowlerId` = X. A ball-log delete reopens
+  the over but the console never reconciled, so the picker branded X "Bowled
+  last over" and the only selectable bowlers were wrong - picking one miscredits
+  the rest of X's over permanently via the career re-fold. `_undo()` already had
+  this recovery; it lived in that ONE handler instead of reacting to the fold.
+  Moved to a `ref.listen` on `inningsStateProvider` and deleted the undo copy,
+  with an explicit undo REGRESSION GUARD. Sabotaging the listener fails 6/8
+  including that guard - which is what proves the deleted code's behaviour is
+  actually carried by the new mechanism.
+
+Gates: **pgTAP 732 / 120 files**, analyze clean, **298 widget tests**.
 Still open: raw-exception snackbars, `insert_ball` double broadcast, failed
 loads rendering as "not set up yet", `respond_join_request` vs `left_at`,
 unbounded feeds + unindexed searches, account-deletion retention. Then a device
