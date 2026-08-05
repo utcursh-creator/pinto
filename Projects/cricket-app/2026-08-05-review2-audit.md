@@ -109,9 +109,21 @@ same class of mistake as reporting the review "done" from memory.
 43 MED  expired posts read 'open' to their author a9504b7
 
 ## REFUTED on re-verification
-28 HIGH edit_ball/insert_ball accept impossible dismissals
-   -> record_ball ALREADY validates both guards correctly; pgTAP 125 pins the
-      uncovered half (that the FOLD counts them right).
+(none - the one entry here was withdrawn, see below)
+
+## WITHDRAWN: I refuted this wrongly
+28 HIGH edit_ball/insert_ball accept impossible dismissals ... FIXED, see below
+   -> My refutation read "record_ball ALREADY validates both guards correctly;
+      pgTAP 125 pins the uncovered half". Both sentences are true and both are
+      beside the point: the finding was about the CORRECTION path, and I never
+      opened edit_ball or insert_ball before closing it. Review #3 caught it
+      with two independent lenses; I then reproduced it by hand on the live
+      database (a legal dot ball edited to "no-ball + bowled" was accepted, and
+      the fold reported wickets=1, runs=1, legal_balls=0 - a batter bowled off a
+      no-ball, feeding player_career_stats, matches.potm and the tournament
+      leaderboard). Fixed in this commit with pgTAP 146 (12 assertions, 5 of
+      them RED first, 2 mutations caught), and the Laws now live in ONE function
+      that all three write paths call.
 
 ## USER-ONLY
 4 CRITICAL iOS reversed-client-ID URL scheme
