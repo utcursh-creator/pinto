@@ -130,15 +130,19 @@ same class of mistake as reporting the review "done" from memory.
    -> needs GOOGLE_IOS_CLIENT_ID. The dead-end half IS fixed: the Google button
       is hidden unless SupabaseEnv.googleConfigured.
 
-## DEFERRED with a reason
+## CLOSED LATER
 40 MED  DM inbox opens one realtime channel per thread
-   -> CONFIRMED: dm_inbox_screen listens per visible thread and each listener
-      invalidates the WHOLE inbox. Fixing it properly needs a per-user realtime
+   -> DEFERRED here, then FIXED on 2026-08-05 in commit c675b41 while working
+      review #3's badge HIGH, which turned out to be the same defect seen from
+      the other end. The deferral said the real fix "needs a per-user realtime
       topic (a `user:<id>` channel the DM trigger also broadcasts to), which is
-      a backend design change, not a client tidy-up. Left open deliberately
-      rather than papered over; the cost is one socket join per conversation on
-      screen, not incorrect data.
+      a backend design change" - that is exactly what was built: ONE private
+      topic per user, fed by both the notifications trigger and a separate
+      dm_messages trigger, with the per-user receive policy on
+      realtime.messages. pgTAP 149 (9 tests) and JOURNEY N on the simulator.
+      This audit said "deferred"; it is closed.
 
+## DEFERRED with a reason
 66 MED  tournament_overview folds every innings three times
    -> CONFIRMED and NOT fixed. One overview call folds each innings up to three
       times: its own per-fixture compute_innings_state, tournament_standings
