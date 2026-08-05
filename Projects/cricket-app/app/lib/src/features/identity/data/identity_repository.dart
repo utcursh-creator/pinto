@@ -163,6 +163,19 @@ class IdentityRepository {
 
   /// Admin-only: approves a guest claim, transferring the guest membership to
   /// the claimer.
+  /// Says no to a claim, terminally for THIS request: the row leaves the
+  /// captain's inbox (which filters on pending) and the membership is left
+  /// alone. The claimer may ask again - see the migration for why a permanent
+  /// decline would be worse (review #3, finding 23).
+  Future<void> declineGuestClaim({
+    required String membershipId,
+    required String claimerId,
+  }) =>
+      _client.rpc('decline_guest_claim', params: {
+        '_membership_id': membershipId,
+        '_claimer': claimerId,
+      });
+
   Future<void> approveGuestClaim({
     required String membershipId,
     required String claimerId,

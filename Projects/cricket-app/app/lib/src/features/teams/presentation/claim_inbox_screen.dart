@@ -21,6 +21,32 @@ class ClaimInboxScreen extends ConsumerStatefulWidget {
 class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
   String? _busyId;
 
+  /// The captain says no. Approving hands over a career, so the absence of
+  /// this was not a missing convenience: a bogus claim could only be accepted
+  /// or ignored, and ignoring it meant meeting it again on every visit
+  /// (review #3, finding 23).
+  Future<void> _decline(String membershipId, String claimerId, String name) async {
+    setState(() => _busyId = membershipId);
+    try {
+      await ref.read(identityRepositoryProvider).declineGuestClaim(
+            membershipId: membershipId,
+            claimerId: claimerId,
+          );
+      ref.invalidate(claimInboxProvider);
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)
+            ?.showSnackBar(SnackBar(content: Text('$name declined')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)
+            ?.showSnackBar(SnackBar(content: Text(humanError(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
   Future<void> _approve(String membershipId, String claimerId, String name) async {
     setState(() => _busyId = membershipId);
     try {
@@ -107,11 +133,26 @@ class _ClaimInboxScreenState extends ConsumerState<ClaimInboxScreen> {
                         height: 20,
                         child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                       )
-                    : FilledButton(
-                        onPressed: known
-                            ? () => _approve(membershipId, claimerId, claimer)
-                            : null,
-                        child: const Text('Approve'),
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Decline is available even when the claimer cannot
+                          // be resolved - that row is the most suspicious one
+                          // on the screen, and it used to be the one a captain
+                          // could do least about.
+                          TextButton(
+                            onPressed: () =>
+                                _decline(membershipId, claimerId, claimer),
+                            child: const Text('Decline'),
+                          ),
+                          const SizedBox(width: 4),
+                          FilledButton(
+                            onPressed: known
+                                ? () => _approve(membershipId, claimerId, claimer)
+                                : null,
+                            child: const Text('Approve'),
+                          ),
+                        ],
                       ),
               );
             },

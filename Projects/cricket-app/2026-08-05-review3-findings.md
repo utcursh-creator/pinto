@@ -2,7 +2,7 @@
 type: review
 date: 2026-08-05
 project: cricket-app
-status: unworked
+status: worked-through
 ---
 
 # Whole-system review #3
@@ -171,6 +171,18 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   (renewedMatchAt, 6 tests, 3 mutations) and a wiring test that drives the real
   pickers on the real screen (4 tests, all RED against the old date-only flow).
   The rule tests alone could not have noticed the screen not calling it.
+* the UNDECLINABLE CLAIM (finding 23) - commit below, pgTAP 154. A guest claim
+  could be approved but never declined, and approving hands over that guest's
+  whole career, so a bogus claim could only be accepted or ignored - and
+  ignoring it meant meeting it again on every visit. New decline_guest_claim,
+  admin-gated, plus a Decline control that is available even when the claimer
+  cannot be resolved (that row is the most suspicious on the screen and was the
+  one a captain could do least about).
+  ONE DELIBERATE DESIGN CHOICE, pinned by assertion 9 so it stays a decision:
+  a decline is NOT permanent. request_guest_claim reopens a rejected row, so
+  the claimer can ask again. A final decline would let one mis-tap lock the
+  REAL player out of their own record forever, because approve_guest_claim
+  needs a pending row to act on.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard
