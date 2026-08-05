@@ -27,15 +27,15 @@ select is((public.team_career_stats(:'_a'::uuid)->>'lost')::int, 1,
 -- TEAM-11: a stranger requests to join; the captain is notified
 select tests.authenticate_as('joiner@t.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('joiner@t.dev'), 'Joiner');
-select isnt(public.request_to_join(:'_a'::uuid), null, 'a stranger can request to join');
+select public.request_to_join(:'_a'::uuid) as _req \gset
+select isnt(:'_req'::uuid, null, 'a stranger can request to join');
 select throws_ok(
   format($$ select public.request_to_join(%L) $$, :'_a'::uuid),
   'P0001', 'request already pending', 'a duplicate pending request is refused');
 
 -- a non-admin cannot respond
 select throws_ok(
-  $$ select public.respond_join_request(
-       (select id from public.team_join_requests limit 1), true) $$,
+  format($$ select public.respond_join_request(%L, true) $$, :'_req'),
   'P0001', 'not authorized', 'a non-admin cannot respond to a request');
 
 -- the captain approves -> the requester becomes a member + was notified

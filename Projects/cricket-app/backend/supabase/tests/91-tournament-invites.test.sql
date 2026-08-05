@@ -16,7 +16,7 @@ select public.create_tournament('Cup', 20, 1, 2) as _t \gset
 select tests.authenticate_as('rando@s.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('rando@s.dev'), 'Rando');
 select throws_ok(
-  $$ select public.create_tournament_invite((select id from public.tournaments limit 1)) $$,
+  format($$ select public.create_tournament_invite(%L) $$, :'_t'),
   'P0001', 'not authorized', 'a non-organizer cannot mint a tournament invite');
 
 -- organizer mints the token (a)

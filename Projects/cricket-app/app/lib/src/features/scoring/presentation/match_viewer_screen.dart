@@ -839,6 +839,21 @@ class _ScorecardTab extends ConsumerWidget {
     // A batter at the crease who has not yet faced a ball is "batting" (0*),
     // not "did not bat".
     final atCrease = <String>{?strikerId, ?nonStrikerId};
+
+    // NOT OUT = at the crease AND no wicket fell on you.
+    //
+    // striker_id on its own is not "at the crease". record_ball permits a null
+    // incoming batter on the last wicket of an innings - there is nobody left
+    // to come in - so compute_innings_state leaves the DISMISSED batter sitting
+    // in striker_id, and every all-out card used to show two not-out batters,
+    // one of whom the fall-of-wickets block right below named as dismissed.
+    //
+    // fall_of_wickets is the truth, and it is already here: a `retired_not_out`
+    // deliberately gets no entry in it, so a batter who retired and came back
+    // still reads not out.
+    final dismissedIds = {for (final w in fow) w['dismissed_player_id']};
+    bool notOut(Object? id) =>
+        atCrease.contains(id) && !dismissedIds.contains(id);
     final battedIds = {for (final b in batting) b['batter_id'] as String};
     final battingRows = [
       ...batting,
@@ -884,7 +899,7 @@ class _ScorecardTab extends ConsumerWidget {
           _row([
             '${names[b['batter_id']] ?? '-'}'
                 '${roles.containsKey(b['batter_id']) ? ' (${roles[b['batter_id']]})' : ''}'
-                '${b['batter_id'] == strikerId || b['batter_id'] == nonStrikerId ? '  *' : ''}',
+                '${notOut(b['batter_id']) ? '  *' : ''}',
             '${_i(b['runs'])}',
             '${_i(b['balls'])}',
             '${_i(b['fours'])}',

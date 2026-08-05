@@ -84,6 +84,21 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   client half is UserRealtime, watched by the app shell, plus a resume refresh
   on Discover - the socket cannot help a phone that slept through the
   conversation.
+* the ALL-OUT ASTERISK (finding 17) - commit below, pgTAP 150. The card read
+  striker_id as "at the crease"; on the last wicket of an innings there is no
+  incoming batter, so the fold leaves the DISMISSED batter there. Not-out now
+  means "at the crease AND not in fall_of_wickets", which is data the viewer
+  already held. pgTAP 150 pins the two fold contracts that rule now depends on
+  (striker_id IS the out batter after the last wicket; a retired_not_out gets
+  NO fall_of_wickets entry) - neither was pinned by anything before.
+* FOUND WHILE FIXING IT, not in any finding: four pgTAP files used
+  `(select id from public.X limit 1)` to name the object under test. The device
+  journeys leave real tournaments, threads and join requests in the local DB,
+  and test 90 then picked a JOURNEY's tournament, tripped the organizer check
+  instead of the team-admin guard it is named after, and had been passing on
+  the wrong error all along. Fixed in 50, 90, 91, 99 by naming the ids. The
+  full suite now passes against a DB full of real journey data, which is a
+  stricter gate than the clean-reset run.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

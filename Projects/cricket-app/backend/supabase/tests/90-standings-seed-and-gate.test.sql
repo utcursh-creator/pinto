@@ -20,10 +20,14 @@ select tests.authenticate_as('rando@s.dev');
 insert into public.profiles(id, display_name) values (tests.get_supabase_uid('rando@s.dev'), 'Rando');
 select public.create_team('Z', 'C') as _z \gset
 select tests.authenticate_as('org@s.dev');
+-- `(select id from public.tournaments limit 1)` used to stand in for the
+-- tournament here. It picked WHATEVER tournament the local DB happened to hold,
+-- so the moment a device-journey run left one behind, the call tripped the
+-- ORGANIZER check ("not authorized") and never reached the team-admin guard
+-- this test is named after - and throws_ok, given only an errcode, was happy.
+-- Name the ids.
 select throws_ok(
-  $$ select public.add_tournament_team(
-       (select id from public.tournaments limit 1),
-       (select id from public.teams where name = 'Z'), 'A') $$,
+  format($$ select public.add_tournament_team(%L, %L, 'A') $$, :'_t', :'_z'),
   'P0001', 'you must be an admin of this team to enter it',
   'the organizer cannot enter a team they do not admin');
 
