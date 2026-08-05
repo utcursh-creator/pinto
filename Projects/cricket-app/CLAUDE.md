@@ -1,15 +1,31 @@
 # Cricket App ("Pitch") - Development Index & Protocol
 
-> ## ⚠️ ACTIVE WORK IN PROGRESS - READ THE HANDOFF FIRST
-> **`Projects/cricket-app/2026-07-07-fix-run-handoff.md` is the CURRENT state of
-> the project and the live TODO.** Read it before this file. It supersedes the
-> "Build state" section below, which describes 2026-06-27 and is historical.
+> ## ⚠️ CURRENT STATE - 2026-08-05
+> **Three whole-system reviews have been run and all three are CLOSED.** The
+> "Build state" section below describes 2026-06-27 and is historical.
 >
-> One-line summary: a 100-finding adversarial penetration review
-> (`2026-07-07-penetration-review.md`) is being fixed unit by unit under a
-> standing `/loop`. 26 commits done; backend 621 pgTAP / 104 files green, app 198
-> widget tests green, all 3 device journeys green. Remaining: medium + low tiers,
-> more user journeys, a shadow push, then re-run the review until it returns zero.
+> * `2026-07-07-penetration-review.md` (100 findings) - worked unit by unit.
+> * `2026-07-28-review2-findings.md` + `2026-08-05-review2-audit.md` - 87/87:
+>   84 fixed, 1 closed later, 1 user-only, 1 deferred with a reason (66,
+>   tournament_overview's triple fold), 0 open.
+> * `2026-08-05-review3-findings.md` - 23/23: 22 fixed, 1 REFUTED with evidence
+>   (16 - pull-to-refresh does fire on Watch live; a vertical ListView with no
+>   controller is `primary`, so it gets AlwaysScrollableScrollPhysics).
+>
+> Gates as of 2026-08-05, all verified against a database built FROM SCRATCH by
+> `supabase db reset` (not an incrementally patched one):
+> **pgTAP 950 tests / 147 files, 459 widget tests on both platforms, 9 device
+> journeys on the iOS simulator, flutter analyze clean.**
+>
+> EVERYTHING IS LOCAL. The hosted backend is 8 migrations behind
+> (20260805140000 .. 20260805210000) and the push needs the user's explicit go.
+> Other user-only actions are listed in `oauth-provisioning.md` and in
+> `.claude/context/memory/work_status.md`.
+>
+> Next, when the user picks: a review #4 over everything since workflow
+> `wf_9b84f4f2-5c0` (fix its verdict join first - join by INDEX, not by title
+> string, or every finding returns "no verdict returned" again), or the
+> push-notifications scaffold, which is still genuinely unbuilt.
 
 **READ THIS FIRST every iteration.** It is the single source of truth for the cricket-app build.
 After compaction, read this file top-to-bottom, then skim the doc index below before doing anything.
@@ -79,7 +95,9 @@ Frontend design+plan (`Projects/cricket-app/`):
 - **`2026-07-01-master-issue-map.md`** - the 94-issue defect map + 8-slice rebuild plan (that rebuild is DONE).
 - **`2026-07-05-final-done-audit.md`** - the 10-agent audit that rejected the first "done" claim.
 - **`2026-07-07-penetration-review.md`** - THE 100-finding adversarial review (12 fronts, run twice, skeptic-verified) + synthesis with the release gate and fix order.
-- **`2026-07-07-fix-run-handoff.md`** - **RESUME HERE.** Current state, done/remaining units, hard-won gotchas, the user-only actions.
+- **`2026-07-07-fix-run-handoff.md`** - the review-#1 fix run's handoff. HISTORICAL as of 2026-08-05: it predates reviews #2 and #3, so its "remaining" list and its test counts are stale. Its gotchas are still good.
+- **`2026-08-05-review2-audit.md`** - the 87-finding disposition for review #2 (what was fixed, refuted, deferred, user-only).
+- **`2026-08-05-review3-findings.md`** - review #3's 23 findings, each with its disposition recorded inline under FIXED SO FAR / REFUTED.
 Memory: `.claude/context/memory/work_status.md` (detailed running log - the per-turn truth), `learnings.md` (reusable gotchas), `user_preferences.md`.
 
 ## Run / build / test / seed (copy-paste)
