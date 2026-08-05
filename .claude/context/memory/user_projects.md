@@ -1,17 +1,19 @@
 ---
 type: memory
 category: projects
-last_updated: 2026-06-27
+last_updated: 2026-08-05
 ---
 
 # Active Projects
 
-## 0. Pitch - Cricket App (CURRENT PRIMARY FOCUS, 2026-06)
+## 0. Pitch - Cricket App (CURRENT PRIMARY FOCUS)
 - **Status**: Active - the dominant build of the last several weeks. Backend + frontend feature-complete for v1 and NOW HOSTED on the user's own Supabase. Not yet on any app store.
 - **What**: CricHeroes-inspired iOS+Android cricket app. Headline = geo-matchmaking (post "looking-for" ads, nearby players/teams discover + reply + DM), plus full ball-by-ball scoring, CricHeroes-style team management, player stats, and tournaments. Solo builder (the user).
 - **Stack**: Flutter (one platform-adaptive codebase) + Supabase (Postgres + RLS + Realtime + Storage). Brand accent teal `#0F6E56` (deliberately NOT CricHeroes red). Riverpod 3.x (manual providers) + go_router 17 + supabase_flutter 2.15.
 - **Where it lives**: `Projects/cricket-app/` - `backend/` (Supabase migrations + pgTAP tests + README) and `app/` (Flutter, feature-first `lib/src/features/`). **The build's source of truth is `Projects/cricket-app/CLAUDE.md`** (read it first every iteration) + `.claude/context/memory/work_status.md` (per-turn running log).
-- **Build state (2026-06-27)**: Backend = 6 sub-projects done, ~396 pgTAP green (Identity & Teams; Scoring Core event-sourced fold; Matchmaking & Discovery PostGIS+DMs; Frontend-prep; Player stats; Tournaments). Frontend = slices 1-6 + stats + tournaments, ~107 widget tests, verified on the iOS simulator via integration_test (the user FORBIDS computer-use/Simulator puppeting - drive the real app with `flutter drive` instead). All dangling-RPC gaps closed (corrections UI, home-base location, team invites, photo upload).
+- **Build state (2026-08-05)**: feature-complete for v1 and hardened by THREE whole-system adversarial reviews, all closed - the 100-finding penetration review, review #2 (87/87), and review #3 (23/23, one finding refuted with evidence). Gates, all verified against a database built FROM SCRATCH by `supabase db reset`: **pgTAP 950 tests / 147 files, 459 widget tests on both platforms, 9 device journeys on the iOS simulator, flutter analyze clean.** Verified on the simulator via integration_test (the user FORBIDS computer-use/Simulator puppeting - drive the real app with `flutter drive` instead).
+- **Where the truth is**: the header of `Projects/cricket-app/CLAUDE.md`, then `2026-08-05-review2-audit.md` + `2026-08-05-review3-findings.md`. The 2026-07-07 handoff is SUPERSEDED - good gotchas, stale TODO.
+- **Local vs hosted**: everything is committed LOCAL. The hosted backend is 8 migrations behind (20260805140000 .. 20260805210000); those apply cleanly from scratch but the push needs the user's explicit go.
 - **HOSTED**: Supabase ref `ocejkqihgiinonpyafhl` (all 72 migrations pushed, anon sign-ins on, dev seeded). App points at hosted via `--dart-define-from-file=hosted_defines.json`; default is local. Secrets (access token, anon key, service_role) live in GITIGNORED files (`backend/.env.hosted`, `app/hosted_defines.json`). The user said these keys are "all under protected environments... we don't need to rotate any key" - so do NOT keep nagging about rotation; just don't echo secrets in plain output.
 - **Auth decision**: Google sign-in ONLY for now (Apple deferred). Native idToken flow (google_sign_in v7 + Supabase signInWithIdToken). Web OAuth client done; Android client + iOS client are the remaining credential-boundary items. OAuth code is fully wired + gated (empty client IDs -> friendly "not configured", no crash).
 - **The goal driving hosting**: the user wants to **install on his own iPhone and share with friends for real testing WITHOUT the App Store**. The free path = a release Android APK (sideload, no Apple fee) and/or iOS via a free personal Apple ID (7-day resign, ad-hoc) - TestFlight needs the $99/yr Apple Developer Program. This is why the backend got hosted.
