@@ -161,7 +161,9 @@ final myPostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final c = ref.watch(supabaseClientProvider);
   final rows = await c
       .from('looking_for_posts')
-      .select('id, mode, flair, title, status, created_at')
+      // expires_at and match_at, because a post that has run out reads exactly
+      // like a live one without them (review #2, finding 43)
+      .select('id, mode, flair, title, status, created_at, expires_at, match_at')
       .eq('author_id', me)
       .order('created_at', ascending: false);
   return List<Map<String, dynamic>>.from(rows as List);

@@ -86,6 +86,15 @@ class DiscoverRepository {
   Future<void> markFilled(String postId) =>
       _c.rpc('mark_post_filled', params: {'_post_id': postId});
 
+  /// Puts an ad that ran out back in the feed (review #2, finding 43). A post
+  /// whose match date has passed needs a NEW date - the feed floors on
+  /// match_at, so more expiry time alone would leave it invisible.
+  Future<void> renewPost(String postId, {DateTime? matchAt}) =>
+      _c.rpc('renew_post', params: {
+        '_post_id': postId,
+        if (matchAt != null) '_match_at': matchAt.toUtc().toIso8601String(),
+      });
+
   Future<String> getOrCreateDmThread(String otherUserId) async {
     final id = await _c.rpc('get_or_create_dm_thread', params: {'_other': otherUserId});
     return id as String;

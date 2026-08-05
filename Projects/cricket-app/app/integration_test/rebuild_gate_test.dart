@@ -51,7 +51,12 @@ void main() {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    // `% 1000000` on MILLISECONDS wraps every 1000 seconds, so two runs about
+    // 17 minutes apart drew the SAME id, the sign-up came back 422 "user
+    // already registered", and the journey failed at onboarding with no clue
+    // why. That flake cost two false regression hunts on 2026-08-05. A wider
+    // modulus is ~11.5 days between collisions.
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     // ---- 1. Fresh account via the UI (anon Discover -> Sign in -> dev shim) ----
     await settle(tester, find.text('Sign in'), label: 'anon_signin_cta');

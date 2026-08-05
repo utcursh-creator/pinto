@@ -29,6 +29,46 @@ class MyPostsScreen extends ConsumerWidget {
     }
   }
 
+  /// "Expires today" / "Expires in 3 days" - a post with a life span has to
+  /// show it, or the author cannot tell a quiet week from a dead ad.
+  static String _expiryLabel(DateTime expiresAt) {
+    // ROUNDED UP: a post that dies in 71 hours has "2 days" left by integer
+    // division, which reads as a day less than the author actually has.
+    final days = (expiresAt.difference(DateTime.now()).inMinutes / 1440).ceil();
+    if (days <= 0) return 'Expires today';
+    return 'Expires in $days ${days == 1 ? 'day' : 'days'}';
+  }
+
+  /// A post whose match date has passed needs a NEW date: the feed floors on
+  /// match_at, so more expiry time alone would leave it invisible and the
+  /// author none the wiser. Undated ads just get their fortnight back.
+  Future<void> _renew(BuildContext context, WidgetRef ref, String id,
+      DateTime? matchAt) async {
+    DateTime? newDate;
+    final needsDate = matchAt != null &&
+        matchAt.isBefore(DateTime.now().subtract(const Duration(hours: 6)));
+    if (needsDate) {
+      final picked = await showDatePicker(
+        context: context,
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 180)),
+        initialDate: DateTime.now().add(const Duration(days: 7)),
+        helpText: 'When is the new game?',
+      );
+      if (picked == null) return;
+      newDate = DateTime(picked.year, picked.month, picked.day,
+          matchAt.hour, matchAt.minute);
+    }
+    if (!context.mounted) return;
+    await _act(
+      context,
+      ref,
+      () => ref
+          .read(discoverRepositoryProvider)
+          .renewPost(id, matchAt: newDate),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final posts = ref.watch(myPostsProvider);
@@ -52,6 +92,15 @@ class MyPostsScreen extends ConsumerWidget {
                   final id = p['id'] as String;
                   final status = p['status'] as String?;
                   final open = status == 'open';
+                  // An ad that ran out is invisible to everyone else, and used
+                  // to read exactly like a live one - "open", with Mark filled
+                  // and Cancel, and no expiry anywhere (review #2, finding 43).
+                  final expiresAt =
+                      DateTime.tryParse('${p['expires_at'] ?? ''}')?.toLocal();
+                  final expired =
+                      open && expiresAt != null && expiresAt.isBefore(DateTime.now());
+                  final matchAt =
+                      DateTime.tryParse('${p['match_at'] ?? ''}')?.toLocal();
                   return Card(
                     margin: EdgeInsets.zero,
                     child: Padding(
@@ -70,15 +119,38 @@ class MyPostsScreen extends ConsumerWidget {
                               FlairChip(p['flair'] as String?),
                               const SizedBox(width: 8),
                               Chip(
-                                label: Text(status ?? ''),
+                                label: Text(expired ? 'Expired' : (status ?? '')),
                                 visualDensity: VisualDensity.compact,
                               ),
                             ],
                           ),
+                          if (expired)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 6),
+                              child: Text(
+                                'Nobody can see this any more.',
+                                style: TextStyle(fontSize: 12, color: Colors.black54),
+                              ),
+                            )
+                          else if (open && expiresAt != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                _expiryLabel(expiresAt),
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.black54),
+                              ),
+                            ),
                           if (open) ...[
                             const SizedBox(height: 8),
                             Row(
                               children: [
+                                if (expired)
+                                  TextButton(
+                                    onPressed: () => _renew(
+                                        context, ref, id, matchAt),
+                                    child: const Text('Renew'),
+                                  ),
                                 TextButton(
                                   onPressed: () =>
                                       _act(context, ref, () => repo.markFilled(id)),

@@ -2,7 +2,7 @@
 type: audit
 date: 2026-08-05
 project: cricket-app
-status: in-progress
+status: complete
 ---
 
 # Review #2: per-finding audit of all 87
@@ -16,7 +16,13 @@ REFUTED = re-verified against the code and found not to hold.
 USER = blocked on a credential or action only the user can take.
 OPEN = still to do.
 
-## CLOSED (56)
+FINAL TALLY, counted from this file rather than remembered: 83 closed,
+1 refuted (28), 1 user-only (4), 2 deferred with reasons (40, 66), 0 open.
+All 87 appear exactly once. The header count above was wrong for most of this
+run - I kept incrementing a number instead of counting the list - which is the
+same class of mistake as reporting the review "done" from memory.
+
+## CLOSED (83)
 1 CRITICAL deleted account claimable ......... pgTAP 121 (earlier run)
 2 CRITICAL gradle configuration-time guard ... build.gradle.kts (earlier run)
 3 CRITICAL console innings-state no retry .... 3c27925
@@ -100,7 +106,8 @@ OPEN = still to do.
 76 LOW  handover left a dead "Continue scoring"  59b1439
 65 MED  leaderboard names CTE was unfiltered ... 2ab52a2
 73 LOW  claim inbox had no index, bare auth.uid() 2ab52a2
-8  HIGH reset-password link could not re-enter . (this commit)
+8  HIGH reset-password link could not re-enter . 0763d19
+43 MED  expired posts read 'open' to their author (this commit)
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
@@ -136,4 +143,4 @@ OPEN = still to do.
       and I have no fixture big enough to measure it.
 
 ## OPEN - still to do
-43 MED   expired posts still read 'open' to their author
+(none - every finding is closed, refuted, deferred with a reason, or user-only)

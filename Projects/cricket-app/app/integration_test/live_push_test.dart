@@ -41,7 +41,12 @@ void main() {
     // created through its own flow), then match setup via API - this gate
     // tests realtime, not forms.
     final c = Supabase.instance.client;
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    // `% 1000000` on MILLISECONDS wraps every 1000 seconds, so two runs about
+    // 17 minutes apart drew the SAME id, the sign-up came back 422 "user
+    // already registered", and the journey failed at onboarding with no clue
+    // why. That flake cost two false regression hunts on 2026-08-05. A wider
+    // modulus is ~11.5 days between collisions.
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
     await waitFor(tester, find.text('Sign in'));
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in').first);
     await waitFor(tester, find.text('Create test account (dev)'));

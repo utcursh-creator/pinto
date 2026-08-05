@@ -215,7 +215,12 @@ void main() {
   testWidgets('JOURNEY A: run a tournament end to end', (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    // `% 1000000` on MILLISECONDS wraps every 1000 seconds, so two runs about
+    // 17 minutes apart drew the SAME id, the sign-up came back 422 "user
+    // already registered", and the journey failed at onboarding with no clue
+    // why. That flake cost two false regression hunts on 2026-08-05. A wider
+    // modulus is ~11.5 days between collisions.
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     await signUpFresh(tester, run, 'Organizer $run');
     await shot(tester, 'ja1_signed_in');
@@ -281,7 +286,7 @@ void main() {
   testWidgets('JOURNEY B: find a team to play with', (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     await signUpFresh(tester, run, 'Seeker $run');
     await createTeamWithGuests(tester, 'Seekers $run', ['S1', 'S2']);
@@ -330,7 +335,7 @@ void main() {
   testWidgets('JOURNEY C: search for players and add them', (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     await signUpFresh(tester, run, 'Scout $run');
     // adding players IS the journey: a team plus guests, via the roster UI
@@ -382,7 +387,7 @@ void main() {
   testWidgets('JOURNEY D: score a match through the console', (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     await signUpFresh(tester, run, 'Scorer $run');
     await createTeamWithGuests(tester, 'Bat $run', ['Bat1', 'Bat2', 'Bat3']);
@@ -587,7 +592,7 @@ void main() {
   testWidgets('JOURNEY E: correct a ball in the log', (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     await signUpFresh(tester, run, 'Fixer $run');
     await createTeamWithGuests(tester, 'Fix $run', ['Fix1', 'Fix2']);
@@ -743,7 +748,7 @@ void main() {
       (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     await signUpFresh(tester, run, 'Organiser $run');
 
@@ -864,7 +869,7 @@ void main() {
   testWidgets('JOURNEY M: find a player and message them', (tester) async {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    final run = DateTime.now().millisecondsSinceEpoch % 1000000;
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
 
     // the person being messaged has to exist first
     await signUpFresh(tester, run, 'Rahul $run');
