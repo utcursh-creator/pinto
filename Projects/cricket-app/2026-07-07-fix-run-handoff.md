@@ -2,14 +2,27 @@
 type: handoff
 date: 2026-07-07
 project: cricket-app
-status: active
+status: superseded
 tags: [resume, fix-run, penetration-review, pitch]
 ---
 
-# RESUME HERE - Pitch fix run (post-compaction handoff)
+# Pitch fix run - post-compaction handoff (SUPERSEDED 2026-08-05)
 
-**Read this FIRST after any compaction, then `Projects/cricket-app/CLAUDE.md`.**
-This file is the single source of truth for the state of the current work. It is
+> **DO NOT RESUME FROM THIS FILE.** It was the source of truth for the review-#1
+> fix run and it is now five weeks and two whole-system reviews out of date: its
+> "remaining" list is done, and its test counts (621 pgTAP / 104 files, 198
+> widget tests, 3 device journeys) are far behind the real ones.
+>
+> **Current state lives in the header of `Projects/cricket-app/CLAUDE.md`**, with
+> the per-review dispositions in `2026-08-05-review2-audit.md` and
+> `2026-08-05-review3-findings.md`.
+>
+> Kept because the GOTCHAS below are still true and hard-won - the Riverpod
+> sync/async rule, the `flutter build ios` error 74 recipe, the pgTAP
+> dollar-quoting trap, the overload-on-new-arity trap. Read those; ignore the
+> status and the TODO.
+
+This file WAS the single source of truth for the state of that work. It is
 written to be self-contained: everything needed to continue without the
 conversation.
 
