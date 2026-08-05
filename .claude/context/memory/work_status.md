@@ -874,6 +874,27 @@ Commits this run (local, nothing pushed):
 Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean,
 415 widget tests on both platforms, 8/8 device journeys.**
 
+### 2026-08-05 (later) - REVIEW #3 LAUNCHED
+
+The user said "run the review, please" - explicit opt-in for a Workflow. Run id
+`wf_9b84f4f2-5c0`; script persisted under the session's workflows/scripts/.
+
+Shape: 6 lenses in parallel (cricket correctness | permissions + exposure |
+realtime/lifecycle/caching | user journeys + dead ends | schema/migrations/data
+integrity | TEST INTEGRITY), each piped straight into its own SKEPTIC whose job
+is to KILL the findings - default refuted when unsure, because ~60% of both
+previous reviews did not survive that step and a false finding costs more than a
+missed one. Then one synthesis agent. 13 agents, under the 15 guideline.
+
+Each lens was told: the review-#2 ledger is closed, read it first, do not
+re-report; and the least-soaked code is the newest (set_match_squad, dm_inbox,
+the DM receipts + RECEIPT trigger, renew_post, password recovery, the ErrorRetry
+sweep, anchorProvider's new dependency, the narrowed leaderboard CTE).
+
+**When it lands**: write the survivors to
+`Projects/cricket-app/2026-08-05-review3-findings.md`, then work them the same
+way - re-verify, proven-RED test per fix, mutation-prove, commit per unit.
+
 ### NEXT (in order)
 1. **RE-RUN THE WHOLE-SYSTEM REVIEW.** This is the highest-value remaining work
    and has been for a while: ~50 fix units deep, touching all three folds, the
