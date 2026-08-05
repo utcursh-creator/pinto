@@ -908,3 +908,15 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   reads the third argument as the expected error MESSAGE, so the test fails with
   "threw <code>: <your description>". Use the 4-arg form with null:
   `throws_ok(sql, '42501', null, 'description')`.
+- **An allowlist keyed on code SHAPES excuses the regression it exists to
+  catch.** The ErrorRetry guard listed shapes like `error: (e, _) => Center(` as
+  excused - which is precisely what deleting an ErrorRetry leaves behind. Key an
+  allowlist on the FILE (the place the exception was reasoned about), never on
+  the pattern the bug produces.
+- **When a test cannot fail, suspect the FIXTURE before the assertion.** pgTAP
+  107's restamp check was fine; its two-player squad could not express the bug,
+  because after the last wicket there is no batter left to rotate to. Three
+  players made the same assertion decisive.
+- **Guard behaviour, not wording.** Asserting the absence of an exact comment
+  string is defeated by rewording the same bug. A regex for the SHAPE
+  (`catch (_) { }` with only a comment inside) survives it.

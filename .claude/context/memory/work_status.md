@@ -879,7 +879,7 @@ Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean
 **Review #2: closed.** 87 findings - 84 fixed, 1 user-only (4), 2 deferred with
 reasons (40, 66), 0 open. Finding 28 moved REFUTED -> FIXED (see below).
 
-**Review #3: run, written up, 6 of its 23 findings fixed. 17 REMAIN.**
+**Review #3: run, written up, 10 of its 23 findings fixed. 13 REMAIN.**
 2 CRITICAL, 9 HIGH, 11 MEDIUM, 1 LOW in
 `Projects/cricket-app/2026-08-05-review3-findings.md`. Every one of them is
 still marked UNVERIFIED in that file because the skeptics refuted nothing;
@@ -898,10 +898,19 @@ Five older tests asserted the PRE-FIX contract and were updated, not deleted;
 the sharpest had encoded the hole as a feature ("a participating admin may still
 insert directly"). Two more were fixture seeding -> elevate-then-restore.
 
-**NEXT**: the test-integrity findings (four of them are about tests written on
-2026-08-05 - pgTAP 107's restamp assertion, 144's 'this is the proof', the
-ErrorRetry allowlist, the finding-49 comment guard), then the remaining
-frontend items.
+**TEST INTEGRITY IS DONE** (24df92d). All four confirmed by mutation first, and
+the ErrorRetry allowlist was WORSE than reported: keyed on code shapes, and
+those shapes are what a deleted ErrorRetry leaves behind, so it excused the
+regression it existed to catch (proved on My teams - a screen with no
+behavioural test - which left the whole suite green). Re-keyed on file.
+pgTAP 107's restamp needed a THREE-player fixture: with two, nobody is left to
+come in after the last wicket, so a wrongly-live fold stamps the same pair.
+
+**NEXT**: the remaining 13 are frontend/UX - the Discover badge staleness, the
+setup->live invalidation, re-entering setup on a live match rewriting the toss,
+the guest-removal shadowing, the two dead-end error branches, the renew-to-today
+trap, the all-out scorecard asterisk, the dm_participants index, add_guest_member
+vs add_match_guest tombstone split, and the claim decline.
 
 OLD next-unit note, kept for the reasoning: the grant cluster. matches INSERT,
 team_members INSERT/UPDATE/DELETE, looking_for_posts UPDATE, and discover_posts'
@@ -915,7 +924,7 @@ Verified by hand and NOT to be re-litigated: edit_ball accepted no-ball+bowled
 can call it; matches INSERT is real but only for an admin of ONE participating
 team (two stranger teams is refused by RLS).
 
-Gates at the end of the session: pgTAP 899 / 140 files after a full db reset,
+Gates at the end of the session: pgTAP 900 / 140 files after a full db reset,
 analyze clean, 415 widget tests both platforms, Android + iOS builds, device
 journeys 8/8.
 
