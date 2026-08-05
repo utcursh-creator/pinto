@@ -1049,3 +1049,32 @@ the mutation landed before believing a green sabotage run.
 Everything before the 2026-07-07 fix run now lives in
 `archive/work_status-pre-2026-07-07.md` (rule 13: this file had reached ~1400
 lines). Nothing was deleted.
+
+## 2026-08-05 - review #3: the badge HIGH (finding 3) + review-#2 finding 40
+
+Commit c675b41. The last HIGH in `2026-08-05-review3-findings.md` is closed;
+15 of 23 fixed, 8 remain (all MEDIUM, one LOW).
+
+What it was: both Discover badges and the DM inbox were fetched once per app
+launch and never again. Discover is the shell's initial branch so it never
+unmounts, and both providers are plain FutureProviders. No realtime existed
+outside the Messages screens.
+
+The fix is one private topic per user, `user:<uid>`, with TWO producers - the
+notifications trigger for the bell, and a separate dm_messages trigger for the
+mail, because notify_dm_message writes no second notification while an unread
+one exists, so the 2nd and 3rd message of a burst would be silent. The
+notifications trigger skips type 'dm' so one arrival wakes the client once.
+
+Gotchas worth keeping:
+- Watching a new provider in the app SHELL is a blast radius, not a local
+  change. anchorProvider's session dependency broke 8 tests; this one broke 7,
+  then 2 more that supplied a real session so a lazy client read did not help.
+  The durable fix was ordering: check the CLIENT first and return early, so the
+  session provider (which reads the client itself) is never reached. New
+  `supabaseClientOrNullProvider` for exactly this - optional features only.
+- A device journey can act as a SECOND real user without a second device: keep
+  the first account's JWT after signUpFresh and drive raw REST with it. RLS
+  stays fully in force, so it is not a test back door.
+- Key the badge DOT, not the icon. A key on the icon is always present; a key
+  on the dot answers the question a person actually asks.
