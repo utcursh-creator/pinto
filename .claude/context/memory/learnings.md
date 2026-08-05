@@ -883,3 +883,12 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   caller's own messages (2), the leaderboard CTE unfiltered again (1), the claim
   index dropped + auth.uid() un-hoisted (3), renew_post without its status guard
   (3). Restore with `supabase db reset`, not by hand.
+- **"record_ball validates it" is not an answer to "edit_ball does not".** I
+  closed review-#2 finding 28 as REFUTED by checking the function I already had
+  open, not the two the finding named. A refutation has to land on the SAME code
+  path the finding is about; if it does not, it is a different (true) statement
+  that happens to be nearby. Review #3 found it again with two independent
+  lenses and it reproduced on the first try.
+- **When one write path has a rule and two do not, fixing the two is the wrong
+  fix.** Extract the rule so all three call it. record_ball/edit_ball/insert_ball
+  drifted precisely because the Laws were copied into one of them.

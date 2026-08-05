@@ -874,6 +874,38 @@ Commits this run (local, nothing pushed):
 Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean,
 415 widget tests on both platforms, 8/8 device journeys.**
 
+### STATUS AS OF THE END OF 2026-08-05 (read this first)
+
+**Review #2: closed.** 87 findings - 84 fixed, 1 user-only (4), 2 deferred with
+reasons (40, 66), 0 open. Finding 28 moved REFUTED -> FIXED (see below).
+
+**Review #3: run, written up, and 2 of its 23 findings fixed. 21 REMAIN.**
+2 CRITICAL, 9 HIGH, 11 MEDIUM, 1 LOW in
+`Projects/cricket-app/2026-08-05-review3-findings.md`. Every one of them is
+still marked UNVERIFIED in that file because the skeptics refuted nothing;
+re-verify before acting, exactly as with review #2.
+
+Fixed so far from review #3 (commit 3c7a112): the two findings that are the same
+defect - edit_ball and insert_ball accepting dismissals impossible under the
+Laws. The Laws now live in ONE function (assert_legal_dismissal + free_hit_at)
+that record_ball, edit_ball and insert_ball all call.
+
+**THE NEXT UNIT, already scoped**: the grant cluster. matches INSERT,
+team_members INSERT/UPDATE/DELETE, looking_for_posts UPDATE, and discover_posts'
+lost EXECUTE grant are ONE mistake in four places - a table grant that makes an
+RPC's guards decorative, or a grant dropped by a drop-and-recreate. Fix it as a
+rule (audit every grant, add a pgTAP guard that fails when a new one appears),
+not as four patches.
+
+Verified by hand and NOT to be re-litigated: edit_ball accepted no-ball+bowled
+(fold: wickets=1, runs=1, legal_balls=0); discover_posts has proacl null so anon
+can call it; matches INSERT is real but only for an admin of ONE participating
+team (two stranger teams is refused by RLS).
+
+Gates at the end of the session: pgTAP 884 / 139 files after a full db reset,
+analyze clean, 415 widget tests both platforms, Android + iOS builds, device
+journeys 8/8.
+
 ### 2026-08-05 (later still) - REVIEW #3 LANDED: 23 findings, and one of them is mine
 
 `Projects/cricket-app/2026-08-05-review3-findings.md` - 2 CRITICAL, 9 HIGH,
