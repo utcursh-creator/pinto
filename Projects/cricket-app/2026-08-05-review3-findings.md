@@ -74,6 +74,16 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
 * the two TOSS findings (a live match's toss rewritable + nothing invalidating
   myMatchesProvider on setup -> live) - commit below, pgTAP 148. They are one
   bug in two layers: the stale tile is what leads the scorer back into setup.
+* the BADGE HIGH (finding 3) - commit below, pgTAP 149 + JOURNEY N. This also
+  closes review-#2's finding 40, which was deferred with the note "fixing it
+  properly needs a per-user realtime topic, which is a backend design change".
+  That is what this is: ONE private topic per user, `user:<uid>`, fed by both
+  the notifications trigger (the bell) and the dm_messages trigger (the mail,
+  because notify_dm_message deliberately writes no second notification while an
+  unread one exists, so the burst's 2nd and 3rd message would be missed). The
+  client half is UserRealtime, watched by the app shell, plus a resume refresh
+  on Discover - the socket cannot help a phone that slept through the
+  conversation.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

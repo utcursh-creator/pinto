@@ -23,12 +23,35 @@ class DiscoverScreen extends ConsumerStatefulWidget {
   ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
+    with WidgetsBindingObserver {
   String? _mode;
   String? _flair;
   String? _skill;
   int? _maxOvers;
   DateTime? _fromDate;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The user channel carries the badges live, but the OS tears the socket
+    // down on a locked phone and does not always re-subscribe. A phone that
+    // slept through a conversation must catch up when it wakes (review #3).
+    if (state != AppLifecycleState.resumed) return;
+    ref.invalidate(dmInboxProvider);
+    ref.invalidate(notificationsProvider);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +95,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           icon: _Badged(
             count: unreadNotificationCount(
                 ref.watch(notificationsProvider).value),
+            dotKey: const Key('badge_bell'),
             child: const Icon(Icons.notifications_none),
           ),
           tooltip: 'Notifications',
@@ -80,6 +104,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         IconButton(
           icon: _Badged(
             count: unreadDmCount(ref.watch(dmInboxProvider).value),
+            dotKey: const Key('badge_mail'),
             child: const Icon(Icons.mail_outline),
           ),
           onPressed: () => context.push(Routes.messages),
@@ -451,9 +476,14 @@ class _MetaChip extends StatelessWidget {
 
 /// A small unread-count dot over an app-bar icon (DM-4 / MISS-2 badges).
 class _Badged extends StatelessWidget {
-  const _Badged({required this.count, required this.child});
+  const _Badged({required this.count, required this.child, this.dotKey});
   final int count;
   final Widget child;
+
+  /// Keys the DOT, not the icon: the dot only exists when count > 0, so a test
+  /// asking for it is asking the question a person asks - "is there a badge?" -
+  /// and not "is there an icon that might have one".
+  final Key? dotKey;
 
   @override
   Widget build(BuildContext context) {
@@ -466,6 +496,7 @@ class _Badged extends StatelessWidget {
           right: -6,
           top: -4,
           child: Container(
+            key: dotKey,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: const Color(0xFFD7263D),

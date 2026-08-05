@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +9,31 @@ import 'package:integration_test/integration_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:pitch_app/main.dart' as app;
+import 'package:pitch_app/src/core/config/env.dart';
+
+/// Does something as ANOTHER signed-in user, over REST, with their own token.
+///
+/// Journey N needs a message to arrive from somebody else while the phone under
+/// test sits still. supabase_flutter is a singleton with one session, so the
+/// other person cannot be signed in here at the same time - but their JWT is
+/// still valid, and a raw REST call carrying it is exactly what their phone
+/// would send. RLS is fully in force: nothing here is a test back door.
+Future<dynamic> _asOtherUser(String token, String path, Object body) async {
+  final c = HttpClient();
+  final req = await c.postUrl(Uri.parse('${SupabaseEnv.url}$path'));
+  req.headers.set('apikey', SupabaseEnv.publishableKey);
+  req.headers.set('Authorization', 'Bearer $token');
+  req.headers.set('Prefer', 'return=representation');
+  req.headers.contentType = ContentType.json;
+  req.add(utf8.encode(jsonEncode(body)));
+  final res = await req.close();
+  final text = await res.transform(utf8.decoder).join();
+  c.close();
+  if (res.statusCode >= 300) {
+    throw StateError('$path -> ${res.statusCode} $text');
+  }
+  return text.isEmpty ? null : jsonDecode(text);
+}
 
 /// THE THREE USER JOURNEYS the user asked to be driven and verified on a real
 /// device, entirely through the UI, against live local Supabase:
@@ -932,5 +960,78 @@ void main() {
         reason: 'the inbox row names the other participant');
     expect(find.textContaining('Could not load messages'), findsNothing);
     await shot(tester, 'jm4_inbox_row');
+  });
+
+  // ==========================================================================
+  /// Review #3 (HIGH), and review #2's deferred finding 40.
+  ///
+  /// The badges were fetched once per app launch and never again. Discover is
+  /// the initial branch of the shell so it stays mounted all session, and both
+  /// providers are plain FutureProviders - so a message arriving while you were
+  /// looking straight at the Discover app bar changed nothing at all. This is
+  /// the one half of the fix a widget test cannot reach: it needs a real socket,
+  /// a real RLS-checked broadcast, and a real second person.
+  testWidgets('JOURNEY N: a message arriving while you sit on Discover lights '
+      'the badge', (tester) async {
+    app.main();
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    final run = DateTime.now().millisecondsSinceEpoch % 1000000000;
+
+    // the SENDER signs up first and we keep their token - everything they do
+    // below happens on THEIR phone
+    await signUpFresh(tester, run, 'Priya $run');
+    final sender = Supabase.instance.client.auth.currentSession!;
+    final senderToken = sender.accessToken;
+    final senderId = sender.user.id;
+
+    // the RECIPIENT is the phone under test
+    await signUpFresh(tester, run + 1, 'Rahul ${run + 1}');
+    final me = Supabase.instance.client.auth.currentUser!.id;
+
+    await tester.tap(find.text('Discover').last);
+    await settle(tester, find.byIcon(Icons.mail_outline), label: 'discover_n');
+    expect(find.byKey(const Key('badge_mail')), findsNothing,
+        reason: 'sanity: a brand-new account has nothing unread');
+    await shot(tester, 'jn1_before');
+
+    // Priya opens a thread and sends. Both calls go over REST as HER, so
+    // get_or_create_dm_thread's block + rate-limit checks and the dm_messages
+    // insert policy all run for real.
+    final thread = await _asOtherUser(
+        senderToken, '/rest/v1/rpc/get_or_create_dm_thread', {'_other': me});
+    await _asOtherUser(senderToken, '/rest/v1/dm_messages', {
+      'thread_id': thread,
+      'sender_id': senderId,
+      'body': 'ground is free at 3',
+    });
+
+    // NOT ONE TAP from here. The phone is sitting on Discover exactly as it was.
+    var lit = false;
+    for (var i = 0; i < 40; i++) {
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      if (find.byKey(const Key('badge_mail')).evaluate().isNotEmpty) {
+        lit = true;
+        break;
+      }
+    }
+    if (!lit) {
+      await binding.takeScreenshot('jn_badge_never_lit');
+    }
+    expect(lit, isTrue,
+        reason: 'a DM arrived and the mail badge never moved. This is the '
+            'finding itself: before the user topic, the badge you were looking '
+            'at was a number fetched when the app launched');
+    expect(find.byKey(const Key('badge_bell')), findsOneWidget,
+        reason: 'the first message of a thread writes a notification row too, '
+            'and the bell is re-read off the same event');
+    await shot(tester, 'jn2_badge_lit');
+
+    // and the inbox behind it is the FRESH read, not the launch-time one
+    await tester.tap(find.byIcon(Icons.mail_outline).first);
+    await settle(tester, find.text('Messages'), label: 'inbox_n');
+    expect(find.text('ground is free at 3'), findsOneWidget,
+        reason: 'opening the inbox showed ten-minute-old rows before this: the '
+            'provider had resolved once and held');
+    await shot(tester, 'jn3_inbox_fresh');
   });
 }
