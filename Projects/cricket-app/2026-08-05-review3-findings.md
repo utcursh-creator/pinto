@@ -147,6 +147,19 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   him. It should not - once revived he IS an active member, so refusing him as
   a NEW guest is correct and the picker is the right door. The assertion now
   checks what matters, that his ORIGINAL membership id can be picked.
+* the DM INBOX SCAN (finding 13) - commit below, pgTAP 153. CONFIRMED by my own
+  measurement, not taken on faith: at 39,814 participant rows the lookup was a
+  Seq Scan touching 294 buffers and discarding 39,615 rows; with the index it is
+  an Index Only Scan touching 5. The ratio is not the point - the SHAPE is. The
+  cost scaled with the conversations on the PLATFORM rather than the ones this
+  user has, and dm_inbox re-runs on every incoming message in any visible
+  thread.
+  I also swept the whole class (every column that is a non-first member of a
+  composite PK with no standalone index): it found blocked_users.blocked_id and
+  tournament_teams.team_id. Both were inspected and NEITHER is filtered alone on
+  a hot path - blocked_users names both columns everywhere except a
+  once-per-lifetime account deletion, and tournament_teams is always driven by
+  tournament_id. No speculative indexes added.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

@@ -1,0 +1,29 @@
+-- Review #3 (MEDIUM), finding 13: every load of the DM inbox reads the WHOLE
+-- dm_participants table.
+--
+-- dm_inbox()'s `mine` CTE filters on profile_id alone. The only index mentioning
+-- that column is the primary key btree(thread_id, profile_id), where it is the
+-- SECOND column - useless for a lookup that does not also know the thread. The
+-- CTE is referenced four times so PostgreSQL materialises it: one full pass per
+-- call, unconditionally, before any of the caller's own rows are known.
+--
+-- Measured locally with 200 profiles -> 19,900 threads -> 39,814 participant
+-- rows:
+--   before: Seq Scan, 294 shared buffers, 39,615 rows removed by filter, 0.806ms
+--   after : Index Only Scan, 5 buffers, 0.021ms
+-- The number that matters is not the ratio but the SHAPE: the cost scales with
+-- the conversations on the PLATFORM, not with the ones this user has. Someone
+-- with an empty inbox pays the same full pass as everyone else.
+--
+-- And it is paid often: dm_inbox_screen invalidates dmInboxProvider from inside
+-- the per-thread realtime listener, so the RPC re-runs on every incoming
+-- message in any visible thread, on every pull-to-refresh, and after every
+-- markThreadRead.
+--
+-- This is exactly the argument 20260804140000_scale_indexes.sql made for
+-- match_squad - "the only index mentioning that column is the composite UNIQUE
+-- (match_id, team_member_id), where it is the SECOND column" - which added
+-- match_squad_member_idx and left dm_participants alone. dm_inbox() postdates
+-- that migration and concentrated three client round-trips into this predicate.
+create index if not exists dm_participants_profile_idx
+  on public.dm_participants(profile_id);
