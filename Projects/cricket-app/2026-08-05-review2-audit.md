@@ -76,7 +76,6 @@ same class of mistake as reporting the review "done" from memory.
 83 LOW tournaments list unbounded ............ 5b683c3
 84 LOW viewer wagon never updates ............ 0ed439d
 85 LOW last-pair retirement strands batter ... 61aff0c
-67 MED NRR ignored balls_per_over ........... (this commit)
 86 LOW (duplicate of 64) .................... 68575f4
 
 67 MED tournament_standings NRR hardcoded /6.0 .. 2c94aba
@@ -107,7 +106,7 @@ same class of mistake as reporting the review "done" from memory.
 65 MED  leaderboard names CTE was unfiltered ... 2ab52a2
 73 LOW  claim inbox had no index, bare auth.uid() 2ab52a2
 8  HIGH reset-password link could not re-enter . 0763d19
-43 MED  expired posts read 'open' to their author (this commit)
+43 MED  expired posts read 'open' to their author a9504b7
 
 ## REFUTED on re-verification
 28 HIGH edit_ball/insert_ball accept impossible dismissals
