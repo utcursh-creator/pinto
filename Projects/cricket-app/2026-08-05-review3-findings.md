@@ -134,6 +134,19 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   journey is not decoration here - the widget spy fakes MatchRepository, which
   sits ABOVE the RPC, so deleting `params['_crossed']` passes all 442 widget
   tests. Only the device run joins the two halves.
+* the GUEST TOMBSTONE SPLIT (finding 12) - commit below, pgTAP 152.
+  add_guest_member (team page) inserted a second row where add_match_guest
+  (match squads) revives the tombstone - two live buttons with the same label
+  and opposite IRREVERSIBLE outcomes. It had been given the `left_at is null`
+  half of the sibling's fix and never the revive, which turns a hard, visible
+  block into a silent split. Fixed by copying the sibling's revive verbatim,
+  deliberately: the last three bugs in this family were all one reader
+  filtering left_at while the other did not.
+  My own test was wrong once here and is worth recording: I asserted that
+  add_match_guest should still accept the name after the team page re-added
+  him. It should not - once revived he IS an active member, so refusing him as
+  a NEW guest is correct and the picker is the right door. The assertion now
+  checks what matters, that his ORIGINAL membership id can be picked.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard
