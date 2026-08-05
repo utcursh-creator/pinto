@@ -844,3 +844,30 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   respond_join_request (31), add_match_guest (54), and the same shape nearly bit
   the claim flow. The pattern is `on conflict`/`if exists` against a table with
   `left_at`/`deleted_at` - grep for it rather than waiting for the next report.
+- **A "unique" id built from `millisecondsSinceEpoch % 1000000` repeats every
+  1000 seconds.** The device journeys drew account ids that way, so two runs
+  ~17 minutes apart collided, sign-up returned 422 "user already registered",
+  and the journey died at onboarding with no clue why. It cost two false
+  regression hunts (I re-read fresh code looking for a break that was not
+  there). When a device run fails at a step the code did not touch, check the
+  ENVIRONMENT first: the fixture ids, the auth rate limits, and whether I reset
+  the database under a live run - which I also did, twice.
+- **An overridden provider that throws never delivers its error in a widget
+  test.** `myTeamsProvider.overrideWith((ref) async => throw ...)` plus
+  `ref.read(p.future)` resolves at container teardown with "disposed during
+  loading state", not the exception. The un-overridden provider behaves
+  correctly, so this is a test-harness artifact - do not conclude the app is
+  broken from it. Fake the REPOSITORY instead of the provider when the code
+  under test awaits a future.
+- **Riverpod 3 retries a failed provider on its own with a growing backoff.**
+  That is a safety net, not a retry button: the user is still looking at an
+  error with nothing to tap. A test measuring a Retry button must pass
+  `retry: (_, _) => null` to ProviderScope, or it measures the backoff.
+- **A count in a header drifts; a count from the list does not.** I incremented
+  the audit's "CLOSED (n)" by hand for a whole run and it ended 26 short of the
+  truth. Same class of error as reporting a review complete from memory. Count
+  the file.
+- **`dart format <dir>` reformats everything it touches.** One careless run
+  produced a 3,500-line diff over 50 unrelated files; the fix was `git checkout`
+  on everything outside the actual change. Format the file you edited, never the
+  tree.
