@@ -99,6 +99,30 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   the wrong error all along. Fixed in 50, 90, 91, 99 by naming the ids. The
   full suite now passes against a DB full of real journey data, which is a
   stricter gate than the clean-reset run.
+* the START-A-MATCH DEAD END (finding 18) - commit below. The team selector's
+  error branch was a bare line of text: a FAILED read showed strictly less than
+  an EMPTY one, because the "Create a team" escape hatch lives in the data
+  branch. It now carries an ErrorRetry. The sweep structurally could not catch
+  this - the allowlist is keyed on the FILE (deliberately, finding 19) and the
+  file's excuse was written for the opponent picker further down - so the proof
+  is behavioural.
+
+## REFUTED
+
+* **finding 16 ("Watch live" load failure is a dead end).** Driven, not argued:
+  with riverpod's auto-retry disabled, a fling on the error branch takes the
+  provider from 1 read to 2. The RefreshIndicator fires. The finding's argument
+  was that `ScrollPhysics.shouldAcceptUserOffset` rejects the drag on one short
+  child - true of the DEFAULT physics, but a vertical ListView with no
+  controller is `primary`, and ScrollView then supplies
+  AlwaysScrollableScrollPhysics, which accepts unconditionally. The allowlist
+  reason is correct as written.
+  What WAS missing is a test: the excuse rested on a property nothing checked.
+  Both branches (error and empty) are now pinned in
+  `dead_end_error_branches_test.dart`, so giving that ListView a controller or
+  `primary: false` fails the suite instead of silently removing the only
+  recovery.
+
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

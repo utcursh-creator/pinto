@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/platform/error_retry.dart';
 import '../../../core/routing/routes.dart';
 import '../../discover/data/discover_repository.dart';
 import '../../identity/data/identity_providers.dart';
@@ -161,7 +162,20 @@ class _StartMatchScreenState extends ConsumerState<StartMatchScreen> {
           Text('Your team', style: Theme.of(context).textTheme.labelLarge),
           myTeams.when(
             loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text(humanError(e)),
+            // A FAILED read used to show strictly LESS than an EMPTY one: the
+            // "Create a team" escape hatch below lives in the data branch, so
+            // this was a bare line of text with no dropdown and no button -
+            // while "Next: squads" stayed enabled and answered "Still needed:
+            // your team", naming a field the screen had drawn no control for.
+            // myTeamsProvider is not autoDispose, so that state was cached for
+            // the process: backing out to Matches and re-entering showed the
+            // same thing, and the only cure was to leave the tab entirely for
+            // Profile -> My teams. This is a form, not a list - there is no
+            // RefreshIndicator here to fall back on (review #3, finding 18).
+            error: (e, _) => ErrorRetry(
+              message: humanError(e, fallback: 'Could not load your teams.'),
+              onRetry: () => ref.invalidate(myTeamsProvider),
+            ),
             data: (rows) {
               // A brand-new signed-in user has no team, so this dropdown was
               // empty, "Next: squads" stayed enabled, and the primary CTA of
