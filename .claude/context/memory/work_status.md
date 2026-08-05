@@ -1078,3 +1078,15 @@ Gotchas worth keeping:
   stays fully in force, so it is not a test back door.
 - Key the badge DOT, not the icon. A key on the icon is always present; a key
   on the dot answers the question a person actually asks.
+
+## 2026-08-05 (cont) - review #3 down to 4
+
+Commits ef60f2f (all-out asterisk + 4 test-isolation fixes), 811af9f
+(start-match dead end + finding 16 refuted), c2b4faa (run-out crossing).
+
+19 of 23 resolved: 18 fixed, 1 refuted with evidence. Remaining 4 are all
+MEDIUM/LOW: 12 (add_guest_member vs add_match_guest tombstone split), 13
+(dm_participants index), 14 (renew-to-today), 23 (claim decline).
+
+Gates now standing at: pgTAP 929 / 144 files, widget 442, 9 device journeys.
+Everything local; nothing pushed.

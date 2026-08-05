@@ -949,3 +949,25 @@ there is nobody left to come in - so compute_innings_state leaves the dismissed
 batter in _striker forever. Any UI reading striker_id as "not out" prints a
 dismissed batter as not out on every all-out innings. `fall_of_wickets` is the
 truth, and `retired_not_out` deliberately gets no entry there.
+
+## A fake at the repository boundary leaves the wire untested (2026-08-05)
+
+Widget tests spy on `MatchRepository`, which sits ABOVE the `rpc()` call. So
+deleting `params['_crossed'] = crossed` from the repository failed NOTHING -
+all 442 widget tests passed, and pgTAP passed too, because each covers one side
+of a boundary neither crosses. pgTAP proves the RPC accepts the parameter; the
+widget test proves the UI collects it; nothing proved the key travels.
+
+Rule: when a fix adds a new field to an RPC call, the mutation to run is
+"delete it from the params map". If that is green, the only honest cover is a
+device journey. Add one - do not settle for a string-match test on the
+repository source.
+
+## Assert what the finding claims, then drive it (2026-08-05)
+
+Review #3 finding 16 argued from `ScrollPhysics.shouldAcceptUserOffset` that a
+short ListView rejects the pull-to-refresh drag. True of the DEFAULT physics -
+but a vertical ListView with no controller is `primary`, so ScrollView hands it
+AlwaysScrollableScrollPhysics, which accepts unconditionally. One test that
+actually flung the list settled it in a minute. A finding that cites SDK line
+numbers is still a claim about THIS widget tree.
