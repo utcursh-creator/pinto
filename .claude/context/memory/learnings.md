@@ -920,3 +920,8 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **Guard behaviour, not wording.** Asserting the absence of an exact comment
   string is defeated by rewording the same bug. A regex for the SHAPE
   (`catch (_) { }` with only a comment inside) survives it.
+- **Widget precedence is a feature gate.** `if (onClaim != null) ... else if
+  (adminMenu)` silently removed every admin control from guest rows, because
+  both conditions are true for a captain. When two optional affordances can
+  co-occur on one row, decide the order deliberately and TEST the co-occurrence
+  - the bug is invisible to anyone who only ever sees one of them.

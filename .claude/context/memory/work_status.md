@@ -879,7 +879,8 @@ Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean
 **Review #2: closed.** 87 findings - 84 fixed, 1 user-only (4), 2 deferred with
 reasons (40, 66), 0 open. Finding 28 moved REFUTED -> FIXED (see below).
 
-**Review #3: run, written up, 12 of its 23 findings fixed. 11 REMAIN.**
+**Review #3: run, written up, 13 of its 23 findings fixed. 10 REMAIN, and
+NONE of them is a HIGH or a CRITICAL any more.**
 2 CRITICAL, 9 HIGH, 11 MEDIUM, 1 LOW in
 `Projects/cricket-app/2026-08-05-review3-findings.md`. Every one of them is
 still marked UNVERIFIED in that file because the skeptics refuted nothing;
