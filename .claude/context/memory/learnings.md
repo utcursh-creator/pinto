@@ -871,3 +871,15 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   produced a 3,500-line diff over 50 unrelated files; the fix was `git checkout`
   on everything outside the actual change. Format the file you edited, never the
   tree.
+- **A mutation that does not apply looks exactly like a test that cannot fail.**
+  Sabotaging the DM thread by string replacement reported "0 failures" twice -
+  not because the tests were weak, but because `dart format` had reflowed the
+  call and my search strings no longer matched. Both were no-ops. ALWAYS assert
+  the mutation landed (`assert old in s`) before drawing a conclusion from a
+  green run; a silent no-op is the one failure mode of sabotage-proving itself.
+- **Mutation-tested the whole of review #2's new SQL (2026-08-05).** Six
+  mutations, six caught: dm_inbox sorted oldest-first (5 failures),
+  set_match_squad made additive again (7), mark_thread_delivered stamping the
+  caller's own messages (2), the leaderboard CTE unfiltered again (1), the claim
+  index dropped + auth.uid() un-hoisted (3), renew_post without its status guard
+  (3). Restore with `supabase db reset`, not by hand.
