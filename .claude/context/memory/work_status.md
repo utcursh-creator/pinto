@@ -835,3 +835,76 @@ rebuild the APK, and put up pitch.app/privacy + /terms.
 Everything before the 2026-07-07 fix run now lives in
 `archive/work_status-pre-2026-07-07.md` (rule 13: this file had reached ~1400
 lines). Nothing was deleted.
+
+## 2026-08-05 - review #2 CLOSED OUT (all 87 findings)
+
+`Projects/cricket-app/2026-08-05-review2-audit.md` is the per-finding ledger and
+is now `status: complete`. **83 closed, 1 refuted (28), 1 user-only (4), 2
+deferred with written reasons (40, 66), 0 open.** All 87 appear exactly once -
+that tally is COUNTED FROM THE LIST, not remembered; the header count I had been
+incrementing by hand ended 26 short of the truth.
+
+Commits this run (local, nothing pushed):
+- `38f24ea` DM inbox was one `dm_inbox()` RPC away from downloading every
+  message body the user owned (15); the thread never re-synced after a socket
+  gap (41). JOURNEY M added - the first device coverage messaging has ever had.
+- `495a08f` `set_match_squad` - the squads screen could never REMOVE anybody, so
+  a dropped player still reached the toss pickers and the public scorecard
+  (10/25); 'Add my team' offered clubs the RPC refuses and swallowed the refusal
+  (9); AuthGate's error branch tore the nav stack down mid-innings (11).
+- `a040051` abandon refreshed one cache of four (34); the discover anchor
+  outlived the user who chose it (55); the tournaments list never re-read (87).
+- `75418df` **DM sent/delivered/seen ticks - a direct user request, not a
+  finding.** `delivered_at` + `mark_thread_delivered`, both stamps written only
+  by the RECIPIENT, one statement-level RECEIPT broadcast (measured: 5 messages
+  read = 1 event, not 5). The inbox marks delivered too.
+- `fea11c7` 16 screens stayed dead after one failed load - ErrorRetry
+  everywhere, plus a source guard with a reasoned allowlist (39).
+- `59b1439` GPS with no time limit spun forever off-simulator (44); the
+  propose-a-match bridge swallowed BOTH side effects (49); share-image failed
+  silently (68); handover left a "Continue scoring" that always 403s (76).
+- `2ab52a2` leaderboard `names` CTE scoped to who actually played (65); claim
+  inbox index + hoisted `auth.uid()` (73).
+- `0763d19` password reset works end to end at last: redirectTo, a
+  passwordRecovery listener, and a screen to spend the recovery session on (8).
+- `a9504b7` an expired ad said "open" to the only person who could renew it
+  (43) + `renew_post`.
+- `cfdcfe5` memory.
+
+Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean,
+415 widget tests on both platforms, 8/8 device journeys.**
+
+### NEXT (in order)
+1. **RE-RUN THE WHOLE-SYSTEM REVIEW.** This is the highest-value remaining work
+   and has been for a while: ~50 fix units deep, touching all three folds, the
+   permission model, the deletion path, the image pipeline and now the DM
+   schema. It needs a Workflow, so it waits for the user to ask.
+2. The two deferred findings, each needing a design pass: **40** (one realtime
+   channel per DM thread -> a per-user topic) and **66** (tournament_overview
+   folds every innings three times -> stop folding on read).
+3. Shadow push / hosted `db push` when the user says go.
+
+### USER-ONLY, unchanged and still blocking
+- rotate `dev@pitch.local`/`password123` on hosted, then the hosted
+  `supabase db push`, then rebuild the APK
+- **NEW**: add `io.supabase.pitch://login-callback` to the hosted project's
+  redirect allow-list, or GoTrue refuses the password-reset `redirectTo` and
+  finding 8's fix cannot work in production
+- `GOOGLE_IOS_CLIENT_ID` + reversed-client-id scheme; pitch.app/privacy +
+  /terms; the Apple entitlement
+
+### Two process notes from today
+- Three device runs failed and NONE was a code regression: twice I ran
+  `supabase db reset` under a live run, once the journeys' "unique" account id
+  (`ms % 1000000`, which repeats every 17 minutes) collided and sign-up 422'd.
+  Fixed the id; the rule is in learnings.md.
+- The device pass still predates nothing important now, but the password-reset
+  LINK half cannot be device-tested locally - it needs a real recovery email and
+  the hosted allow-list above.
+
+
+---
+
+Everything before the 2026-07-07 fix run now lives in
+`archive/work_status-pre-2026-07-07.md` (rule 13: this file had reached ~1400
+lines). Nothing was deleted.
