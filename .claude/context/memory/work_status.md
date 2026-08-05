@@ -1162,3 +1162,29 @@ Deliberately NOT done: archiving the oversized memory files. Rule 13 says
 auto-archive over 150 lines and work_status.md is ~1150, learnings.md ~1000.
 Discarding that much hard-won context unilaterally, inside a loop with no human
 checkpoint, is the wrong call - it is a two-minute job once the user says go.
+
+## 2026-08-05 - push + APK + loop cancelled (user gave explicit go)
+
+* **Ralph loop CANCELLED** at iteration 94.
+* **Pushed** `claude/elegant-wilson-2dba98` (370 commits) to
+  git@github.com:utcursh-creator/pinto.git. First time this work has had an
+  off-machine copy. main is untouched; a PR link is available if wanted.
+* **Release APK built and delivered**: v1.0.0+2, 59 MB, signed with the real
+  keystore (CN=Pitch App, NOT debug), hosted project ref baked in.
+* **HOSTED db push BLOCKED - the Supabase project is PAUSED.**
+  `supabase link` returns LegacyProjectPausedError. Free-tier inactivity pause;
+  only the user can resume it from the dashboard. The 8 migrations
+  (20260805140000..20260805210000) are still unpushed. THE APK CANNOT WORK
+  UNTIL IT IS RESUMED - every screen will fail.
+
+Two things found while doing this:
+
+1. **The gitignored secrets are NOT in this worktree.** `.env.hosted`,
+   `hosted_defines.json` and `key.properties` live in the sibling worktree
+   `.claude/worktrees/elegant-wilson-2dba98/`. Copied across (verified
+   gitignored here first). A fresh worktree will always need this - it is not a
+   fault, it is what gitignore means.
+2. **I had been quoting "147 migrations" and that was WRONG.** 147 is the pgTAP
+   TEST FILE count. There are **199 migration files**. The from-scratch verify
+   applied all 199 and ran 950 pgTAP tests across 147 files. Corrected in
+   CLAUDE.md.

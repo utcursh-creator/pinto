@@ -13,8 +13,8 @@
 >   controller is `primary`, so it gets AlwaysScrollableScrollPhysics).
 >
 > Gates as of 2026-08-05, all verified against a database built FROM SCRATCH by
-> `supabase db reset` (not an incrementally patched one):
-> **pgTAP 950 tests / 147 files, 459 widget tests on both platforms, 9 device
+> `supabase db reset` (not an incrementally patched one) - all 199 migrations:
+> **pgTAP 950 tests / 147 test files, 459 widget tests on both platforms, 9 device
 > journeys on the iOS simulator, flutter analyze clean.**
 >
 > EVERYTHING IS LOCAL. The hosted backend is 8 migrations behind
