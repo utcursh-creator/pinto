@@ -892,3 +892,19 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
 - **When one write path has a rule and two do not, fixing the two is the wrong
   fix.** Extract the rule so all three call it. record_ball/edit_ball/insert_ball
   drifted precisely because the Laws were copied into one of them.
+- **A guard that names the whole CLASS finds instances nobody reported.** pgTAP
+  147 lists every RPC-owned table and fails if a client write grant appears on
+  one. Writing it turned up `tournaments` I/U/D, which was in no finding and let
+  an organiser set status='complete' and crown their own champion. Four patches
+  would have missed it.
+- **A test that asserts the pre-fix contract is not a regression - it is a
+  fossil.** Revoking the grants broke five older pgTAP assertions, and the
+  sharpest read "a participating admin may still insert directly - the rule is
+  participation, not 'only the RPC may write'". It had encoded the hole as a
+  feature. Update those tests WITH the reasoning; deleting them loses why the
+  behaviour changed. Two others were the milder tell: "the UPDATE runs but RLS
+  filters it to no rows" means the client can still reach the table.
+- **pgTAP `throws_ok(sql, errcode, description)` is a trap**: the 3-arg form
+  reads the third argument as the expected error MESSAGE, so the test fails with
+  "threw <code>: <your description>". Use the 4-arg form with null:
+  `throws_ok(sql, '42501', null, 'description')`.

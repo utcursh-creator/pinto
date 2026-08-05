@@ -879,7 +879,7 @@ Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean
 **Review #2: closed.** 87 findings - 84 fixed, 1 user-only (4), 2 deferred with
 reasons (40, 66), 0 open. Finding 28 moved REFUTED -> FIXED (see below).
 
-**Review #3: run, written up, and 2 of its 23 findings fixed. 21 REMAIN.**
+**Review #3: run, written up, 6 of its 23 findings fixed. 17 REMAIN.**
 2 CRITICAL, 9 HIGH, 11 MEDIUM, 1 LOW in
 `Projects/cricket-app/2026-08-05-review3-findings.md`. Every one of them is
 still marked UNVERIFIED in that file because the skeptics refuted nothing;
@@ -890,7 +890,20 @@ defect - edit_ball and insert_ball accepting dismissals impossible under the
 Laws. The Laws now live in ONE function (assert_legal_dismissal + free_hit_at)
 that record_ball, edit_ball and insert_ball all call.
 
-**THE NEXT UNIT, already scoped**: the grant cluster. matches INSERT,
+**THE GRANT CLUSTER IS DONE** (83a4411, pgTAP 147). matches INSERT,
+team_members I/U/D, looking_for_posts I/U/D, tournaments I/U/D and
+discover_posts' lost EXECUTE grant. `tournaments` was NOT in any finding - the
+new drift guard found it mid-fix, which is the whole argument for the guard.
+Five older tests asserted the PRE-FIX contract and were updated, not deleted;
+the sharpest had encoded the hole as a feature ("a participating admin may still
+insert directly"). Two more were fixture seeding -> elevate-then-restore.
+
+**NEXT**: the test-integrity findings (four of them are about tests written on
+2026-08-05 - pgTAP 107's restamp assertion, 144's 'this is the proof', the
+ErrorRetry allowlist, the finding-49 comment guard), then the remaining
+frontend items.
+
+OLD next-unit note, kept for the reasoning: the grant cluster. matches INSERT,
 team_members INSERT/UPDATE/DELETE, looking_for_posts UPDATE, and discover_posts'
 lost EXECUTE grant are ONE mistake in four places - a table grant that makes an
 RPC's guards decorative, or a grant dropped by a drop-and-recreate. Fix it as a
@@ -902,7 +915,7 @@ Verified by hand and NOT to be re-litigated: edit_ball accepted no-ball+bowled
 can call it; matches INSERT is real but only for an admin of ONE participating
 team (two stranger teams is refused by RLS).
 
-Gates at the end of the session: pgTAP 884 / 139 files after a full db reset,
+Gates at the end of the session: pgTAP 899 / 140 files after a full db reset,
 analyze clean, 415 widget tests both platforms, Android + iOS builds, device
 journeys 8/8.
 
