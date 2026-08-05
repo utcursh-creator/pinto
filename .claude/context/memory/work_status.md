@@ -1090,3 +1090,28 @@ MEDIUM/LOW: 12 (add_guest_member vs add_match_guest tombstone split), 13
 
 Gates now standing at: pgTAP 929 / 144 files, widget 442, 9 device journeys.
 Everything local; nothing pushed.
+
+## 2026-08-05 - REVIEW #3 IS CLOSED (23/23)
+
+22 fixed, 1 refuted with evidence (finding 16 - pull-to-refresh DOES fire on
+Watch live; a vertical ListView with no controller is `primary`, so it gets
+AlwaysScrollableScrollPhysics). Plus two things found while fixing, in neither
+review: the `tournaments` grant (caught by the new drift guard) and four pgTAP
+files naming their object with `(select id from X limit 1)`.
+
+Final gates: pgTAP 950 tests / 147 files, widget 458, 9 device journeys,
+flutter analyze clean. 15 commits, ALL LOCAL - nothing pushed, per the standing
+rule.
+
+Both review #2 (87/87) and review #3 (23/23) are now fully accounted for.
+
+NEXT, when the user wants it: a review #4 against everything that has landed
+since wf_9b84f4f2-5c0. If it runs, fix the workflow's join defect first - join
+skeptic verdicts by INDEX, not by title string, or every finding comes back
+"no verdict returned" again.
+
+USER-ONLY ACTIONS still outstanding (unchanged): rotate dev@pitch.local on
+hosted; the hosted `supabase db push` (now 8 migrations behind: 20260805140000
+through 20260805210000); rebuild the APK; GOOGLE_IOS_CLIENT_ID +
+reversed-client-id; pitch.app/privacy + /terms; the Apple entitlement; and add
+`io.supabase.pitch://login-callback` to the hosted redirect allow-list.

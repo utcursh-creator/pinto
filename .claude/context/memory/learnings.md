@@ -971,3 +971,15 @@ but a vertical ListView with no controller is `primary`, so ScrollView hands it
 AlwaysScrollableScrollPhysics, which accepts unconditionally. One test that
 actually flung the list settled it in a minute. A finding that cites SDK line
 numbers is still a claim about THIS widget tree.
+
+## State the trade in the migration, and pin it with a test (2026-08-05)
+
+decline_guest_claim is not permanent: request_guest_claim reopens a rejected
+row, so a declined claimer can ask again. That looks like an oversight and is
+not - a final decline would let one mis-tap lock the real player out of their
+own career record, because approve_guest_claim needs a pending row to act on.
+
+Written into the migration comment AND asserted by a test, so the next reader
+finds a decision rather than a bug, and cannot quietly reverse it without
+seeing what it costs. Same shape as add_match_guest's "two guests of the same
+name get merged" note.
