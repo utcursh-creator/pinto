@@ -983,3 +983,17 @@ Written into the migration comment AND asserted by a test, so the next reader
 finds a decision rather than a bug, and cannot quietly reverse it without
 seeing what it costs. Same shape as add_match_guest's "two guests of the same
 name get merged" note.
+
+## `supabase db reset` leaves Kong pointing at a dead auth upstream (2026-08-05)
+
+db reset restarts auth/db/realtime/storage but NOT the Kong gateway. Kong keeps
+the old upstream and answers every `/auth/v1/*` call with
+`{"message":"An invalid response was received from the upstream server"}`.
+
+Every device journey then fails inside signUpFresh, at the create-profile step,
+which looks precisely like an onboarding regression. It is not. Fix:
+`docker restart supabase_kong_backend`.
+
+Rule: when a whole suite fails at ONE shared step right after an environment
+change, probe that step outside the app (a raw curl) before reading any code.
+Thirty seconds of curl beat a hunt through the auth gate.

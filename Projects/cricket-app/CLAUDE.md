@@ -87,6 +87,7 @@ Env (prepend to bash):
 `export PATH="$HOME/development/flutter/bin:/opt/homebrew/bin:$PATH"; export LANG=en_US.UTF-8; export JAVA_HOME=/opt/homebrew/opt/openjdk@17`
 - Local Supabase: `cd Projects/cricket-app/backend && supabase start` (OrbStack must be up). DB at 127.0.0.1:54322. `supabase status` for keys.
 - pgTAP: `cd backend && supabase db reset && supabase test db`. **`db reset` WIPES seeded demo data - re-seed after (see below).**
+- **AFTER `db reset`, RESTART KONG: `docker restart supabase_kong_backend`.** db reset restarts auth/db/realtime/storage but NOT the Kong gateway, which keeps routing to the dead auth upstream and answers every `/auth/v1/*` call with `{"message":"An invalid response was received from the upstream server"}`. Every device journey then fails at sign-up, which reads exactly like an app bug. Probe it with a REST signup before blaming the code.
 - Flutter: `cd app && flutter analyze && flutter test`. iOS build: `flutter build ios --simulator --debug`.
 - iPhone 17 sim udid `23708F23-B0FA-48AC-97B2-69330802D156`. Launch: `xcrun simctl boot <udid>; open -a Simulator; xcrun simctl install <udid> build/ios/iphonesimulator/Runner.app; xcrun simctl launch <udid> dev.pitch.pitchApp`. Screenshot: `xcrun simctl io <udid> screenshot /tmp/x.png` then Read it.
 - Demo login (dev-auth shim, prefilled): `dev@pitch.local` / `password123`.
