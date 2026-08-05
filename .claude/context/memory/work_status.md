@@ -874,6 +874,46 @@ Commits this run (local, nothing pushed):
 Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean,
 415 widget tests on both platforms, 8/8 device journeys.**
 
+### 2026-08-05 (later still) - REVIEW #3 LANDED: 23 findings, and one of them is mine
+
+`Projects/cricket-app/2026-08-05-review3-findings.md` - 2 CRITICAL, 9 HIGH,
+11 MEDIUM, 1 LOW. 13 agents, 2.0M tokens, ~24 min, 0 errors.
+
+**The skeptics refuted NOTHING (23 in, 23 out).** Both earlier reviews killed
+~60% at that step, so that is a fact about the skeptics, not a compliment to the
+finders: the file marks every finding UNVERIFIED and says re-verify first.
+Mechanical cause of a second problem: my script joined verdicts to findings by
+exact title and the skeptics rewrote the titles, so nothing matched and every
+finding came back "no verdict returned". Join on INDEX next time.
+
+Three verified by hand immediately:
+* **edit_ball accepts dismissals impossible under the Laws** - CONFIRMED on the
+  live DB (dot ball -> edit to no-ball + bowled -> accepted, fold says
+  wickets=1/runs=1/legal_balls=0). **This means I refuted review-#2 finding 28
+  WRONGLY**: I checked record_ball, which does guard it, and never opened the
+  CORRECTION path, which is what the finding was about. The audit ledger's
+  REFUTED entry for 28 is wrong and must be reopened.
+* **discover_posts is executable by PUBLIC** - CONFIRMED, proacl is null; the
+  LIMIT migration recreated the function and never re-granted.
+* **matches INSERT** - CONFIRMED but the scenario is overstated: two stranger
+  teams is refused by RLS; an admin of ONE team can insert a pre-complete match
+  with an invented result against anyone.
+
+Found by hand while it ran: **looking_for_posts grants UPDATE on every column**,
+so renew_post / cancel_post / mark_post_filled / _snap_geog are all optional
+(expires_at, status, geog all client-settable). Written up in
+2026-08-05-prefinding-posts-grant.md.
+
+**THE THEME**: four of the worst are one mistake - a table grant that makes an
+RPC's guards decorative, or a grant lost in a drop+recreate. Review #2 fixed
+exactly this for deliveries and match_squad. The fix is a RULE, not four
+patches.
+
+NEXT: work the list the same way as review #2 - re-verify, proven-RED test per
+fix, mutation-prove, commit per unit. Start with the grant cluster (one unit),
+then the correction-path Laws guards, then the test-integrity findings (four of
+them are about tests I wrote today).
+
 ### 2026-08-05 (later) - REVIEW #3 LAUNCHED
 
 The user said "run the review, please" - explicit opt-in for a Workflow. Run id
