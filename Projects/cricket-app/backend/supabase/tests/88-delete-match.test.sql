@@ -27,10 +27,14 @@ select is((select count(*)::int from public.matches where id = :'_m'::uuid), 0,
 
 -- a tournament match is protected
 select public.create_match(:'_a'::uuid, :'_b'::uuid, 20) as _tm \gset
+-- FIXTURE SEEDING, not a behaviour claim: clients cannot write tournaments any
+-- more (review #3 - the grant let an organiser crown themselves), so seed as the
+-- owner and hand the role back, the same way the scoring tests do.
+select current_role as _seedrole88 \gset
+set local role postgres;
 insert into public.tournaments(id, name, organizer_id, overs_limit, group_count, qualifiers_per_group)
   values (gen_random_uuid(), 'Cup', tests.get_supabase_uid('own@s.dev'), 20, 1, 2)
   returning id as _t \gset
-reset role;  -- fixture setup: this write is no longer granted to clients
 insert into public.tournament_matches(match_id, tournament_id, stage)
   values (:'_tm'::uuid, :'_t'::uuid, 'group');
 select tests.authenticate_as('own@s.dev');

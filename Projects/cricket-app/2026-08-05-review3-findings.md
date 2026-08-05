@@ -61,6 +61,15 @@ checked and deliberately NOT changed (team_members DELETE is safe - the FKs are
 ON DELETE NO ACTION; no definer function lacks a search_path; no leftover
 overloads; and the five remaining bare auth.uid() policies all act on one row).
 
+## FIXED SO FAR
+
+* the two Laws findings (edit_ball / insert_ball accepting impossible
+  dismissals) - commit 3c7a112, pgTAP 146
+* the GRANT CLUSTER below - commit in progress, pgTAP 147: matches INSERT,
+  team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
+  tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard
+  caught it), and discover_posts' lost EXECUTE grant.
+
 ## The theme
 
 Four of the highest-severity findings are one mistake in four places: **a

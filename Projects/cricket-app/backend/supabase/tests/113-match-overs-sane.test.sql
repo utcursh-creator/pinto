@@ -47,11 +47,18 @@ select lives_ok(
   'a 90-over innings is allowed');
 
 -- 8. the constraint also stops a direct insert that skips the RPC
+select current_role as _roleback \gset
+set local role postgres;
+-- The client can no longer INSERT into matches at all (review #3: the grant let
+-- an admin fabricate a completed match), so the CHECK is proved as the owner -
+-- the point of this assertion is that the CONSTRAINT exists, not who can reach it.
 select throws_ok(
   format($$ insert into public.matches(team_a_id, team_b_id, owner_id, scorer_id, overs_limit)
             values (%L, %L, %L, %L, 0) $$,
          :'_a', :'_b', tests.get_supabase_uid('ov@m.dev'), tests.get_supabase_uid('ov@m.dev')),
-  '23514', null, 'a direct insert with 0 overs violates the check constraint');
+  '23514', null, 'a 0-over match violates the check constraint (proved as owner: '
+  'clients cannot insert into matches any more)');
+set local role :_roleback;
 
 select * from finish();
 rollback;

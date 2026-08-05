@@ -34,9 +34,15 @@ select throws_ok($$ select public.add_tournament_team(
   (select id from public.teams where name='Bravo'), 'B') $$,
   'P0001', null, 'a non-organizer cannot add a team');
 
--- a non-organizer cannot UPDATE the tournament (RLS filters the row out)
-select lives_ok($$ update public.tournaments set name='Hacked' where name='Summer Cup' $$,
-  'a non-organizer UPDATE runs but matches no rows');
+-- A non-organizer cannot UPDATE the tournament. This used to be a lives_ok -
+-- "RLS filters the row out" - which left the client able to reach the table at
+-- all. The drift guard in pgTAP 147 caught the grant while the review-#3 fix was
+-- being written: the app only ever SELECTs tournaments, so an organiser could
+-- have set status='complete' and named their own champion without playing the
+-- bracket. Every write is an RPC now.
+select throws_ok($$ update public.tournaments set name='Hacked' where name='Summer Cup' $$,
+  '42501', null,
+  'a non-organizer UPDATE is refused at permission, not merely filtered');
 select is((select name from public.tournaments where id=:'_t'::uuid), 'Summer Cup',
   'RLS prevented the non-organizer from changing the tournament');
 

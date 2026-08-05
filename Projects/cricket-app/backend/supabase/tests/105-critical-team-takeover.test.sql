@@ -24,24 +24,35 @@ select is(public.is_team_admin(:'_vt'::uuid), false,
   'precondition: the attacker is not an admin of the victim team');
 
 -- THE ATTACK: re-point my own membership row at the victim team, as admin.
+--
+-- This used to be stopped by a TRIGGER ('a membership cannot be moved to another
+-- team'), which meant the client could still reach the table and everything
+-- depended on that one guard being right. Review #3: the UPDATE grant also made
+-- the last-captain guard in set_team_member_role optional. The grant is gone, so
+-- the attack now dies a layer earlier - at permission, before any trigger runs.
+-- The trigger stays where it is, as defence in depth for anything server-side.
 select throws_ok(
   format($$ update public.team_members set team_id = %L, role = 'admin' where id = %L $$,
     :'_vt', :'_amem'),
-  'P0001', 'a membership cannot be moved to another team',
-  'the takeover PATCH is now rejected');
+  '42501', null,
+  'the takeover PATCH is now rejected - at permission, not at the trigger');
 
 select is(public.is_team_admin(:'_vt'::uuid), false,
   'the attacker is still not an admin of the victim team');
 
--- the weaker form: just self-promote inside a team I am not in (no rows match now
--- that the policy is admin-only), and self-promotion within my OWN team is fine
--- but must go through the RPC, not a raw PATCH of someone else's row.
+-- the weaker form: self-promote inside a team I am not in. This used to be a
+-- lives_ok - "RLS filters it to no rows rather than erroring" - which was true
+-- and was also the tell: the client could still REACH the table, so the whole
+-- defence was one policy predicate being right. Review #3 took the grant away,
+-- so the same attempt is now refused outright.
 select tests.authenticate_as('victim@t.dev');
 select public.add_guest_member(:'_vt'::uuid, 'Guesty') as _g \gset
 select tests.authenticate_as('attacker@t.dev');
-select lives_ok(
+select throws_ok(
   format($$ update public.team_members set role = 'admin' where id = %L $$, :'_g'),
-  'a non-admin UPDATE matches no rows (RLS filters it) rather than erroring');
+  '42501', null,
+  'a non-admin UPDATE is refused at permission - it no longer depends on the '
+  'policy filtering the row out');
 select is((select role::text from public.team_members where id = :'_g'::uuid), 'player',
   'the victim team''s guest was NOT promoted by the attacker');
 

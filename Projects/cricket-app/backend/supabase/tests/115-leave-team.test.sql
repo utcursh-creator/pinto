@@ -31,11 +31,19 @@ select public.add_squad_member(:'_m'::uuid, :'_t'::uuid, :'_veteran'::uuid);
 select public.add_squad_member(:'_m'::uuid, :'_o'::uuid, :'_opp1'::uuid);
 select public.add_squad_member(:'_m'::uuid, :'_o'::uuid, :'_opp2'::uuid);
 
--- 1. THE BUG: the raw delete cannot work for someone who has played
+-- 1. THE BUG: the raw delete cannot work for someone who has played.
+--    Clients can no longer DELETE from team_members at all (review #3 - the
+--    grant made leave_team's tombstone optional), so the FK is proved as the
+--    OWNER. The point of this assertion is the referential reason the RPC
+--    exists, not who is allowed to try.
+select current_role as _roleback \gset
+set local role postgres;
 select throws_ok(
   format($$ delete from public.team_members where id = %L $$, :'_veteran'),
   '23503', null,
-  'the raw delete still fails on the FKs (this is why the RPC exists)');
+  'even as the owner the raw delete fails on the FKs - this is why leave_team '
+  'tombstones instead of deleting');
+set local role :_roleback;
 
 -- 2-4. leave_team on a player with history keeps the row and stamps the exit
 select lives_ok(

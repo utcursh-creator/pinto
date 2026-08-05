@@ -89,7 +89,13 @@ select throws_ok(
 -- redemption after registration closes (tournament left setup) fails (d).
 -- the organizer moves the tournament out of setup (RLS: only they may).
 select tests.authenticate_as('org@s.dev');
+-- FIXTURE: moving the tournament out of setup is a state change the RPCs own
+-- (generate_group_fixtures does it); clients no longer hold UPDATE on
+-- tournaments, so seed the state as the owner.
+select current_role as _seedrole91 \gset
+set local role postgres;
 update public.tournaments set status = 'group_stage' where id = :'_t'::uuid;
+set local role :_seedrole91;
 select tests.authenticate_as('capt@s.dev');
 select public.create_team('Late', 'C') as _late \gset
 select throws_ok(

@@ -65,14 +65,21 @@ select lives_ok(
   format($$ select public.create_match(%L, %L, 20) $$, :'_v1', :'_v2'),
   'a real team admin can still create a match through the RPC');
 
--- 6. and their own raw insert is still allowed, because they ARE an admin -
--- the rule is participation, not "only the RPC may write".
-select lives_ok(
+-- 6. NOT ANY MORE. This assertion used to read "a participating admin may still
+-- insert directly - the rule is participation, not 'only the RPC may write'".
+-- Review #3 showed what that permits: an admin of ONE participating team could
+-- insert a match that was already 'complete' with a result they invented,
+-- bypassing the scoring engine and set_match_result entirely. The rule is now
+-- BOTH - participation AND the RPC - so the direct write is gone and
+-- create_match is the only door.
+select throws_ok(
   format($$ insert into public.matches(team_a_id, team_b_id, owner_id, scorer_id, overs_limit)
             values (%L, %L, %L, %L, 20) $$,
          :'_v1', :'_v2',
          tests.get_supabase_uid('victim@x.dev'), tests.get_supabase_uid('victim@x.dev')),
-  'a participating admin may still insert directly');
+  '42501', null,
+  'not even a participating admin may insert a match directly - create_match '
+  'owns the shape of a new match');
 
 -- 7. the attacker never became a scorer anywhere
 select is(
