@@ -123,6 +123,17 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   `primary: false` fails the suite instead of silently removing the only
   recovery.
 
+* the CROSSED CORRECTION GAP (finding 15) - commit below, pgTAP 151 + JOURNEY E.
+  insert_ball had no _crossed parameter at all, and the ball-log editor had no
+  control to send one - so a corrected run-out landed with crossed = NULL, all
+  three folds took the coalesce(crossed,false) branch, and the wrong batter
+  kept the strike for the rest of the innings. edit_ball already ACCEPTED
+  _crossed (review #2 gave it one); nothing was sending it.
+  pgTAP 151 asserts LOCKSTEP rather than a hand-derived expectation: the
+  corrected innings must land where a LIVE-scored one does. And the device
+  journey is not decoration here - the widget spy fakes MatchRepository, which
+  sits ABOVE the RPC, so deleting `params['_crossed']` passes all 442 widget
+  tests. Only the device run joins the two halves.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

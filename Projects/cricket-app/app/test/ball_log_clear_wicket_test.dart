@@ -31,6 +31,7 @@ class _SpyRepo extends Fake implements MatchRepository {
     String? dismissedPlayerId,
     String? incomingBatterId,
     String? fielderId,
+    bool? crossed,
     bool clearWicket = false,
     bool clearWagon = false,
   }) async {

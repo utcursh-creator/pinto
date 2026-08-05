@@ -227,6 +227,11 @@ class MatchRepository {
     String? dismissedPlayerId,
     String? incomingBatterId,
     String? fielderId,
+    /// Run-out crossing. Null means "leave the stored value alone"; a switch
+    /// always has an opinion, so the editor sends true or false explicitly and
+    /// a wrongly-recorded crossing can be corrected in BOTH directions
+    /// (review #3, finding 15).
+    bool? crossed,
     // edit_ball is COALESCE-patch shaped: omitting a field KEEPS it. So a null
     // wicketType cannot mean "remove the wicket" - the RPC has explicit
     // _clear_wicket / _clear_wagon flags for that, and nothing was sending them,
@@ -253,6 +258,7 @@ class MatchRepository {
     if (dismissedPlayerId != null) params['_dismissed_player_id'] = dismissedPlayerId;
     if (incomingBatterId != null) params['_incoming_batter_id'] = incomingBatterId;
     if (fielderId != null) params['_fielder_id'] = fielderId;
+    if (crossed != null) params['_crossed'] = crossed;
     return _c.rpc('edit_ball', params: params);
   }
 
@@ -273,6 +279,7 @@ class MatchRepository {
     String? dismissedPlayerId,
     String? incomingBatterId,
     String? fielderId,
+    bool? crossed,
   }) async {
     final params = <String, dynamic>{
       '_innings_id': inningsId,
@@ -292,6 +299,7 @@ class MatchRepository {
     if (dismissedPlayerId != null) params['_dismissed_player_id'] = dismissedPlayerId;
     if (incomingBatterId != null) params['_incoming_batter_id'] = incomingBatterId;
     if (fielderId != null) params['_fielder_id'] = fielderId;
+    if (crossed != null) params['_crossed'] = crossed;
     final id = await _c.rpc('insert_ball', params: params);
     return id as String;
   }

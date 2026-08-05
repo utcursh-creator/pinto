@@ -728,6 +728,56 @@ void main() {
     await shot(tester, 'je4_console_after_edit');
     expect(find.textContaining('3/0'), findsWidgets,
         reason: 'the four became a two, so 5 must have become 3');
+
+    // THE SECOND CORRECTION (review #3, finding 15): that ball was actually a
+    // run-out, and the batters HAD crossed.
+    //
+    // This is the only thing that exercises the whole wire. The widget test
+    // spies on MatchRepository, which sits ABOVE the RPC call - so dropping
+    // `_crossed` from the params map, or misspelling the key, passes every
+    // widget test in the suite. pgTAP 151 pins the RPC's half. Only a real
+    // device run joins the two.
+    String onStrikeE() => tester
+        .widgetList<Text>(find.byType(Text))
+        .map((w) => w.data ?? '')
+        .firstWhere((d) => d.startsWith('On strike:'), orElse: () => '');
+
+    final strikerBefore = onStrikeE();
+    expect(strikerBefore, isNotEmpty, reason: 'the console names the striker');
+
+    await tester.tap(find.byIcon(Icons.edit_note));
+    await settle(tester, find.text('Ball log'), label: 'ball_log_e2');
+    await tester.tap(find.byType(ListTile).last);
+    await settle(tester, find.text('Edit this ball'), label: 'ball_actions_e2');
+    await tester.tap(find.text('Edit this ball'));
+    await settle(tester, find.text('Runs off the bat'), label: 'edit_sheet_e2');
+
+    await tapScrolled(tester, find.widgetWithText(SwitchListTile, 'Wicket'),
+        label: 'wicket_on_e');
+    await tapScrolled(tester, find.widgetWithText(ChoiceChip, 'run out'),
+        label: 'run_out_e');
+    await tapScrolled(
+        tester, find.widgetWithText(SwitchListTile, 'Batters had crossed'),
+        label: 'crossed_switch_e');
+    await shot(tester, 'je5_crossed_switch');
+    await tapScrolled(tester, find.widgetWithText(FilledButton, 'Save'),
+        label: 'save_crossed_e');
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(find.textContaining('PostgrestException'), findsNothing,
+        reason: 'a correction that sends _crossed must not 404 on the RPC - '
+            'insert_ball had no such parameter at all until this fix, and '
+            'edit_ball had one nothing was sending');
+
+    await tester.pageBack();
+    await settle(tester, find.text('Live scoring'), label: 'console_after_cross');
+    await shot(tester, 'je6_console_after_crossed');
+    expect(onStrikeE(), isNot(strikerBefore),
+        reason: 'the batters crossed on the run-out, so the OTHER batter is on '
+            'strike now. If this still matches, the flag never reached the '
+            'database and all three folds are quietly taking the '
+            'coalesce(crossed,false) branch - which is exactly the bug: every '
+            'later run, ball and boundary would be credited to the wrong '
+            'batter for the rest of the innings');
   });
 
   // JOURNEY K: the very first thing anyone sees.

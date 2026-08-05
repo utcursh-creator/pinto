@@ -259,6 +259,7 @@ class BallLogScreen extends ConsumerWidget {
             dismissedPlayerId: res.dismissedId,
             incomingBatterId: res.incomingId,
             fielderId: res.fielderId,
+            crossed: res.crossed,
             // The ball HAD a wicket and the scorer switched it off. Without this
             // the COALESCE patch keeps the old dismissal, so a mis-tapped wicket
             // could never be taken back - the batter stayed out on the scorecard
@@ -294,6 +295,7 @@ class BallLogScreen extends ConsumerWidget {
             dismissedPlayerId: res.dismissedId,
             incomingBatterId: res.incomingId,
             fielderId: res.fielderId,
+            crossed: res.crossed,
           );
           ref.invalidate(inningsDeliveriesProvider(inningsId));
           ref.invalidate(inningsStateProvider(inningsId));
@@ -351,6 +353,7 @@ class _BallEdit {
     this.incomingId,
     this.fielderId,
     this.bowlerId,
+    this.crossed,
   });
 
   final int runsOffBat;
@@ -364,6 +367,12 @@ class _BallEdit {
   final String? incomingId;
   final String? fielderId;
   final String? bowlerId;
+
+  /// Whether the batters had crossed when a run-out (or obstructing) happened.
+  /// Null on every other kind of ball: edit_ball is a COALESCE patch, so null
+  /// means "leave the stored value alone", and only a run-out has a stored
+  /// value worth touching (review #3, finding 15).
+  final bool? crossed;
 
   /// Must emit public.noball_secondary_kind values, which are SINGULAR:
   /// ('off_bat','bye','leg_bye'). This used to emit the plural UI spellings, so
@@ -393,6 +402,7 @@ class _BallEdit {
       dismissedId: d['dismissed_player_id'] as String?,
       incomingId: d['incoming_batter_id'] as String?,
       fielderId: d['fielder_id'] as String?,
+      crossed: d['crossed'] as bool?,
     );
   }
 }
@@ -460,6 +470,7 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
   late int _legByes = widget.initial.legByes;
   late bool _penalty = widget.initial.penalty > 0;
   late bool _wicket = widget.initial.wicketType != null;
+  late bool _crossed = widget.initial.crossed ?? false;
   late String _wicketType = widget.initial.wicketType ?? 'bowled';
   late String? _incoming = widget.initial.incomingId;
   late String? _fielder = widget.initial.fielderId;
@@ -472,6 +483,10 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
   bool get _isInsert => widget.bowlers != null;
   bool get _valid => !_isInsert || _bowler != null;
 
+  /// Crossing only means anything on a run out or obstructing the field. The
+  /// scoring console gates its own switch exactly this way; asking the question
+  /// on a bowled ball would only invite a wrong answer.
+  static bool _needsCrossed(String t) => t == 'run_out' || t == 'obstructing';
   static bool _needsWhoOut(String t) =>
       t == 'run_out' || t == 'obstructing' || t == 'retired_out';
   static bool _needsFielder(String t) =>
@@ -596,6 +611,16 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
                       ),
                   ],
                 ),
+                if (_needsCrossed(_wicketType))
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Batters had crossed'),
+                    subtitle: const Text(
+                        'Sets which batter is on strike for the rest of the '
+                        'innings'),
+                    value: _crossed,
+                    onChanged: (v) => setState(() => _crossed = v),
+                  ),
                 if (_needsWhoOut(_wicketType)) ...[
                   const SizedBox(height: 8),
                   const Text('Who was out?'),
@@ -667,6 +692,9 @@ class _BallEditorSheetState extends State<_BallEditorSheet> {
                                   ? _fielder
                                   : null,
                               bowlerId: _bowler,
+                              crossed: _wicket && _needsCrossed(_wicketType)
+                                  ? _crossed
+                                  : null,
                             ),
                           )
                       : null,
