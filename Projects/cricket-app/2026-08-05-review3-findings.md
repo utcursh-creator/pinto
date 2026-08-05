@@ -160,6 +160,17 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   a hot path - blocked_users names both columns everywhere except a
   once-per-lifetime account deletion, and tournament_teams is always driven by
   tournament_id. No speculative indexes added.
+* the RENEW-TO-TODAY TRAP (finding 14) - commit below. The renew flow showed a
+  DATE-only picker and rebuilt the instant from the OLD time of day, so
+  renewing a 09:00 fixture to "today" at 16:00 produced 09:00 today - past the
+  feed's 6-hour floor, still invisible, and now with the Expired chip and the
+  Renew button gone because this screen computes "expired" from expires_at
+  alone. The author ended up worse off than before tapping it. The flow now
+  asks for a time and refuses a past-floor result in the composer's own words.
+  Tested in TWO halves on purpose, after the _crossed lesson: a pure rule
+  (renewedMatchAt, 6 tests, 3 mutations) and a wiring test that drives the real
+  pickers on the real screen (4 tests, all RED against the old date-only flow).
+  The rule tests alone could not have noticed the screen not calling it.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

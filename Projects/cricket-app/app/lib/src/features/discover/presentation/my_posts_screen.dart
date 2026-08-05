@@ -6,8 +6,39 @@ import '../data/discover_models.dart';
 import '../data/discover_providers.dart';
 import '../data/discover_repository.dart';
 import 'flair_chip.dart';
+import 'new_post_composer.dart' show isPastFeedFloor;
 import '../../../core/ui/human_error.dart';
 import '../../../core/platform/error_retry.dart';
+
+/// The instant a renewal would set, or NULL when that instant is already past
+/// the feed floor - i.e. renewing to it would leave the ad invisible to
+/// everyone, its author included.
+///
+/// This used to be three lines inside the renew flow, and it rebuilt the
+/// instant from the OLD match time because the flow only ever asked for a DATE.
+/// Renewing a 09:00 fixture to "today" at 16:00 therefore produced 09:00 today,
+/// seven hours in the past. discover_posts floors on
+/// `match_at >= now() - interval '6 hours'`, so the post stayed dead - while
+/// My posts computes "expired" from expires_at alone, which was now tomorrow,
+/// so the Expired chip and the Renew button both disappeared. The author was
+/// left worse off than before renewing (review #3, finding 14).
+///
+/// Top-level and pure for the same reason isPastFeedFloor is: the rule can be
+/// tested exhaustively without driving two platform date pickers, and the
+/// screen is left with nothing to get wrong but calling it.
+DateTime? renewedMatchAt({
+  required DateTime date,
+  required TimeOfDay? time,
+  required DateTime previous,
+  required DateTime now,
+}) {
+  // Skipping the time picker keeps the old time of day - clubs play at the same
+  // hour every week - and must NOT be read as midnight, which would move a
+  // 09:00 fixture to 00:00 and, for today, bury it.
+  final chosen = DateTime(date.year, date.month, date.day,
+      time?.hour ?? previous.hour, time?.minute ?? previous.minute);
+  return isPastFeedFloor(chosen, now) ? null : chosen;
+}
 
 class MyPostsScreen extends ConsumerWidget {
   const MyPostsScreen({super.key});
@@ -56,8 +87,24 @@ class MyPostsScreen extends ConsumerWidget {
         helpText: 'When is the new game?',
       );
       if (picked == null) return;
-      newDate = DateTime(picked.year, picked.month, picked.day,
-          matchAt.hour, matchAt.minute);
+      if (!context.mounted) return;
+      // ASK FOR THE TIME. Without this the flow reused the old time of day, so
+      // renewing to "today" after that hour had passed re-buried the post.
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(matchAt),
+        helpText: 'What time?',
+      );
+      if (!context.mounted) return;
+      newDate = renewedMatchAt(
+        date: picked, time: time, previous: matchAt, now: DateTime.now());
+      if (newDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('That time has already passed, so nobody would see '
+              'this post. Pick a time from the last few hours onwards.'),
+        ));
+        return;
+      }
     }
     if (!context.mounted) return;
     await _act(
