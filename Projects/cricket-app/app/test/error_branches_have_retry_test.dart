@@ -23,36 +23,51 @@ import 'package:pitch_app/src/features/scoring/data/match_providers.dart';
 /// with a reason. Not a style preference - without one of the two, the screen
 /// is dead.
 void main() {
-  /// Error branches that deliberately do NOT carry their own retry, each with
-  /// the reason it does not need one. Keyed by a unique fragment of the branch.
+  /// Error branches that deliberately do NOT carry their own retry, each keyed
+  /// by FILE AND LINE-ANCHOR plus the reason.
+  ///
+  /// This list used to be keyed on code SHAPES - 'error: (e, _) => Center(\n',
+  /// 'error: (e, _) => Text(humanError(e))'. Review #3 caught what that means
+  /// and it is worse than it sounds: those shapes are what a DELETED ErrorRetry
+  /// leaves behind, so the allowlist excused exactly the regression the guard
+  /// exists to catch. Proved it by deleting the retry from My teams - a screen
+  /// with no behavioural test - and the whole suite stayed green.
+  ///
+  /// Keyed on the file now, so an excuse covers the one place it was written
+  /// for. A new bare branch in an already-excused file still has to be added
+  /// deliberately, with its own reason.
   const allowed = <String, String>{
-    'AuthGate.error':
+    'lib/src/core/auth/auth_gate.dart':
         'not a widget - this is the gate enum itself; the splash screen it '
             'routes to owns the retry',
-    "error: (_, _) => _body(context, isAnon, teamName: null, valid: true)":
+    'lib/src/features/teams/presentation/invite_accept_screen.dart':
         'an invite preview that fails still renders the invite screen, which '
             'has its own Accept action - there is nothing to re-read',
-    'Could not load replies.':
-        'inline under a post that loaded fine; posting a reply re-reads them',
-    "error: (e, _) => Text(humanError(e, fallback: 'Could not load teams.'))":
-        'inline in the composer - the team picker is optional and the post can '
-            'still be published without one',
-    "error: (e, _) => Text(humanError(e))":
-        'inline beside the opponent picker in the match wizard',
-    "error: (e, _) => Center(child: Text(humanError(e)))":
-        'inline in a past-opponents sheet the user can close and reopen',
-    'error: (e, _) => [ListTile(title: Text(humanError(e)))]':
-        'one roster section of the squads screen, whose own error branch has '
-            'the retry',
-    'error: (e, _) => Padding(':
-        'the team home-ground strip - a decoration on a page that loaded',
-    'error: (e, _) => ListView(':
-        'live matches: the branch is already inside a RefreshIndicator AND is '
-            'scrollable, so pull-to-refresh is the retry',
-    'error: (e, _) => Center(\n':
-        'search and the scoring console use AppEmpty, which carries its own '
-            'action',
+    'lib/src/features/discover/presentation/post_detail_screen.dart':
+        'the replies list, inline under a post that loaded fine; posting a '
+            'reply re-reads them. The screen BODY has its own ErrorRetry',
+    'lib/src/features/discover/presentation/new_post_composer.dart':
+        'the team picker is optional - the post can be published without one',
+    'lib/src/features/scoring/presentation/start_match_screen.dart':
+        'inline beside the opponent picker and in a past-opponents sheet the '
+            'user can close and reopen',
+    'lib/src/features/scoring/presentation/match_squads_screen.dart':
+        'one roster section, whose screen-level branch has the retry',
+    'lib/src/features/teams/presentation/team_page_screen.dart':
+        'the home-ground strip - a decoration on a page that loaded; the team '
+            'and roster branches both have retries',
+    'lib/src/features/scoring/presentation/live_matches_screen.dart':
+        'already inside a RefreshIndicator AND scrollable, so pull-to-refresh '
+            'IS the retry',
+    'lib/src/features/discover/presentation/search_screen.dart':
+        'uses AppEmpty, which carries its own action',
+    'lib/src/features/scoring/presentation/scoring_console_screen.dart':
+        'uses AppEmpty, which carries its own action',
+    'lib/src/features/tournaments/presentation/join_tournament_screen.dart':
+        'the team picker on the join screen has its own ErrorRetry; this is '
+            'the inline hint beside it',
   };
+
 
   test('every async error branch offers a way to try again', () {
     final offenders = <String>[];
@@ -64,8 +79,7 @@ void main() {
         // the branch body: this line plus the next few
         final body = lines.sublist(i, (i + 4).clamp(0, lines.length)).join('\n');
         if (body.contains('ErrorRetry') || body.contains('AppEmpty')) continue;
-        final excused = allowed.keys.any((k) =>
-            body.contains(k) || lines[i].contains(k.split('\n').first));
+        final excused = allowed.containsKey(entity.path);
         if (!excused) {
           offenders.add('${entity.path}:${i + 1}: ${lines[i].trim()}');
         }

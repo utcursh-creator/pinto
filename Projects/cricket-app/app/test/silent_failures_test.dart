@@ -52,18 +52,30 @@ void main() {
     final src = File(
             'lib/src/features/scoring/presentation/start_match_screen.dart')
         .readAsStringSync();
-    expect(src.contains('catch (_) {/* non-fatal: the match exists either way */}'),
-        isFalse,
-        reason: 'the carried-over date is the whole point of proposing from a '
-            'post - losing it silently leaves a match with no schedule');
-    expect(
-        src.contains('catch (_) {/* non-fatal: the match is created regardless */}'),
-        isFalse,
-        reason: 'if the opponent was never messaged, the proposer has to know: '
-            'they think a conversation is happening and it is not');
+
+    // KEYED ON THE SHAPE, NOT ON ONE OLD COMMENT. The first version of this
+    // test asserted the ABSENCE of two exact comment strings, which review #3
+    // caught: I re-swallowed the schedule write as `catch (_) {/* non-fatal */}`
+    // - different wording, same bug - and the test stayed green. An empty catch
+    // is an empty catch whatever is written inside it.
+    final emptyCatch = RegExp(r'catch\s*\(_\)\s*\{\s*(/\*.*?\*/)?\s*\}',
+        dotAll: true);
+    final offenders = emptyCatch
+        .allMatches(src)
+        .map((m) => m.group(0)!.replaceAll('\n', ' '))
+        .toList();
+    expect(offenders, isEmpty,
+        reason: 'this screen creates the match AND carries over the date and '
+            'DMs the opponent. Both side effects were swallowed whole, so the '
+            'proposer walked on believing a conversation was happening when it '
+            'was not. No empty catch belongs here:\n${offenders.join('\n')}');
+
+    // and the positive half: the user is told WHICH part did not happen
     expect(src, contains('could not be messaged'),
-        reason: 'and the wording has to say WHICH half failed - the match '
-            'itself was created either way');
+        reason: 'the match is created either way - the message has to name the '
+            'half that failed');
+    expect(src, contains('could not be saved'),
+        reason: 'and the same for the carried-over date and ground');
   });
 
   /// 68: `_captureAndShare` returns silently when the boundary or the bytes are

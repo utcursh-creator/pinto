@@ -65,7 +65,11 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
 
 * the two Laws findings (edit_ball / insert_ball accepting impossible
   dismissals) - commit 3c7a112, pgTAP 146
-* the GRANT CLUSTER below - commit in progress, pgTAP 147: matches INSERT,
+* the four TEST-INTEGRITY findings - commit below. All four confirmed by
+  mutation before touching anything, and one turned out WORSE than reported:
+  the ErrorRetry allowlist excused a deletion on any screen without a
+  behavioural test, so removing the retry from My teams left the suite green.
+* the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard
   caught it), and discover_posts' lost EXECUTE grant.

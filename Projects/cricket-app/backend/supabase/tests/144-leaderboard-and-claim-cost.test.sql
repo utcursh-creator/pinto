@@ -68,16 +68,25 @@ select is(
   0, 'a membership from an unrelated team is not in the leaderboard');
 
 -- 5. The four assertions above hold with or without the fix - the leaderboard
---    only ever listed players who scored - so they are a guard against the
---    change BREAKING something, not proof that it happened. This is the proof:
---    the names CTE is joined to the members who actually appear, which is what
---    stops it materialising one row per membership in the database.
+--    only ever listed players who scored - so they guard against the change
+--    BREAKING something, not against it being reverted.
+--
+--    BE HONEST ABOUT WHAT THIS ONE IS. Scoping the CTE changes COST, not output:
+--    there is no query whose answer differs, so there is no behavioural proof to
+--    write. It is a source assertion, and it has to be a tight one. The first
+--    version matched 'join appearing' anywhere in the definition, which review
+--    #3 caught: I reverted the CTE to unfiltered, left the phrase behind in a
+--    COMMENT, and this file stayed green. Now the join has to be inside the
+--    names CTE itself.
 select matches(
-  (select pg_get_functiondef(p.oid) from pg_proc p
+  (select substring(pg_get_functiondef(p.oid)
+                    from 'names as \((.*?)\),\s*run_agg')
+     from pg_proc p
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname = 'tournament_leaderboard'),
-  'join appearing',
-  'the names CTE is scoped to the members who appear in this tournament');
+  'join\s+appearing\s+\w+\s+on',
+  'the names CTE ITSELF joins the members who appear - not a comment mentioning '
+  'it somewhere else in the function');
 
 -- 6. 73: the claim inbox has an index to find pending rows by, instead of
 --    seq-scanning the table and calling is_team_admin for every pending claim
