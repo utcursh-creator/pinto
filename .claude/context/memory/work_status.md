@@ -893,6 +893,23 @@ Gates at the end: **pgTAP 872 / 138 files after a full `db reset`, analyze clean
 - `GOOGLE_IOS_CLIENT_ID` + reversed-client-id scheme; pitch.app/privacy +
   /terms; the Apple entitlement
 
+### Every fix unit in this run is now mutation-proved, not just proven-RED
+
+Ten mutations applied to shipped code, every one caught, tree restored and green
+afterwards (pgTAP 872/138, analyze clean, 415 widget tests):
+
+  SQL   dm_inbox sorted oldest-first (5 failures) | set_match_squad additive
+        again (7) | mark_thread_delivered stamping the caller's own messages (2)
+        | leaderboard CTE unfiltered (1) | claim index dropped + auth.uid()
+        un-hoisted (3) | renew_post without its status guard (3)
+  DART  auth_gate without skipError (1) | the squad save stating only one side
+        (4) | nothing ever reading `expired` (4) | the inbox back on dm_messages
+        (1) | no receipt listener (2) | no re-sync on resubscribe (4)
+
+Two of those first reported "0 failures" and were NO-OPS - dart format had
+reflowed the code my search strings matched against. See learnings.md: assert
+the mutation landed before believing a green sabotage run.
+
 ### Two process notes from today
 - Three device runs failed and NONE was a code regression: twice I ran
   `supabase db reset` under a live run, once the journeys' "unique" account id
