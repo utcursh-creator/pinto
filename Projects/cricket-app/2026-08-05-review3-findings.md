@@ -69,6 +69,9 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   mutation before touching anything, and one turned out WORSE than reported:
   the ErrorRetry allowlist excused a deletion on any screen without a
   behavioural test, so removing the retry from My teams left the suite green.
+* the two TOSS findings (a live match's toss rewritable + nothing invalidating
+  myMatchesProvider on setup -> live) - commit below, pgTAP 148. They are one
+  bug in two layers: the stale tile is what leads the scorer back into setup.
 * the GRANT CLUSTER - 83a4411, pgTAP 147: matches INSERT,
   team_members INSERT/UPDATE/DELETE, looking_for_posts INSERT/UPDATE/DELETE,
   tournaments INSERT/UPDATE/DELETE (not in any finding - the new drift guard

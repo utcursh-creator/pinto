@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
 import '../../../core/routing/routes.dart';
+import '../../identity/data/identity_providers.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import '../../../core/ui/human_error.dart';
@@ -243,6 +244,16 @@ class _TossOpenersScreenState extends ConsumerState<TossOpenersScreen> {
       // alive since it opened, so the console would inherit the PRE-toss match
       // row (no toss, not yet live) that we have just replaced.
       ref.invalidate(matchProvider(widget.matchId));
+      // ...and the same for every OTHER cache that describes this match. The
+      // Matches tab is mounted underneath and holds the row it fetched at
+      // creation time, status 'setup' (review #3). Left stale it says
+      // "Setup - not started" for a game in progress, offers "Resume setup"
+      // rather than "Continue scoring", and walks the scorer back into the
+      // squad editor and a blank toss form - which is how a live match got
+      // re-tossed. The server now refuses that too (pgTAP 148).
+      ref.invalidate(myMatchesProvider);
+      ref.invalidate(liveMatchesProvider);
+      ref.invalidate(teamMatchesProvider);
       if (mounted) context.pushReplacement(Routes.scoreMatch(widget.matchId));
     } catch (e) {
       // golden-path audit: a silent failure here strands the user at the toss
