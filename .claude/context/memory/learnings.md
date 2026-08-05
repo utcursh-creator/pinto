@@ -925,3 +925,27 @@ See full analysis: `Projects/content-engine/writing-style-analysis.md`
   both conditions are true for a captain. When two optional affordances can
   co-occur on one row, decide the order deliberately and TEST the co-occurrence
   - the bug is invisible to anyone who only ever sees one of them.
+
+## A polluted test DB is a stricter gate than a clean one (2026-08-05)
+
+`supabase db reset` before `supabase test db` hides test-isolation bugs. After a
+device-journey run left real tournaments, DM threads and join requests in the
+local DB, pgTAP 90 went red - it named its object with
+`(select id from public.tournaments limit 1)` and had been picking its own
+tournament only because nothing else existed. With a journey's tournament in the
+table it tripped the ORGANIZER check and never reached the team-admin guard the
+test is named after. It had been passing on the wrong error the whole time.
+
+Rule: run the pgTAP suite against a DB that has been USED, not one just reset.
+Anything that breaks is a test that was reading the world instead of its own
+fixture. Four files had it (50, 90, 91, 99); the project had already recorded
+this exact habit once, which is why the sweep was worth doing rather than just
+fixing the one that failed.
+
+## striker_id is not "at the crease" (2026-08-05)
+
+record_ball permits a null incoming batter on the LAST wicket of an innings -
+there is nobody left to come in - so compute_innings_state leaves the dismissed
+batter in _striker forever. Any UI reading striker_id as "not out" prints a
+dismissed batter as not out on every all-out innings. `fall_of_wickets` is the
+truth, and `retired_not_out` deliberately gets no entry there.
