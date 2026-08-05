@@ -69,6 +69,8 @@ overloads; and the five remaining bare auth.uid() policies all act on one row).
   mutation before touching anything, and one turned out WORSE than reported:
   the ErrorRetry allowlist excused a deletion on any screen without a
   behavioural test, so removing the retry from My teams left the suite green.
+* the GUEST-REMOVAL HIGH (the "This is me" button shadowing the admin menu) -
+  commit below. The last HIGH in the file.
 * the two TOSS findings (a live match's toss rewritable + nothing invalidating
   myMatchesProvider on setup -> live) - commit below, pgTAP 148. They are one
   bug in two layers: the stale tile is what leads the scorer back into setup.

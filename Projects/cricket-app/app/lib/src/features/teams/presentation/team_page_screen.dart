@@ -584,14 +584,29 @@ class _MemberTile extends StatelessWidget {
       _ => '',
     };
     Widget? trailing;
-    if (onClaim != null) {
-      trailing =
-          TextButton(onPressed: onClaim, child: const Text('This is me'));
-    } else if (adminMenu && onMemberAction != null) {
+    // ORDER MATTERS, and it used to be wrong (review #3). `onClaim` is non-null
+    // for any signed-in non-anonymous viewer looking at a row with no account -
+    // the captain included - so checking it FIRST meant an admin's only control
+    // on a guest row was "This is me". A guest added by mistake could never be
+    // taken off the roster, and kept appearing in every future squad picker.
+    //
+    // The admin menu wins now, and carries the claim as one of its items, so
+    // neither power is lost: a captain is also a player, and captains are
+    // exactly the people who add a guest for themselves before they have an
+    // account.
+    if (adminMenu && onMemberAction != null) {
       trailing = PopupMenuButton<String>(
         key: Key('member_menu_${member['id']}'),
-        onSelected: onMemberAction,
+        onSelected: (v) {
+          if (v == 'claim') {
+            onClaim?.call();
+          } else {
+            onMemberAction!(v);
+          }
+        },
         itemBuilder: (context) => [
+          if (onClaim != null)
+            const PopupMenuItem(value: 'claim', child: Text('This is me')),
           // guests have no account, so roles apply to registered members only
           if (!isGuest && role != 'captain')
             const PopupMenuItem(value: 'captain', child: Text('Make captain')),
@@ -602,6 +617,9 @@ class _MemberTile extends StatelessWidget {
           const PopupMenuItem(value: 'remove', child: Text('Remove from team')),
         ],
       );
+    } else if (onClaim != null) {
+      trailing =
+          TextButton(onPressed: onClaim, child: const Text('This is me'));
     } else {
       trailing = Text(IdentityLabels.teamRole(role));
     }
