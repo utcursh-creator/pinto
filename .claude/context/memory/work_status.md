@@ -1115,3 +1115,27 @@ hosted; the hosted `supabase db push` (now 8 migrations behind: 20260805140000
 through 20260805210000); rebuild the APK; GOOGLE_IOS_CLIENT_ID +
 reversed-client-id; pitch.app/privacy + /terms; the Apple entitlement; and add
 `io.supabase.pitch://login-callback` to the hosted redirect allow-list.
+
+## 2026-08-05 - FULL FROM-SCRATCH VERIFICATION PASSED
+
+The gate the "zero findings" claim was resting on, and which had never been run:
+for the last several units migrations were applied by hand with psql, so they
+had never been proved to apply from an EMPTY database in dependency order -
+which is exactly what the hosted `db push` will do.
+
+  * `supabase db reset`: all 147 migrations applied clean
+  * pgTAP: 950 tests / 147 files PASS on the fresh DB
+  * insert_ball and set_toss: ONE candidate each (both had an arity change,
+    the shape that leaves an ambiguous overload and 300s every PostgREST call)
+  * all 8 new objects present after a from-scratch apply
+  * flutter analyze clean, widget suite 459
+  * ALL 9 DEVICE JOURNEYS GREEN on the from-scratch database
+
+One false alarm on the way, worth remembering: every journey first failed at
+sign-up, which read exactly like an onboarding regression from my own commits.
+It was Kong - `db reset` restarts auth but not the gateway, so /auth/v1/* 502s
+from a stale upstream. `docker restart supabase_kong_backend`. Now in the run
+recipe in CLAUDE.md.
+
+The backend is genuinely push-ready rather than only-works-on-my-patched-DB.
+The push itself still needs the user's explicit go.
