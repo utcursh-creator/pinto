@@ -1188,3 +1188,45 @@ Two things found while doing this:
    TEST FILE count. There are **199 migration files**. The from-scratch verify
    applied all 199 and ran 950 pgTAP tests across 147 files. Corrected in
    CLAUDE.md.
+
+## 2026-08-05 - HOSTED PUSH DONE + APK SHIPPED
+
+Project unpaused by the user. Everything below is verified, not assumed.
+
+* **117 migrations pushed** (NOT 8 - I had been quoting the count of migrations
+  I wrote this session, not the gap to hosted. Hosted was at 82 applied and had
+  stopped around 2026-07-01). `db push --include-all` applied all of them.
+  Pending after: **0**.
+* Took a JSON snapshot of hosted data first (/tmp/hosted-snapshot-2026-08-05.json)
+  - the from-scratch verification proved the EMPTY-database path, never the
+  incremental-on-top-of-data path. Data survived intact: 3 profiles, 2 teams,
+  3 matches, 6 deliveries, unchanged before and after.
+* Hosted schema verified live: 4 new functions present, dm_participants index
+  present, and insert_ball / set_toss have exactly ONE candidate each (the
+  arity-change overload trap did not fire).
+* Live RPC checks through PostgREST: anon sign-in OK; dm_inbox, my_home_location,
+  discover_posts all 200 for an authed user; **discover_posts returns 42501 for
+  the true `anon` role** (the grant fix works in production) while anon can
+  still read matches for the login-free viewer.
+* **APK smoke-tested on an Android emulator against LIVE hosted**: installs,
+  launches, reaches Discover, no crash, no config error. Delivered to the user
+  and saved to ~/Desktop/pitch-v1.0.0+2.apk.
+
+### THE ONE UNVERIFIED LINK - Google sign-in on the release build
+The release sign-in screen offers ONLY "Continue with Google" (the dev
+email/password shim is debug-only, correctly). Tapping it DOES launch Google's
+real credential flow - so the client id is wired and there is no dead end - but
+the token exchange cannot be verified without signing into a real Google
+account, which I will not do.
+
+It works only if the Android OAuth client is registered for:
+  package  dev.pitch.pitch_app
+  SHA-1    43:1A:49:F8:E3:83:4E:09:31:8D:2F:CD:64:54:00:55:9D:05:52:4F  (RELEASE keystore)
+A debug-SHA-only registration will fail for the friend after they pick an account.
+
+Also found: hosted `uri_allow_list` is EMPTY, so `io.supabase.pitch://login-callback`
+is still missing - password reset cannot work in production. Not blocking the
+friend (no email path in release UI), but still open.
+
+Gotcha for the user: an OLD debug-signed build of dev.pitch.pitch_app blocks
+install with INSTALL_FAILED_UPDATE_INCOMPATIBLE. Uninstall the old one first.

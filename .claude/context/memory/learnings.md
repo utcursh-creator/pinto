@@ -997,3 +997,27 @@ which looks precisely like an onboarding regression. It is not. Fix:
 Rule: when a whole suite fails at ONE shared step right after an environment
 change, probe that step outside the app (a raw curl) before reading any code.
 Thirty seconds of curl beat a hunt through the auth gate.
+
+## "Verified from scratch" is not "verified as an upgrade" (2026-08-05)
+
+The from-scratch `db reset` run proved all 199 migrations apply to an EMPTY
+database. Hosted had 82 already applied and real rows, so `db push` exercised a
+path nothing had tested: migrations 83..199 landing on top of existing data.
+They were the same files, but not the same test. Snapshot the data first and
+re-count the rows after - cheap, and it turns an assumption into a check.
+
+## Count the gap, not your own commits (2026-08-05)
+
+I told the user "8 migrations behind" several times. That was the number of
+migrations I had WRITTEN that session. The actual gap to hosted was 117 - the
+project had stopped receiving pushes five weeks earlier. `supabase migration
+list --linked` and count the rows with an empty remote column; never infer a
+remote's state from local activity.
+
+## A release build can have a different auth surface than debug (2026-08-05)
+
+The dev email/password shim is debug-only, so the RELEASE sign-in screen offers
+only "Continue with Google" - a path that depends on an OAuth client registered
+against the RELEASE keystore SHA-1, not the debug one. Every widget test and
+every device journey ran on debug and could not see this. Launch the actual
+release artifact and look at the sign-in screen before shipping it to anyone.
