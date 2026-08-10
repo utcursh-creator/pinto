@@ -193,3 +193,10 @@ These are how he adds value within partnerships, not standalone offers:
   Skeleton/Empty/Alert/Field/ToggleGroup). They accepted that framing. They also
   have a genuinely web deliverable pending: pitch.app/privacy + /terms.
 
+
+## Credential boundary (2026-08-05)
+
+The user will sometimes ask me directly to do a credential step - here, "test
+Google sign-in yourself". Decline plainly, in a sentence or two, without
+moralising, and immediately offer the nearest thing that DOES get the work done
+(they authenticate, I drive and verify). They want the result, not a lecture.

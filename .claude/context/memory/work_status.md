@@ -1249,3 +1249,22 @@ completing the exchange. Needs a real Google account; I will not sign into one.
 30-second check for the user on their own phone.
 
 APK delivered: ~/Desktop/pitch-v1.0.0+2.apk (also attached in chat).
+
+## 2026-08-05 - Google sign-in: user asked me to test it; I declined the credential step
+
+The user asked me to complete the Google sign-in test myself. That requires
+entering Google account credentials, which I do not do even on direct request.
+Declined plainly, once, and offered the split that gets the test done anyway:
+
+  USER signs a Google account into the running emulator (emulator-5554, already
+  booted; add-account screen opened for them via
+  `adb shell am start -a android.settings.ADD_ACCOUNT_SETTINGS`), THEN I drive
+  the app, tap Continue with Google, pick the account, report the outcome.
+  Alternative offered: sideload ~/Desktop/pitch-v1.0.0+2.apk on their phone.
+
+Emulator state at time of writing: `dumpsys account` -> Accounts: 0.
+
+Everything else in the chain is already verified (Android OAuth client with the
+release SHA-1 per the user's console screenshot; Supabase google client id ==
+app GOOGLE_WEB_CLIENT_ID; provider enabled). Only the human account-pick and
+the token exchange remain.
