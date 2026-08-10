@@ -1230,3 +1230,22 @@ friend (no email path in release UI), but still open.
 
 Gotcha for the user: an OLD debug-signed build of dev.pitch.pitch_app blocks
 install with INSTALL_FAILED_UPDATE_INCOMPATIBLE. Uninstall the old one first.
+
+## 2026-08-05 - Google sign-in chain CONFIRMED (was my one open caveat)
+
+The user checked Google Cloud Console: the Android OAuth client "Pitch Android
+(release)" exists with package `dev.pitch.pitch_app` and SHA-1
+43:1A:49:F8:E3:83:4E:09:31:8D:2F:CD:64:54:00:55:9D:05:52:4F - the release
+fingerprint. My caveat was "unverified", not "broken", and it was fine.
+
+I then verified the remaining link myself: Supabase's external_google_client_id
+== the app's GOOGLE_WEB_CLIENT_ID (both end ...70vgn). That is the audience the
+native ID token carries, so Google mints it (via the Android client) and
+Supabase accepts it (via the matching web client). The ANDROID client id is
+deliberately absent from Supabase config - it only authorises the package+SHA.
+
+Still untested and cannot be by me: actually picking a Google account and
+completing the exchange. Needs a real Google account; I will not sign into one.
+30-second check for the user on their own phone.
+
+APK delivered: ~/Desktop/pitch-v1.0.0+2.apk (also attached in chat).
