@@ -40,8 +40,13 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
   /// teamMembersProvider now filters them out, so prefilling them here put an
   /// id into _selected with no tile to un-tick: invisible, unremovable, and
   /// re-written to the server on "Next: toss" (re-review 2026-07-07).
-  void _prefillFrom(
-      List<Map<String, dynamic>> squad, Set<String> selectable) {
+  /// [started] is true once the match is past setup. BEFORE the first ball the
+  /// squad is a PLAN, so a departure should prune it (above). AFTER it, the
+  /// squad is a RECORD: set_match_squad is authoritative and REFUSES to drop
+  /// anyone who has played ("that player has already played in this match"), so
+  /// pruning made the next save fail outright with no tile to tick him back on.
+  void _prefillFrom(List<Map<String, dynamic>> squad, Set<String> selectable,
+      {required bool started}) {
     if (_prefilled || squad.isEmpty) return;
     _prefilled = true;
     final ordered = [...squad]..sort((x, y) {
@@ -53,7 +58,7 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
       final memberId = row['team_member_id'] as String?;
       final teamId = row['team_id'] as String?;
       if (memberId == null || teamId == null) continue;
-      if (!selectable.contains(memberId)) continue; // they have left the team
+      if (!started && !selectable.contains(memberId)) continue; // left the team
       _selected.add(memberId);
       _teamOf[memberId] = teamId;
       if (row['is_captain'] == true) _captainOf[teamId] = memberId;
@@ -140,9 +145,12 @@ class _MatchSquadsScreenState extends ConsumerState<MatchSquadsScreen> {
           final rosterA = ref.watch(teamMembersProvider(teamA)).value;
           final rosterB = ref.watch(teamMembersProvider(teamB)).value;
           if (existing != null && rosterA != null && rosterB != null) {
-            _prefillFrom(existing, {
-              for (final r in [...rosterA, ...rosterB]) r['id'] as String,
-            });
+            _prefillFrom(
+              existing,
+              {for (final r in [...rosterA, ...rosterB]) r['id'] as String},
+              started: (m['status'] as String?) != null &&
+                  m['status'] != 'setup',
+            );
           }
           // M1: show real team names, never "Team A"/"Team B".
           final names = ref.watch(matchTeamNamesProvider(widget.matchId)).value ??
