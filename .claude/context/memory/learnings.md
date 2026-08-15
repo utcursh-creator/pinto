@@ -1089,3 +1089,18 @@ a stranger's. The scripts never touched that path, so they were green while the
 user hit a wall on his first real attempt. A journey is only evidence if its
 SETUP matches how the situation actually arises for a user - otherwise it tests
 the fixture, not the product.
+
+## A test that works around a defect will never report it (2026-08-05)
+
+The dot-ball wagon prompt survived weeks of green journeys because the helper
+`scoreRuns()` dismissed the sheet after every tap, with a comment explaining
+that the sheet swallows the next tap. The suite had ENCODED the bug as a fact of
+life. When a test needs a workaround to proceed, the workaround is the finding -
+stop and ask why the app made you write it.
+
+## Frequency belongs in the journey map (2026-08-05)
+
+Listing per-ball outcomes WITH how often they happen made the dot-ball defect
+obvious in a way that reading the same code three times had not: the friction
+sits on the most common event in the game. Rank user actions by frequency before
+deciding what to test, not by how interesting the code is.

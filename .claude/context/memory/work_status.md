@@ -1385,3 +1385,33 @@ NEXT (agreed direction, not yet done): write the actual user-journey map first -
 states x actions for a scorer from install to result, including the ordinary
 one-team case - and derive tests FROM it, instead of deriving tests from review
 findings. Ask the user for the exact taps he made for the three symptoms.
+
+## 2026-08-05 - journey map written FIRST, and it immediately found a real bug
+
+`Projects/cricket-app/2026-08-05-user-journey-map.md` - who holds the phone, the
+day-one path, the per-ball loop with FREQUENCIES, and a state x action table
+that tests must derive from.
+
+Two gaps fell straight out of writing it:
+
+**GAP 1 - no ad-hoc opponent (design, unfixed).** start_match requires the
+opponent to be an existing team. On day one NOBODY's opponent is on Pitch, so
+the only way through is to create a second team you will never use - which is
+exactly what the user hit and exactly what every journey did silently on his
+behalf. Needs a product decision (named opponent? lightweight team?). THIS IS
+THE TOP ITEM.
+
+**GAP 2 - dot ball opened the wagon sheet (FIXED, e32a04a, pushed to hosted).**
+wagon_applicable never checked whether runs were scored, so ~2 balls in 3 got a
+"where did 0 runs go?" modal. The old journeys ACCOMMODATED it - scoreRuns()
+dismisses the sheet after every tap - instead of reporting it. pgTAP 157 + the
+old contrary assertion in pgTAP 57 updated with its reason.
+
+Measured and NOT defective: dot/wide/no-ball arithmetic in the fold, and the
+params the console sends (`wides: 1 + runs`, correctly labelled). If the wide
+numbers still look wrong to the user it is a SCREEN question - needs him to say
+which taps he made.
+
+NEXT, in order: GAP 1 (product decision needed from the user); then journey-map
+C1 driven on a device with screenshots after every ball; then B3 (filling a
+stranger's XI, never once driven).
