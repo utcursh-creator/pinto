@@ -1045,3 +1045,30 @@ Broadcast tests failing with `no partition of relation "messages" found for row`
 means the daily partitions have simply expired (DB clock 2026-08-15, newest
 partition 2026-08-11), not that the code broke. Same class as the Kong trap.
 Recipe now in Projects/cricket-app/CLAUDE.md.
+
+## Write the test for the mechanism, not the symptom (2026-08-05)
+
+Twice on finding #4 I wrote a test that passed against the BROKEN code:
+- remounting the console re-renders the innings-break panel, which re-arms the
+  very latch the test was trying to catch as cleared;
+- round-tripping innings_status through 'completed' to force a re-notify does
+  the same thing.
+Only advancing the fold WHILE staying in_progress isolated the defect. The
+mutation is what exposed both: a test that does not fail against the old code is
+not evidence, however plausible its story. Run the mutation before believing
+your own RED.
+
+## An old test that contradicts a new fix may be right for ITS case (2026-08-05)
+
+squads_to_toss pinned "a departed player is never re-written into the squad";
+the new finding needed the opposite. Both were correct - before the first ball a
+squad is a plan, after it a record. The fix was a condition that satisfies both,
+not a decision about which test to overrule. Look for the distinguishing
+variable before deleting anybody's assertion.
+
+## A fixture that pins server state hides server-state bugs (2026-08-05)
+
+innings_break_status_test pinned matchProvider to `{'status': 'live'}` forever,
+so markInningsBreak appeared to change nothing. Any bug about the console
+disagreeing with the server was invisible by construction. When a fix starts
+reading real server state, expect the fakes to need to start moving like it.

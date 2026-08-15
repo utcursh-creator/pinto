@@ -1304,3 +1304,32 @@ Suite now 955 tests / 148 files PASS.
 4. `scoring_console_screen.dart:482` - `_breakMarked` is a per-widget latch, so a
    correction after reopening the console can leave matches.status stuck at
    `innings_break`.
+
+## 2026-08-05 - all 4 remaining review findings worked (commits 08cfc40..65928b4)
+
+1. **PASSWORD RECOVERY - REAL, fixed (08cfc40).** Driven: flipping into recovery
+   left the router on /discover. `onboardingRedirect(recovering:)` was correct
+   AND unit-tested; go_router only re-runs `redirect` when its refreshListenable
+   fires, and RouterRefresh listened to authGateProvider ALONE while the
+   redirect also reads passwordRecoveryProvider. Fixed + the rule written on the
+   class: every provider the redirect reads must be listened to here.
+2. **SQUADS DROP A DEPARTED PLAYER - REAL, fixed (85fb185).** Reproduced on the
+   live DB: omitting a player who faced a ball raises `that player has already
+   played in this match`. An EXISTING test pinned the opposite and was right for
+   its case; the distinction is time - before the first ball the squad is a
+   PLAN (prune it), after it a RECORD (never rewrite it). Skip is now gated on
+   match status; mutations both ways prove the condition is load-bearing.
+3. **STORAGE URL BACKFILL - REAL but latent, fixed (5d2979c).** Triggers
+   normalise on write only; hosted had 0 foreign URLs. Backfilled + drift guard
+   (pgTAP 156). Pushed to hosted.
+4. **INNINGS-BREAK LATCH - HALF REFUTED, half real (65928b4).** The "fresh
+   mount" half is FALSE: remounting re-renders the break panel which re-arms the
+   latch. My test for it passed against the OLD code - that is how I found out.
+   The real half: `_breakMarked = false` before the await meant a FAILED resume
+   could never retry. Now gated on server matches.status.
+
+Gates: pgTAP 959 / 149 files, widget 465, analyze clean. Hosted fully migrated.
+
+NOT re-run since these client changes: the 9 device journeys and the APK. The
+APK the user already has predates findings 1, 2 and 4 (all client-side). If they
+want the friend to test password reset or squad editing, it needs a rebuild.
