@@ -1268,3 +1268,39 @@ Everything else in the chain is already verified (Android OAuth client with the
 release SHA-1 per the user's console screenshot; Supabase google client id ==
 app GOOGLE_WEB_CLIENT_ID; provider enabled). Only the human account-pick and
 the token exchange remain.
+
+## 2026-08-05 - code review found a bug in MY OWN fix (user was right to doubt)
+
+The user said "idts the issues are resolved" and asked for an in-depth review.
+They were right.
+
+**FIRST RUN WAS WORTHLESS AND I NEARLY REPORTED IT.** `/code-review` defaults to
+`git diff @{upstream}...HEAD`; everything was already pushed, so it scoped to ONE
+commit of memory prose and returned "No findings". That is a scoping artifact,
+not a clean bill of health. Re-ran against explicit source paths
+(`app/lib`, `backend/supabase/migrations`) -> 5 findings.
+
+**FIXED (commit 65b4f08, pushed to hosted):** the guest revive I wrote earlier
+today (20260805190000, copied from 20260804260000) updated EVERY tombstoned row
+of a name, unbounded, then `returning id into _id`. The reviewer predicted a
+silent two-active-rows split. Wrong consequence: plpgsql `RETURNING ... INTO` is
+STRICT, so it raises `query returned more than one row`, the transaction aborts,
+and "Add guest player" is permanently broken for that team+name with a raw
+Postgres error. Reachable from legacy data only; hosted had 0 teams in that
+shape. pgTAP 155 RED on 4/5 before, including the add_match_guest half.
+Suite now 955 tests / 148 files PASS.
+
+**STILL UNVERIFIED - 4 findings, do NOT relay as fact until checked:**
+1. `app_router.dart:169` - password-recovery redirect may never fire, because
+   RouterRefresh listens only to authGateProvider and that enum does not change
+   on a recovery event for the same user. If true, reset links land on Discover.
+   START HERE - highest user impact.
+2. `match_squads_screen.dart:56` - `_prefillFrom` skips departed members but
+   set_match_squad is authoritative, so resuming setup can drop a player who has
+   already faced a ball, and the RPC then refuses -> impassable screen.
+3. `20260804240000_image_urls_are_our_storage.sql:75` - normalises on write with
+   no backfill, so pre-existing external photo_url/logo_url keep beaconing
+   viewer IP/UA, including for logged-out visitors.
+4. `scoring_console_screen.dart:482` - `_breakMarked` is a per-widget latch, so a
+   correction after reopening the console can leave matches.status stuck at
+   `innings_break`.

@@ -1021,3 +1021,27 @@ only "Continue with Google" - a path that depends on an OAuth client registered
 against the RELEASE keystore SHA-1, not the debug one. Every widget test and
 every device journey ran on debug and could not see this. Launch the actual
 release artifact and look at the sign-in screen before shipping it to anyone.
+
+## /code-review defaults to the upstream diff - check the scope it chose (2026-08-05)
+
+With everything already pushed, `git diff @{upstream}...HEAD` was one commit of
+memory prose, and the review honestly reported "No findings" on it. I almost
+relayed that as "the code is clean". Re-run with explicit paths or a commit
+range whenever the branch is already pushed, and always read the "Scope
+reviewed" line before believing the verdict.
+
+## A reviewer can be right about the bug and wrong about the damage (2026-08-05)
+
+The review said an unbounded `update ... returning id into _id` would silently
+revive two rows. It does not: plpgsql RETURNING INTO is STRICT for multi-row, so
+it hard-errors and aborts the transaction - a permanent, visible dead end rather
+than a silent split. Reproduce the finding before repeating its consequence; the
+fix differs (scope the update) but the severity and the user-facing story do not
+match what was reported.
+
+## realtime.messages partitions run out on a long-lived local stack (2026-08-05)
+
+Broadcast tests failing with `no partition of relation "messages" found for row`
+means the daily partitions have simply expired (DB clock 2026-08-15, newest
+partition 2026-08-11), not that the code broke. Same class as the Kong trap.
+Recipe now in Projects/cricket-app/CLAUDE.md.
