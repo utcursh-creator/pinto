@@ -1072,3 +1072,11 @@ innings_break_status_test pinned matchProvider to `{'status': 'live'}` forever,
 so markInningsBreak appeared to change nothing. Any bug about the console
 disagreeing with the server was invisible by construction. When a fix starts
 reading real server state, expect the fakes to need to start moving like it.
+
+## Never run `flutter build` and `flutter drive` concurrently (2026-08-05)
+
+They share generated files. `flutter drive` rewrites GeneratedPluginRegistrant
+to include the integration_test plugin; a concurrent release build then compiles
+that registrant and fails with `package dev.flutter.plugins.integration_test
+does not exist`. It reads like a dependency or Gradle problem and is neither.
+Run one, then the other.

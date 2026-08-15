@@ -1333,3 +1333,19 @@ Gates: pgTAP 959 / 149 files, widget 465, analyze clean. Hosted fully migrated.
 NOT re-run since these client changes: the 9 device journeys and the APK. The
 APK the user already has predates findings 1, 2 and 4 (all client-side). If they
 want the friend to test password reset or squad editing, it needs a rebuild.
+
+## 2026-08-05 - APK rebuilt + device journeys re-run after the 4 review fixes
+
+* **9/9 device journeys PASS** on the iOS simulator against local Supabase,
+  with findings 1, 2 and 4 (all client-side) in the build.
+* **APK rebuilt**: v1.0.0+2, 59 MB, sha256 eb64d2b0e1314151..., release-signed
+  (CN=Pitch App), hosted ref baked in. Installed and launched on the Android
+  emulator: reaches Discover, 0 FATAL/E-flutter lines in logcat. Delivered and
+  copied to ~/Desktop/pitch-v1.0.0+2.apk (replaces the earlier build).
+
+MY OWN MISTAKE, worth not repeating: I started the APK build and `flutter drive`
+AT THE SAME TIME. The drive run regenerated
+`android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java` to
+include the integration_test plugin, which does not exist in a release build, so
+the release compile died with `package dev.flutter.plugins.integration_test does
+not exist`. Nothing was wrong with the app. Sequence them.
