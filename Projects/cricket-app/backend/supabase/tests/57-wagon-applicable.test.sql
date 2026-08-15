@@ -20,7 +20,13 @@ select public.create_match(:'_a'::uuid,:'_b'::uuid,20,6,'{"allow_consecutive_ove
 -- innings 1: non-wicket cases (S/NS stay on the crease throughout)
 select public.start_innings(:'_mt'::uuid,1,:'_a'::uuid,:'_b'::uuid,:'_s'::uuid,:'_ns'::uuid) as _in1 \gset
 select is((select wagon_applicable from public.record_ball(:'_in1'::uuid,:'_bw'::uuid,4)), true,  'off-bat four is wagon-applicable');
-select is((select wagon_applicable from public.record_ball(:'_in1'::uuid,:'_bw'::uuid,0)), true,  'a defended dot is wagon-applicable');
+-- CHANGED 2026-08-05 (journey map C1). This used to assert TRUE, describing what
+-- the code did rather than what a scorer wants. The user - who actually scores
+-- gully cricket - reported the dot-ball behaviour as wrong, and he is right: a
+-- dot is the most common outcome in the game, so prompting "where did 0 runs
+-- go?" put a modal in front of the scorer on the majority of deliveries. The
+-- old journeys hid it behind a helper that dismissed the sheet after every tap.
+select is((select wagon_applicable from public.record_ball(:'_in1'::uuid,:'_bw'::uuid,0)), false, 'a defended dot is NOT wagon-applicable - the ball went nowhere');
 select is((select wagon_applicable from public.record_ball(:'_in1'::uuid,:'_bw'::uuid,0,1)), false, 'a wide is not wagon-applicable');
 select is((select wagon_applicable from public.record_ball(:'_in1'::uuid,:'_bw'::uuid,0,0,0,1)), false, 'a bye is not wagon-applicable');
 select is((select wagon_applicable from public.record_ball(:'_in1'::uuid,:'_bw'::uuid,0,0,0,0,1)), false, 'a leg-bye is not wagon-applicable');
