@@ -1349,3 +1349,39 @@ AT THE SAME TIME. The drive run regenerated
 include the integration_test plugin, which does not exist in a release build, so
 the release compile died with `package dev.flutter.plugins.integration_test does
 not exist`. Nothing was wrong with the app. Sequence them.
+
+## 2026-08-05 - USER REJECTED THE TEST APPROACH (and is right)
+
+"You haven't correctly mapped out how a user would actually be using this app
+... that is why the entire test is propagating in a senseless manner."
+
+He is right, and it is structural: EVERY journey in user_journeys_test.dart
+creates BOTH teams from the SAME account (createTeamWithGuests twice). No test
+in this repo has ever exercised the ordinary case - one user, one team, playing
+somebody else's team. So the setup flow has never actually been walked the way a
+scorer walks it, and the journeys pass regardless.
+
+Three symptoms he reported. What I have MEASURED so far:
+
+1. "both teams must be in one single team" - NOT yet reproduced. The opponent
+   picker searches ALL teams (not just mine), and add_match_guest is gated on
+   `is_match_scorer`, NOT on team admin, so the RPC permits filling the
+   opponent's XI. Something in the UI may still force it. UNRESOLVED.
+2. "dot ball mechanics wrong" - NOT reproduced. Backend fold on a dot:
+   runs 0, legal_balls 1, over 0.1, striker unchanged. Correct.
+3. "wide/no-ball +1/+2 wrong" - backend measured CORRECT:
+   wide -> runs +1, legal_balls unchanged; no-ball -> +1 and free_hit true;
+   wide + 2 byes -> +3 total. Console sends `wides: 1 + runs` (the standard
+   convention) and the sheet says "Extra runs run off the wide (the wide itself
+   counts 1)". So neither the fold nor the params are obviously wrong - the
+   defect, if any, is in what the SCREEN shows or how the pad is operated.
+
+An observation run (integration_test/observe_real_use_test.dart - screenshots,
+almost no assertions) got as far as the team page with ONE team, then failed to
+find "Start a match" from the Matches tab. That failure is itself a signal and
+is not yet explained.
+
+NEXT (agreed direction, not yet done): write the actual user-journey map first -
+states x actions for a scorer from install to result, including the ordinary
+one-team case - and derive tests FROM it, instead of deriving tests from review
+findings. Ask the user for the exact taps he made for the three symptoms.

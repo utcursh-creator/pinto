@@ -1080,3 +1080,12 @@ to include the integration_test plugin; a concurrent release build then compiles
 that registrant and fails with `package dev.flutter.plugins.integration_test
 does not exist`. It reads like a dependency or Gradle problem and is neither.
 Run one, then the other.
+
+## Journeys that build the whole world themselves prove nothing (2026-08-05)
+
+Every "user journey" here creates both teams, both squads and both rosters from
+one account, then declares the flow works. A real scorer has ONE team and plays
+a stranger's. The scripts never touched that path, so they were green while the
+user hit a wall on his first real attempt. A journey is only evidence if its
+SETUP matches how the situation actually arises for a user - otherwise it tests
+the fixture, not the product.
