@@ -25,6 +25,14 @@ class _BreakRepo extends Fake implements MatchRepository {
   int attempts = 0;
   int resumes = 0;
 
+  /// The SERVER's matches.status. The console now gates the resume on this
+  /// rather than on a field of its own State, so the fake has to move like the
+  /// real thing: a successful markInningsBreak really does change it. Pinning
+  /// it to 'live' forever, as this fixture used to, modelled a server that
+  /// ignores the write - and hid the bug where a scorer who reopened the
+  /// console (fresh State, latch down) could never get the match back to live.
+  String status = 'live';
+
   @override
   Future<void> markInningsBreak(String matchId) async {
     attempts++;
@@ -32,10 +40,23 @@ class _BreakRepo extends Fake implements MatchRepository {
       failTimes--;
       throw Exception('no connection');
     }
+    status = 'innings_break';
   }
 
+  /// How many resume attempts should fail before one succeeds.
+  int failResumes = 0;
+  int resumeAttempts = 0;
+
   @override
-  Future<void> resumeFromInningsBreak(String matchId) async => resumes++;
+  Future<void> resumeFromInningsBreak(String matchId) async {
+    resumeAttempts++;
+    if (failResumes > 0) {
+      failResumes--;
+      throw Exception('no connection');
+    }
+    resumes++;
+    status = 'live';
+  }
 }
 
 /// `innings_status` is what the fold reports on each successive read, so a test
@@ -48,6 +69,19 @@ class _StatusN extends Notifier<String> {
 
 final _statusSrc = NotifierProvider<_StatusN, String>(_StatusN.new);
 
+/// Lets the fold advance (the next ball) WITHOUT innings_status changing, which
+/// is what actually happens after a correction reopens an innings: the scorer
+/// carries on scoring. Without this a test can only re-notify by passing back
+/// through 'completed', and that re-renders the innings-break panel, which
+/// re-arms the latch and hides the defect.
+class _SeqN extends Notifier<int> {
+  @override
+  int build() => 120;
+  void next() => state = state + 1;
+}
+
+final _seqSrc = NotifierProvider<_SeqN, int>(_SeqN.new);
+
 /// First innings complete, no target set - the innings-break panel.
 ///
 /// Returns the CONTAINER rather than a list of overrides: riverpod 3's
@@ -56,7 +90,7 @@ final _statusSrc = NotifierProvider<_StatusN, String>(_StatusN.new);
 ProviderContainer _container(_BreakRepo repo) => ProviderContainer(overrides: [
         matchRepositoryProvider.overrideWithValue(repo),
         matchProvider.overrideWith(
-            (ref, id) async => {'balls_per_over': 6, 'status': 'live'}),
+            (ref, id) async => {'balls_per_over': 6, 'status': repo.status}),
         currentInningsProvider.overrideWith((ref, id) async => {
               'id': 'in1',
               'batting_team_id': 'A',
@@ -81,7 +115,7 @@ ProviderContainer _container(_BreakRepo repo) => ProviderContainer(overrides: [
               'legal_balls': 120,
               'over': '20.0',
               'innings_status': ref.watch(_statusSrc),
-              'last_seq': 120,
+              'last_seq': ref.watch(_seqSrc),
             }),
       ]);
 
@@ -92,6 +126,55 @@ Widget _console(ProviderContainer c) => UncontrolledProviderScope(
 
 void main() {
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    // ── code review 2026-08-05 ───────────────────────────────────────────────
+    // The review said the per-widget `_breakMarked` latch means a correction
+    // made after REOPENING the console cannot resume. That half is REFUTED:
+    // remounting re-renders the innings-break panel, which re-arms the latch,
+    // so the fresh-mount path self-heals. A test for it passed against the old
+    // code too - which is how I found out.
+    //
+    // The other half is real. `_breakMarked = false` was set BEFORE awaiting
+    // the RPC, so a FAILED resume left nothing to re-trigger on and the comment
+    // promising "the next correction or reopen will retry" could not happen.
+    // Gating on the server's matches.status fixes it for free: the status is
+    // still innings_break after a failure, so the next fold event tries again.
+    testWidgets('a resume that FAILS is retried on the next fold event on '
+        '\$platform', (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        final repo = _BreakRepo(failTimes: 0)..failResumes = 1;
+        final c = _container(repo);
+        addTearDown(c.dispose);
+
+        await tester.pumpWidget(_console(c));
+        await tester.pumpAndSettle();
+        expect(repo.status, 'innings_break', reason: 'sanity: break written');
+
+        // the correction reopens the innings - and the resume RPC fails
+        c.read(_statusSrc.notifier).set('in_progress');
+        await tester.pumpAndSettle();
+        expect(repo.resumeAttempts, 1, reason: 'sanity: it tried once');
+        expect(repo.status, 'innings_break',
+            reason: 'sanity: the server did not move, so viewers still read '
+                'the match as being at the innings break');
+
+        // The scorer simply carries on: the next ball advances the fold while
+        // innings_status STAYS in_progress. Nothing returns to the break panel,
+        // so nothing re-arms the latch - this is the real shape of the failure.
+        c.read(_seqSrc.notifier).next();
+        await tester.pumpAndSettle();
+
+        expect(repo.resumeAttempts, greaterThan(1),
+            reason: 'the old code cleared the latch BEFORE awaiting, so one '
+                'failed resume meant the match stayed at innings_break for the '
+                'rest of the innings with nothing able to try again - and the '
+                'scorer was never told, because this path has no error UI');
+        expect(repo.status, 'live');
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('a correction that reopens the innings puts the match back to '
         'live on $platform', (tester) async {
       debugDefaultTargetPlatformOverride = platform;

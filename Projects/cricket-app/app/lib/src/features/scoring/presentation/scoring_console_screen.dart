@@ -477,14 +477,30 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
     // viewer showed no LIVE badge, the Watch-live list said "innings break"
     // and the Matches tile agreed - while balls were being recorded
     // (review #2, finding 61).
+    // Gated on the SERVER's match status, not on `_breakMarked`. That latch is
+    // a field on this State object, so it is false on a fresh mount: a scorer
+    // who left the console after the innings ended and came back to make the
+    // correction re-opened the innings with the latch down, this listener
+    // returned early, and matches.status stayed `innings_break` for the rest of
+    // the innings while balls were being recorded - the very bug finding 61
+    // fixed, surviving in the one route that reaches it.
+    //
+    // Reading the status also makes the retry real. `_breakMarked = false` used
+    // to be set BEFORE the await, so a failed RPC left nothing to re-trigger on
+    // and the "the next correction or reopen will retry" comment could not
+    // happen. The server state is still `innings_break` after a failure, so the
+    // next fold event tries again by itself.
     ref.listen(inningsStateProvider(inningsId), (prev, next) {
       final status = next.value?['innings_status'] as String?;
-      if (status != 'in_progress' || !_breakMarked) return;
+      if (status != 'in_progress') return;
+      final matchStatus =
+          ref.read(matchProvider(widget.matchId)).value?['status'] as String?;
+      if (matchStatus != 'innings_break') return;
       _breakMarked = false;
       _breakWriteFailed = false;
       _repo.resumeFromInningsBreak(widget.matchId).then((_) {
         if (mounted) ref.invalidate(matchProvider(widget.matchId));
-      }).catchError((_) {/* the next correction or reopen will retry */});
+      }).catchError((_) {/* server status stays innings_break - next fold retries */});
     });
 
     ref.listen(inningsStateProvider(inningsId), (prev, next) {
