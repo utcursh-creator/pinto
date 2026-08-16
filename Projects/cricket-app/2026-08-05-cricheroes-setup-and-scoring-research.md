@@ -133,10 +133,10 @@ the next ball; and whether the sheet's default of 0 reads as "no runs" or as
 
 | Map ref | Was | Now |
 |---|---|---|
-| B1 day-one opponent | GAP, no path | **inline "Create a team" in the opponent sheet** - matches CricHeroes |
-| C1 dot ball | modal on ~2 balls in 3 | fixed; next step is making wagon capture a preference |
-| C2 wide/no-ball | suspected wrong | arithmetic verified correct; UI unverified |
-| C4 corrections | edit/insert/crossed | check that changing a delivery's KIND is as easy as theirs |
+| B1 day-one opponent | GAP, no path | **DONE** 6c4ada4 - Create "<typed name>" in the opponent sheet, selects it |
+| C1 dot ball | modal on ~2 balls in 3 | **DONE** e32a04a (floor) + 29e149f/1573515/7195137 (the ceiling: account-level prefs, off by default, dot plotting a separate opt-in, toggles on Settings) |
+| C2 wide/no-ball | suspected wrong | arithmetic verified correct; UI still UNVERIFIED - needs the user's exact taps |
+| C4 corrections | edit/insert/crossed | **VERIFIED, no fix needed** - the Delivery chips (Legal/Wide/No-ball) already exist. What was missing was a test that the choice REACHES the RPC; ball_log_test only asserted the chip existed. ball_log_change_kind_test now drives it; dropping `wides:` from the payload fails 2 |
 
 ## Sources
 
