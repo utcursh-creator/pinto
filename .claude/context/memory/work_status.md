@@ -1478,3 +1478,33 @@ Gates: analyze clean, widget 471, pgTAP 965/150, hosted fully migrated.
   floor - no prompt on a dot - is already done (e32a04a).
 - C4: check that changing a delivery's KIND (dot -> wide) is reachable in the
   ball-log editor as easily as CricHeroes allows it.
+
+## 2026-08-05 - C1 backend half DONE (29e149f), client half NEXT
+
+User's ruling: "this needs to be fundamentally built and integrated and wired
+properly into the entire app" - so a preferences SUBSYSTEM, not a hidden flag.
+
+DECISION MADE (I put three options to him; he asked for it built properly):
+**ACCOUNT-level**, on profiles, NOT shared_preferences and NOT matches.rules.
+Reasons: survives reinstall and a second phone; profiles is already own-row for
+writes so it costs one column + one RPC with no new RLS surface; and it adds no
+dependency. Respects backend-before-frontend.
+
+Shipped: `profiles.preferences jsonb not null default '{}'` +
+`set_preferences(_patch jsonb)` which MERGES (`||`) and returns the merged
+object. ABSENT = OFF by design - a preference nobody asked for should not exist.
+pgTAP 158 (7 tests); mutation (replace instead of merge) fails 2.
+Suite 972/151. Pushed to hosted.
+
+CLIENT HALF, still to do:
+1. preferences provider + repository method (read from myProfile, write via
+   set_preferences), keys `wagon_capture` and `wagon_dot_balls`, both default
+   FALSE when absent.
+2. Toggles on the EXISTING routed SettingsScreen
+   (features/profile/presentation/settings_screen.dart, already wired in
+   app_router.dart:374) - dot-ball plotting nested under and disabled unless
+   wagon_capture is on, mirroring how CricHQ nests it.
+3. scoring_console_screen: gate `_promptWagon` on wagon_capture, and gate the
+   dot-ball case on wagon_dot_balls. Today it prompts whenever the backend says
+   wagon_applicable.
+4. RED widget test before each, mutation after; then C4.
