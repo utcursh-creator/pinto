@@ -1535,3 +1535,30 @@ CricHeroes allows it ("adjust the delivery type if a ball was incorrectly
 marked"). Start by READING the editor's UI strings - the B1 gap was written in
 our own copy and I missed it for two turns.
 Then, and only then, the promise RESEARCH_DOC_FIXES_ALL_DONE becomes true.
+
+## 2026-08-05 - RESEARCH DOC FIXES ALL DONE (B1, C1, C4)
+
+* **B1** 6c4ada4 - Create "<typed name>" in the opponent picker, selects it.
+  The day-one wall. The gap was written in our own empty-state copy.
+* **C1** e32a04a (floor: no wagon prompt on a dot) + 29e149f (profiles.preferences
+  + set_preferences merge RPC, pgTAP 158) + 1573515 (console gates on the prefs,
+  absent = OFF) + 7195137 (both toggles on the routed SettingsScreen, dot
+  plotting nested under capture).
+* **C4** 39eca21 - VERIFIED, NO FIX NEEDED. The Delivery chips already existed;
+  what was missing was a test that the choice reaches the RPC. Recorded as a
+  verification rather than dressed up as a fix.
+
+Every fix had a proven-RED test before it and a mutation after. Mutations
+caught: removing the create button (4), defaulting prefs ON (4), whole-object
+prefs PUT (2), un-nesting the dot toggle (2), replace-instead-of-merge in SQL
+(2), dropping `wides:` from the edit payload (2).
+
+Gates: analyze clean, widget 487, pgTAP 972/151, hosted has every migration.
+
+STILL OPEN, deliberately NOT claimed as fixed:
+* **C2** - the wide/no-ball SCREEN. Arithmetic is measured correct (wide +1 and
+  not a legal ball; no-ball +1 + free hit; wide+2 byes = +3) and the console
+  sends the right params. If the number still looks wrong it is what the screen
+  shows, and it needs the user's exact taps. Do not write this up as closed.
+* The APK the user holds predates ALL of today's work - B1, C1 and the four
+  code-review fixes. Needs a rebuild before he forwards it again.
