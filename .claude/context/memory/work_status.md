@@ -1415,3 +1415,36 @@ which taps he made.
 NEXT, in order: GAP 1 (product decision needed from the user); then journey-map
 C1 driven on a device with screenshots after every ball; then B3 (filling a
 stranger's XI, never once driven).
+
+## 2026-08-05 - CricHeroes research answers GAP 1 (commit 3eab5bf)
+
+`Projects/cricket-app/2026-08-05-cricheroes-setup-and-scoring-research.md`.
+Sourced, with a confidence column and NOT VERIFIED rows - their FAQ and scoring
+blog both 403 automated fetches, so tap counts and layout are unchecked.
+
+**GAP 1 ANSWERED.** CricHeroes does not treat the opponent as a lookup: you
+CREATE the team inside the match flow (name + location, logo optional), then add
+players immediately. The principle worth copying: A TEAM IS CHEAP - a name and a
+place, not an account - which is why it is safe to make one mid-flow for an
+opposition who will never install anything, and why the scorer is the only user
+who has to exist.
+So the fix is "Create a team" INSIDE our opponent picker sheet (existing fields,
+existing create_team RPC). Explicitly NOT an ad-hoc non-team: that needs its own
+type everywhere a team id is expected and throws away the payoff that Sharma's
+XI becomes a real club page the day they install.
+OPEN QUESTION for the user: should a team created that way be OWNED by the
+creator (my recommendation - he can fix the spelling, and request_guest_claim is
+the hand-over path) or ownerless for the real club to claim?
+
+**Wagon wheel, stronger evidence than instinct:** in CricHQ (a COMPETITOR - cited
+honestly, not CricHeroes) the wagon wheel is an opt-in SETTING and plotting DOT
+BALLS is a further option inside it. Nobody ships placement capture as
+mandatory. So today's dot-ball fix is the FLOOR; the end state is wagon capture
+as a scorer preference, off by default, dot plotting a separate opt-in.
+
+Their scoring pad: 0/1/2/3/4/6 direct + Wide/No ball/Bye/Leg Bye alongside +
+UNDO + after-the-fact correction of a delivery's TYPE. Two principles: the
+common case is one tap, and NOTHING interrupts it. We broke the second one.
+
+NEXT: build the opponent-sheet "Create a team" (B1), then drive C1/C2 on a device
+with screenshots after every ball.
