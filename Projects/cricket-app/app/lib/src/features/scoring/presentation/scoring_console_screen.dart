@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/prefs/scorer_prefs.dart';
 import '../../../core/routing/routes.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
@@ -116,7 +117,19 @@ class _ScoringConsoleScreenState extends ConsumerState<ScoringConsoleScreen> {
       // the recording is DONE here - drop the busy state BEFORE the wagon
       // prompt, or the progress bar animates under the open sheet forever
       if (mounted) setState(() => _busy = false);
-      if (res.wagonApplicable && res.deliveryId != null && mounted) {
+      // THE SCORER DECIDES whether he is asked. wagon_applicable is the
+      // backend saying "placement would be meaningful for this delivery"; it is
+      // not permission to interrupt. Capture is OFF until switched on in
+      // Settings, and dot balls are a SEPARATE opt-in because they are the most
+      // frequent event in the game - the one that costs real time at the
+      // boundary (2026-08-05-cricheroes-setup-and-scoring-research.md).
+      final prefs = ref.read(scorerPrefsProvider);
+      final askAboutThisBall = res.wagonApplicable ||
+          (prefs.wagonDotBalls && runs == 0 && wicketType == null);
+      if (prefs.wagonCapture &&
+          askAboutThisBall &&
+          res.deliveryId != null &&
+          mounted) {
         await _promptWagon(res.deliveryId!,
             runs: runs, wicket: wicketType != null);
       }
