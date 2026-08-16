@@ -1448,3 +1448,33 @@ common case is one tap, and NOTHING interrupts it. We broke the second one.
 
 NEXT: build the opponent-sheet "Create a team" (B1), then drive C1/C2 on a device
 with screenshots after every ball.
+
+## 2026-08-05 - ralph loop on the research doc: B1 DONE (6c4ada4)
+
+Loop armed properly this time: `--max-iterations 40 --completion-promise
+RESEARCH_DOC_FIXES_ALL_DONE`. Do NOT output that promise until B1 + C1 + C4 are
+all genuinely done.
+
+**B1 DONE.** The opponent picker now offers `Create "<what you typed>"` once the
+search has 2+ chars, creates via the existing create_team RPC, and SELECTS it.
+Owned by the creator (my call - he needs to fix the spelling; request_guest_claim
+hands it over). No schema change.
+
+THE BUG WAS WRITTEN IN OUR OWN UI COPY: the empty state said "Check the
+spelling, or ask them to create their team on Pitch first." I spent two turns
+hunting provider wiring while the gap sat there as user-facing text. When
+looking for a product gap, READ THE STRINGS THE USER SEES.
+
+Also: one of my new tests passed for the WRONG reason - it asserted "Choose the
+opponent" was absent after creating, which is also true while the sheet still
+covers it, so it was green while the button never fired. Now asserts the sheet
+is GONE. Mutation: removing the button fails 4.
+
+Gates: analyze clean, widget 471, pgTAP 965/150, hosted fully migrated.
+
+**REMAINING in the research doc:**
+- C1 ceiling: wagon capture as a scorer PREFERENCE, off by default, with
+  dot-ball plotting a SEPARATE opt-in (evidence: CricHQ ships it that way). The
+  floor - no prompt on a dot - is already done (e32a04a).
+- C4: check that changing a delivery's KIND (dot -> wide) is reachable in the
+  ball-log editor as easily as CricHeroes allows it.

@@ -1104,3 +1104,11 @@ Listing per-ball outcomes WITH how often they happen made the dot-ball defect
 obvious in a way that reading the same code three times had not: the friction
 sits on the most common event in the game. Rank user actions by frequency before
 deciding what to test, not by how interesting the code is.
+
+## Read the strings the user sees before reading the wiring (2026-08-05)
+
+The day-one opponent gap was spelled out in our own empty state: "ask them to
+create their team on Pitch first." Two turns went into providers and RPC grants
+while the product decision sat in user-facing copy. UI text states the
+assumptions the code only implies - grep the strings first when hunting a
+product gap rather than a crash.
