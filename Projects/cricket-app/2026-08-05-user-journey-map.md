@@ -62,9 +62,21 @@ Sharma's XI" path. So the only way through is to create a second team you do not
 own and will never use again - which is exactly what the user hit, and exactly
 what every journey in the repo quietly did on his behalf.
 
-**GAP 1 (design, not a code defect): no ad-hoc opponent.** The fix is a named
-opponent that is not a real team, or a "quick opponent" that creates a
-lightweight team owned by nobody. This needs a product decision, not a patch.
+**GAP 1 (design, not a code defect): no way to name an opponent who is not
+already on Pitch.**
+
+ANSWERED by research, 2026-08-05 - see
+`2026-08-05-cricheroes-setup-and-scoring-research.md`. CricHeroes does not treat
+the opponent as a lookup: you **create the team right there**, with name +
+location and an optional logo, then add players immediately. A team is cheap - a
+name and a place, not an account - so it is safe to make one mid-flow for an
+opposition who will never install anything.
+
+So the fix is NOT an ad-hoc non-team (that would need its own type everywhere a
+team id is expected, and would throw away the thing that makes the product
+valuable later: that Sharma's XI becomes a real club page the day they install).
+The fix is **"Create a team" inside the opponent picker sheet** - existing
+fields, existing `create_team` RPC, select it on success and continue.
 
 ---
 
