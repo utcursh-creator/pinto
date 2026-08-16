@@ -1508,3 +1508,30 @@ CLIENT HALF, still to do:
    dot-ball case on wagon_dot_balls. Today it prompts whenever the backend says
    wagon_applicable.
 4. RED widget test before each, mutation after; then C4.
+
+## 2026-08-05 - C1 COMPLETE (29e149f, 1573515, 7195137). Only C4 left.
+
+Preferences subsystem, built properly per the user's instruction:
+* BACKEND `profiles.preferences jsonb` + `set_preferences(_patch)` that MERGES.
+  Account-level so it survives reinstall and a second phone. pgTAP 158 (7).
+* CLIENT `core/prefs/scorer_prefs.dart` - ScorerPrefs.fromProfile, absent = OFF
+  everywhere (no key, null profile, profile still loading). scorer_prefs_test
+  (6); mutation defaulting the flags ON fails 4.
+* CONSOLE gates _promptWagon on the prefs. wagon_applicable is now understood as
+  "placement would be MEANINGFUL", not permission to interrupt.
+* SETTINGS (existing routed screen) has both toggles; dot plotting DISABLED
+  until capture is on, the way CricHQ nests it. Each toggle posts only the key
+  it changed. settings_scoring_prefs_test (6); two mutations both caught.
+
+An existing settings_test broke honestly: the screen grew so the version row
+fell below the fold. Fixed by SCROLLING to it, not by weakening the assertion -
+the version must still be there.
+
+Gates: analyze clean, widget 483, pgTAP 972/151, hosted has the prefs migration.
+
+**LAST ITEM - C4:** confirm that changing a delivery's KIND (dot -> wide, or a
+ball wrongly marked wide) is reachable in the ball-log editor as easily as
+CricHeroes allows it ("adjust the delivery type if a ball was incorrectly
+marked"). Start by READING the editor's UI strings - the B1 gap was written in
+our own copy and I missed it for two turns.
+Then, and only then, the promise RESEARCH_DOC_FIXES_ALL_DONE becomes true.
