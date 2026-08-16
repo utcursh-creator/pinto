@@ -1562,3 +1562,24 @@ STILL OPEN, deliberately NOT claimed as fixed:
   shows, and it needs the user's exact taps. Do not write this up as closed.
 * The APK the user holds predates ALL of today's work - B1, C1 and the four
   code-review fixes. Needs a rebuild before he forwards it again.
+
+## 2026-08-05 - APK rebuilt + 9/9 device journeys, AFTER all of today's work
+
+* **9/9 device journeys PASS** on the iOS simulator (10:23), including JOURNEY E
+  which drives the corrections path.
+* **APK rebuilt**: v1.0.0+2, 59 MB, release-signed (CN=Pitch App), hosted ref
+  baked in. Installed + launched on the Android emulator: reaches Discover,
+  0 FATAL/E-flutter. Delivered and on ~/Desktop/pitch-v1.0.0+2.apk.
+* Built SEQUENTIALLY this time (APK, then journeys). Running them concurrently
+  is what broke the previous build - `flutter drive` rewrites
+  GeneratedPluginRegistrant to include integration_test, which does not exist in
+  a release build.
+
+This APK now contains: B1 opponent creation, the dot-ball fix, the scoring
+preferences subsystem + Settings toggles, and the four code-review fixes
+(password recovery, squads, storage URLs, innings-break retry).
+
+STILL NOT VERIFIED BY ME, unchanged:
+* Google account-pick / token exchange (I do not do credential entry).
+* C2 - the wide/no-ball SCREEN. Arithmetic measured correct; if the number still
+  looks wrong it is the screen and it needs the user's exact taps.
