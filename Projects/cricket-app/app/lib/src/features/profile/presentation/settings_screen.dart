@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/platform/adaptive_scaffold.dart';
+import '../../../core/prefs/scorer_prefs.dart';
 import '../../../core/routing/routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/ui/human_error.dart';
@@ -129,6 +130,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  bool _prefsBusy = false;
+
+  /// Sends ONLY the key that changed; set_preferences merges server-side, so a
+  /// client that knows about one flag can never switch off a flag it has never
+  /// heard of.
+  Future<void> _setPref(String key, bool value) async {
+    setState(() => _prefsBusy = true);
+    try {
+      await ref.read(prefsWriterProvider)({key: value});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text(humanError(e, fallback: 'Could not save that.'))));
+      }
+    } finally {
+      if (mounted) setState(() => _prefsBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final email = ref.watch(currentSessionProvider)?.user.email;
@@ -136,6 +156,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       title: 'Settings',
       body: ListView(
         children: [
+          // SCORING PREFERENCES. The wagon wheel was mandatory until now, which
+          // is why a dot ball opened "Where did 0 run(s) go?" on the most
+          // common event in cricket. Placement capture is a choice the scorer
+          // makes once, not a tax on every delivery
+          // (2026-08-05-cricheroes-setup-and-scoring-research.md).
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text('Scoring',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Builder(builder: (context) {
+            final prefs = ref.watch(scorerPrefsProvider);
+            return Column(children: [
+              SwitchListTile(
+                title: const Text('Ask where the ball went'),
+                subtitle: const Text(
+                    'Plot shots on the field after runs are scored. Off keeps '
+                    'the console to one tap a ball.'),
+                value: prefs.wagonCapture,
+                onChanged: _prefsBusy
+                    ? null
+                    : (v) => _setPref(ScorerPrefs.keyCapture, v),
+              ),
+              SwitchListTile(
+                title: const Text('Also ask on dot balls'),
+                subtitle: const Text(
+                    'Dots are the most common ball in the game, so this is the '
+                    'one that costs time at the boundary.'),
+                value: prefs.wagonDotBalls,
+                // Nested under the setting it depends on, the way CricHQ does
+                // it: asking about dots is meaningless if you are not being
+                // asked about anything.
+                onChanged: (!prefs.wagonCapture || _prefsBusy)
+                    ? null
+                    : (v) => _setPref(ScorerPrefs.keyDotBalls, v),
+              ),
+            ]);
+          }),
+          const Divider(),
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
             child: Text('Account', style: TextStyle(fontWeight: FontWeight.w500)),

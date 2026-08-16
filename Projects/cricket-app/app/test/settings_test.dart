@@ -25,6 +25,13 @@ void main() {
         // store compliance: legal pointers + about + DELETE (MISS-4)
         expect(find.text('Privacy policy'), findsOneWidget);
         expect(find.text('Terms of service'), findsOneWidget);
+        // The screen grew a Scoring section (2026-08-05), so the version row
+        // is now below the fold. The assertion is unchanged - it still has to
+        // be THERE - only how the test reaches it.
+        await tester.scrollUntilVisible(
+            find.textContaining('Pitch v'), 200,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
         expect(find.textContaining('Pitch v'), findsOneWidget);
         final del = find.widgetWithText(OutlinedButton, 'Delete account');
         await tester.scrollUntilVisible(del, 200,
