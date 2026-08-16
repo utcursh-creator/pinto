@@ -135,7 +135,7 @@ the next ball; and whether the sheet's default of 0 reads as "no runs" or as
 |---|---|---|
 | B1 day-one opponent | GAP, no path | **DONE** 6c4ada4 - Create "<typed name>" in the opponent sheet, selects it |
 | C1 dot ball | modal on ~2 balls in 3 | **DONE** e32a04a (floor) + 29e149f/1573515/7195137 (the ceiling: account-level prefs, off by default, dot plotting a separate opt-in, toggles on Settings) |
-| C2 wide/no-ball | suspected wrong | arithmetic verified correct; UI still UNVERIFIED - needs the user's exact taps |
+| C2 wide/no-ball | suspected wrong | **SETTLED 2026-08-05 - REAL DEFECT.** Not arithmetic. The pad's `Wd`/`Nb` record a delivery IMMEDIATELY, so the natural gesture (tap Wd, then tap 2) writes TWO deliveries: runs 3, legal_balls 1, over 0.1 - versus the correct single delivery, runs 3, legal_balls 0, over 0.0. Same total, which is why every arithmetic check passed; but a legal ball that never happened is consumed and the over ends a ball early. FIX: make wide/no-ball a MODIFIER that arms, then the run button writes one delivery |
 | C4 corrections | edit/insert/crossed | **VERIFIED, no fix needed** - the Delivery chips (Legal/Wide/No-ball) already exist. What was missing was a test that the choice REACHES the RPC; ball_log_test only asserted the chip existed. ball_log_change_kind_test now drives it; dropping `wides:` from the payload fails 2 |
 
 ## Sources

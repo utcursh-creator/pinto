@@ -1112,3 +1112,18 @@ create their team on Pitch first." Two turns went into providers and RPC grants
 while the product decision sat in user-facing copy. UI text states the
 assumptions the code only implies - grep the strings first when hunting a
 product gap rather than a crash.
+
+## Equal totals can hide a wrong ball count (2026-08-05)
+
+Every wide/no-ball check I ran compared RUNS, and every one passed, so I reported
+the arithmetic correct four separate times. The defect was in legal_balls: the
+natural pad gesture (Wd then 2) writes two deliveries totalling the same 3 runs
+but consuming a legal ball that never happened. When a user says "the mechanics
+are wrong" and the totals look right, check the OTHER invariants of the same
+event - ball count, strike, over number - before concluding the engine is fine.
+
+## Waiting for the user's repro is not an investigation (2026-08-05)
+
+C2 sat open for several turns on "needs the user's exact taps". It took one
+measurement of our own pad to settle it. Ask for a repro to SPEED UP an
+investigation, never as a substitute for starting one.

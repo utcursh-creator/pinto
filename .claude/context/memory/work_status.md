@@ -1583,3 +1583,37 @@ STILL NOT VERIFIED BY ME, unchanged:
 * Google account-pick / token exchange (I do not do credential entry).
 * C2 - the wide/no-ball SCREEN. Arithmetic measured correct; if the number still
   looks wrong it is the screen and it needs the user's exact taps.
+
+## 2026-08-05 - C2 SETTLED: a real defect, and I should have measured it days ago
+
+The user asked why C2 was still open. Correct challenge - I had been waiting for
+his taps instead of measuring our own screen.
+
+**THE DEFECT.** The console pad has one-tap `Wd` and `Nb` buttons that RECORD A
+DELIVERY IMMEDIATELY. There is no way to say "wide, and they ran two" except via
+the Extras sheet. So the natural gesture - tap Wd, then tap 2 - writes TWO
+deliveries:
+
+    A (Wd then 2):  runs 3, legal_balls 1, over 0.1
+    B (correct):    runs 3, legal_balls 0, over 0.0
+
+Identical TOTAL, which is exactly why every arithmetic check I ran passed and
+why I kept reporting "the arithmetic is correct". But A consumes a legal ball
+that never happened - the over ends a ball early and every subsequent over is
+out by one. That is the user's "mechanics are wrong" / "+1 or +2 is being done
+like that".
+
+**FIX (designed, NOT yet built):** wide/no-ball becomes a MODIFIER, not an
+immediate record. Tap Wd -> it arms and stays lit -> tap the runs -> ONE
+delivery is written. Plain wide stays one gesture; wide+runs is two taps and one
+delivery. This is the standard scorer model and matches what CricHeroes' pad
+(0/1/2/3/4/6 with Wide/No ball alongside) implies.
+
+**ON REVERSE-ENGINEERING THEIR APK:** the user suggested downloading the
+CricHeroes APK and opening it. I declined the binary route - pulling an
+executable from a third-party mirror and decompiling it is both an untrusted
+download and a different thing from studying a product. The legitimate version
+is to INSTALL it from Play on the emulator and use it, which my own research doc
+already called for. That needs a Google sign-in on the emulator, which is the
+credential step I do not do. If the user signs in once, I can drive it and
+screenshot every tap.
