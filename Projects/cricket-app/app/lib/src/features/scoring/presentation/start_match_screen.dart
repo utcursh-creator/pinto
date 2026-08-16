@@ -7,6 +7,7 @@ import '../../../core/platform/error_retry.dart';
 import '../../../core/routing/routes.dart';
 import '../../discover/data/discover_repository.dart';
 import '../../identity/data/identity_providers.dart';
+import '../../identity/data/identity_repository.dart';
 import '../data/match_providers.dart';
 import '../data/match_repository.dart';
 import '../../../core/ui/app_primitives.dart';
@@ -341,6 +342,7 @@ class _OpponentSearchSheet extends ConsumerStatefulWidget {
 class _OpponentSearchSheetState extends ConsumerState<_OpponentSearchSheet> {
   final _q = TextEditingController();
   String _query = '';
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -399,8 +401,7 @@ class _OpponentSearchSheetState extends ConsumerState<_OpponentSearchSheet> {
                         : 'No team called "${_query.trim()}"',
                     message: _query.trim().length < 2
                         ? 'Type a club name to find who you are playing.'
-                        : 'Check the spelling, or ask them to create their team '
-                            'on Pitch first.',
+                        : 'Not on Pitch? Create them below - it takes a name.',
                   );
                 }
                 return ListView.separated(
@@ -425,8 +426,61 @@ class _OpponentSearchSheetState extends ConsumerState<_OpponentSearchSheet> {
               },
             ),
           ),
+          // JOURNEY MAP B1 - the day-one wall.
+          //
+          // On day one NOBODY's opponent is on Pitch, so a picker that can only
+          // SEARCH existing teams stops every new user on their first real
+          // match. The empty state used to say "ask them to create their team
+          // on Pitch first" - which asks a man standing at a ground on Sunday
+          // to make his opposition install an app. He will not. He will build a
+          // second team he does not own, which is exactly what happened.
+          //
+          // CricHeroes does not treat the opponent as a lookup: you create the
+          // team right there. A team is CHEAP - a name and a place, not an
+          // account - and that is what makes it safe, and why the scorer is the
+          // only user who ever has to exist.
+          //
+          // Owned by the creator (create_team makes him captain) so he can fix
+          // the spelling; request_guest_claim hands it over when the real club
+          // turns up.
+          if (_query.trim().length >= 2) ...[
+            const Divider(height: 24),
+            if (_busy)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator.adaptive(),
+                ),
+              )
+            else
+              FilledButton.tonalIcon(
+                onPressed: _createAndPick,
+                icon: const Icon(Icons.add),
+                label: Text('Create "${_query.trim()}"'),
+              ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Creates the opponent under the name the scorer has ALREADY typed, and
+  /// picks it - he is never sent back to search for the team he just made.
+  Future<void> _createAndPick() async {
+    final name = _q.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      final id =
+          await ref.read(identityRepositoryProvider).createTeam(name: name);
+      if (!mounted) return;
+      Navigator.of(context).pop((id: id, name: name));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+          content:
+              Text(humanError(e, fallback: 'Could not create that team.'))));
+    }
   }
 }
