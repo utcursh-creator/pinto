@@ -1617,3 +1617,41 @@ is to INSTALL it from Play on the emulator and use it, which my own research doc
 already called for. That needs a Google sign-in on the emulator, which is the
 credential step I do not do. If the user signs in once, I can drive it and
 screenshot every tap.
+
+## 2026-08-05 - C2 fix ATTEMPTED and REVERTED. Not built. Read this before retrying.
+
+The user said "build everything". I built the wide/no-ball arming modifier, then
+REVERTED it, because it was not shippable:
+
+1. **The mutation failed 0 tests.** I could not get a widget test to prove
+   "one gesture, one delivery". Three new tests never recorded at all - the
+   console refuses to score without a bowler for the over and my harness never
+   satisfied that. Existing tests in first_ball_wide_keeps_bowler pass under BOTH
+   the old and new behaviour, so they prove nothing about arming.
+2. **It broke `console_human_errors_test`.** A real regression, uninvestigated.
+
+Shipping it would have been exactly the vibe coding the user forbids: a change
+with no proof and a known failing test. Reverted; suite back to 487 green.
+
+**THE DEFECT IS REAL AND STILL PRESENT** - measured on the live DB, recorded in
+the research doc and cad9003:
+    Wd then 2  -> runs 3, legal_balls 1, over 0.1   (TWO deliveries)
+    correct    -> runs 3, legal_balls 0, over 0.0   (ONE delivery)
+Same total, so every arithmetic check passes; a legal ball that never happened is
+consumed and the over ends a ball early.
+
+**THE DESIGN (unchanged, still right):** `Wd`/`Nb` ARM instead of recording;
+the run button then writes ONE delivery (wide -> `wides: 1 + n`; no-ball ->
+`noBall: 1, runs: n, noballSecondaryKind: n>0 ? 'off_bat' : null`); a second tap
+on the armed button records the plain case. A banner says what is armed with a
+Cancel.
+
+**WHAT THE NEXT ATTEMPT MUST DO FIRST, in this order:**
+1. Build a console harness that ACTUALLY records - copy the bowler-selection
+   steps from the passing tests in first_ball_wide_keeps_bowler_test (they tap a
+   bowler name after a picker opens). Prove the harness by asserting a plain
+   run(4) reaches the fake BEFORE touching Wd.
+2. Only then write the C2 assertions, and run the mutation (revert Wd to
+   recording immediately) - it MUST fail, or the test is worthless.
+3. Investigate why console_human_errors_test failed under the change before
+   re-applying it.
